@@ -1,6 +1,8 @@
 import { ComponentManager } from "./ComponentManager";
 import type { EntityId } from "./Entity";
 import { EntityManager } from "./EntityManager";
+import type { System } from "./System";
+import { SystemManager } from "./SystemManager";
 
 interface WorldOptions {
   maxEntities: number;
@@ -14,9 +16,11 @@ type ComponentBlueprint<T> = {
 
 export class World<T extends ComponentBlueprint<T>> {
   private readonly options: WorldOptions;
+  readonly components: { [K in keyof T]: { _name: K } };
+
   private entityManager: EntityManager;
+  private systemManager: SystemManager;
   private componentManager: ComponentManager<T>;
-  components: { [K in keyof T]: { _name: K } };
 
   constructor(blueprints: T, options?: Partial<WorldOptions>) {
     this.options = {
@@ -25,6 +29,7 @@ export class World<T extends ComponentBlueprint<T>> {
     };
 
     this.entityManager = new EntityManager(this.options.maxEntities);
+    this.systemManager = new SystemManager();
     this.componentManager = new ComponentManager(
       blueprints,
       this.options.maxEntities,
@@ -51,5 +56,17 @@ export class World<T extends ComponentBlueprint<T>> {
 
   removeComponent(entityId: EntityId, component: { _name: keyof T }): void {
     this.componentManager.removeComponent(entityId, component);
+  }
+
+  addSystem(system: System): void {
+    this.systemManager.addSystem(system);
+  }
+
+  removeSystem(system: System): void {
+    this.systemManager.removeSystem(system);
+  }
+
+  update(deltaTime: number): void {
+    this.systemManager.updateAll(deltaTime);
   }
 }
