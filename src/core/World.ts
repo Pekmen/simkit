@@ -1,4 +1,6 @@
+import { ComponentManager } from "./ComponentManager";
 import type { EntityId } from "./Entity";
+import { EntityManager } from "./EntityManager";
 
 interface WorldOptions {
   maxEntities: number;
@@ -10,16 +12,11 @@ type ComponentBlueprint<T> = {
   };
 };
 
-type ComponentStorageMap<T> = {
-  [K in keyof T]: {
-    [P in keyof T[K]]: (T[K][P] | undefined)[];
-  };
-};
-
 export class World<T extends ComponentBlueprint<T>> {
   private readonly options: WorldOptions;
-  private readonly componentBlueprints: ComponentBlueprint<T>;
-  private readonly componentStorages: ComponentStorageMap<T>;
+  private entityManager: EntityManager;
+  private componentManager: ComponentManager<T>;
+  components: { [K in keyof T]: { _name: K } };
 
   constructor(blueprints: T, options?: Partial<WorldOptions>) {
     this.options = {
@@ -27,27 +24,32 @@ export class World<T extends ComponentBlueprint<T>> {
       ...options,
     };
 
-    this.componentBlueprints = blueprints;
-    this.componentStorages = this.createComponentStorages(blueprints);
+    this.entityManager = new EntityManager(this.options.maxEntities);
+    this.componentManager = new ComponentManager(
+      blueprints,
+      this.options.maxEntities,
+    );
+
+    this.components = this.componentManager.components;
   }
 
-  private createComponentStorages(blueprints: T): ComponentStorageMap<T> {
-    const storages = {} as ComponentStorageMap<T>;
-    const { maxEntities } = this.options;
+  addEntity(): EntityId {
+    return this.entityManager.addEntity();
+  }
 
-    for (const componentName in blueprints) {
-      const key = componentName as keyof T;
-      const componentSchema = blueprints[key];
-      const componentStorage = {} as ComponentStorageMap<T>[typeof key];
+  removeEntity(entityId: EntityId): void {
+    this.componentManager.removeEntityComponents(entityId);
+  }
 
-      for (const propertyName in componentSchema) {
-        const prop = propertyName as keyof T[typeof key];
-        componentStorage[prop] = new Array(maxEntities).fill(undefined);
-      }
+  addComponent<K extends keyof T>(
+    entityId: EntityId,
+    component: { _name: K },
+    componentData: T[K],
+  ): void {
+    this.componentManager.addComponent(entityId, component, componentData);
+  }
 
-      storages[key] = componentStorage;
-    }
-
-    return storages;
+  removeComponent(entityId: EntityId, component: { _name: keyof T }): void {
+    this.componentManager.removeComponent(entityId, component);
   }
 }
