@@ -1,6 +1,7 @@
 import { ComponentManager } from "./ComponentManager";
 import type { EntityId } from "./Entity";
 import { EntityManager } from "./EntityManager";
+import type { QueryResult } from "./Query";
 import type { System } from "./System";
 import { SystemManager } from "./SystemManager";
 
@@ -68,5 +69,11 @@ export class World<T extends ComponentBlueprint<T>> {
 
   update(deltaTime: number): void {
     this.systemManager.updateAll(deltaTime);
+  }
+
+  query<K extends keyof T>(
+    ...components: { _name: K }[]
+  ): QueryResult<T, K> {
+    return this.componentManager.query(...components);
   }
 }

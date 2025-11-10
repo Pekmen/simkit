@@ -1,4 +1,5 @@
 import type { EntityId } from "./Entity";
+import type { QueryResult } from "./Query";
 
 export type ComponentBlueprint<T> = {
   [K in keyof T]: {
@@ -76,5 +77,31 @@ export class ComponentManager<T extends ComponentBlueprint<T>> {
         storage[p][entityId] = undefined;
       }
     }
+  }
+
+  query<K extends keyof T>(
+    ...componentRefs: { _name: K }[]
+  ): QueryResult<T, K> {
+    const entities: EntityId[] = [];
+    const componentNames = componentRefs.map((ref) => ref._name);
+
+    for (let entityId = 0; entityId < this.maxEntities; entityId++) {
+      const hasAllComponents = componentNames.every((name) => {
+        const storage = this.componentStorages[name];
+        const firstProp = Object.keys(storage)[0] as keyof T[K];
+        return storage[firstProp][entityId] !== undefined;
+      });
+
+      if (hasAllComponents) {
+        entities.push(entityId as EntityId);
+      }
+    }
+
+    const storages = {} as Pick<ComponentStorageMap<T>, K>;
+    for (const name of componentNames) {
+      storages[name] = this.componentStorages[name];
+    }
+
+    return { entities, storages };
   }
 }

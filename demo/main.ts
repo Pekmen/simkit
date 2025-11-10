@@ -14,21 +14,55 @@ const world = new World({
 
 const { Position, Velocity } = world.components;
 
-const entity = world.addEntity();
-
-const position = { x: 100, y: 100 };
-const velocity = { dx: 100, dy: 200 };
-
-world.addComponent(entity, Position, position);
-world.addComponent(entity, Velocity, velocity);
+for (let i = 0; i < 3; i++) {
+  const entity = world.addEntity();
+  world.addComponent(entity, Position, {
+    x: 50 + i * 100,
+    y: 50 + i * 50,
+  });
+  world.addComponent(entity, Velocity, {
+    dx: 50 + i * 30,
+    dy: 100 + i * 50,
+  });
+}
 
 class PhysicsSystem extends System {
   update(deltaTime: number): void {
-    position.x += velocity.dx * (deltaTime / 1000);
-    position.y += velocity.dy * (deltaTime / 1000);
+    const dt = deltaTime / 1000;
 
-    if (position.x < 10 || position.x > canvas.width - 10) velocity.dx *= -1;
-    if (position.y < 10 || position.y > canvas.height - 10) velocity.dy *= -1;
+    const {
+      entities,
+      storages: { Position: pos, Velocity: vel },
+    } = world.query(Position, Velocity);
+
+    for (const e of entities) {
+      const x = pos.x[e];
+      const y = pos.y[e];
+      const dx = vel.dx[e];
+      const dy = vel.dy[e];
+
+      if (
+        x === undefined ||
+        y === undefined ||
+        dx === undefined ||
+        dy === undefined
+      ) {
+        continue;
+      }
+
+      const newX = x + dx * dt;
+      const newY = y + dy * dt;
+
+      pos.x[e] = newX;
+      pos.y[e] = newY;
+
+      if (newX < 10 || newX > canvas.width - 10) {
+        vel.dx[e] = -dx;
+      }
+      if (newY < 10 || newY > canvas.height - 10) {
+        vel.dy[e] = -dy;
+      }
+    }
   }
 }
 
@@ -36,10 +70,22 @@ class RenderSystem extends System {
   update(): void {
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.beginPath();
-    ctx.arc(position.x, position.y, 10, 0, Math.PI * 2);
-    ctx.fillStyle = "skyblue";
-    ctx.fill();
+
+    const { entities, storages } = world.query(Position);
+
+    for (const e of entities) {
+      const x = storages.Position.x[e];
+      const y = storages.Position.y[e];
+
+      if (x === undefined || y === undefined) {
+        continue;
+      }
+
+      ctx.beginPath();
+      ctx.arc(x, y, 10, 0, Math.PI * 2);
+      ctx.fillStyle = "skyblue";
+      ctx.fill();
+    }
   }
 }
 
@@ -50,7 +96,6 @@ let last = performance.now();
 
 const loop = (now: number): void => {
   const deltaTime = now - last;
-  console.log("deltaTime___", deltaTime);
   last = now;
   world.update(deltaTime);
   requestAnimationFrame(loop);
