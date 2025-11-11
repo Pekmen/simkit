@@ -1,18 +1,16 @@
-import { ComponentManager, type QueryResult } from "./ComponentManager";
-import type { EntityId } from "./Entity";
+import { ComponentManager } from "./ComponentManager";
 import { EntityManager } from "./EntityManager";
-import type { System } from "./System";
 import { SystemManager } from "./SystemManager";
+import type { System } from "./System";
+import type {
+  EntityId,
+  ComponentBlueprint,
+  QueryResult,
+} from "./types";
 
 interface WorldOptions {
   maxEntities: number;
 }
-
-type ComponentBlueprint<T> = {
-  [K in keyof T]: {
-    [P in keyof T[K]]: T[K][P];
-  };
-};
 
 export class World<T extends ComponentBlueprint<T>> {
   private readonly options: WorldOptions;

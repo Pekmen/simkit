@@ -1,30 +1,10 @@
-import type { EntityId } from "./Entity";
-
-export type ComponentBlueprint<T> = {
-  [K in keyof T]: {
-    [P in keyof T[K]]: T[K][P];
-  };
-};
-
-export type QueryStorageMap<T> = {
-  [K in keyof T]: {
-    [P in keyof T[K]]: T[K][P][];
-  };
-};
-
-export type ComponentStorageMap<T> = {
-  [K in keyof T]: {
-    [P in keyof T[K]]: (T[K][P] | undefined)[];
-  };
-};
-
-export interface QueryResult<
-  T extends ComponentBlueprint<T>,
-  K extends keyof T,
-> {
-  entities: EntityId[];
-  storages: Pick<QueryStorageMap<T>, K>;
-}
+import type {
+  EntityId,
+  ComponentBlueprint,
+  ComponentStorageMap,
+  QueryStorageMap,
+  QueryResult,
+} from "./types";
 
 export class ComponentManager<T extends ComponentBlueprint<T>> {
   private readonly componentBlueprints: ComponentBlueprint<T>;

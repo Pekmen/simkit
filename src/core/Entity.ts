@@ -1,1 +1,1 @@
-export type EntityId = number & { readonly __brand: "EntityId" };
+export type { EntityId } from "./types";
