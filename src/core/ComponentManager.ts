@@ -3,22 +3,23 @@ import type {
   ComponentBlueprint,
   ComponentStorageMap,
   QueryResult,
+  ComponentRef,
 } from "./types";
 
 export class ComponentManager<T extends ComponentBlueprint> {
   private readonly componentBlueprints: T;
   private readonly componentStorages: ComponentStorageMap<T>;
-  readonly components: { [K in keyof T]: { _name: K } };
+  readonly components: { [K in keyof T]: ComponentRef<K> };
   private readonly maxEntities: number;
 
   constructor(blueprints: T, maxEntities: number) {
     this.maxEntities = maxEntities;
     this.componentBlueprints = blueprints;
     this.componentStorages = this.initializeComponentStorages(blueprints);
-    this.components = {} as { [K in keyof T]: { _name: K } };
+    this.components = {} as { [K in keyof T]: ComponentRef<K> };
 
     for (const key in blueprints) {
-      this.components[key as keyof T] = { _name: key } as { _name: typeof key };
+      this.components[key as keyof T] = { _name: key } as ComponentRef<typeof key>;
     }
   }
 
@@ -43,7 +44,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
   addComponent<K extends keyof T>(
     entityId: EntityId,
-    component: { _name: K },
+    component: ComponentRef<K>,
     componentData?: Partial<T[K]>,
   ): void {
     const storage = this.componentStorages[component._name];
@@ -56,7 +57,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
   }
 
-  removeComponent(entityId: EntityId, component: { _name: keyof T }): void {
+  removeComponent(entityId: EntityId, component: ComponentRef<keyof T>): void {
     const storage = this.componentStorages[component._name];
     for (const prop in storage) {
       const p = prop as keyof T[keyof T];
@@ -75,7 +76,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
   }
 
   query<K extends keyof T>(
-    ...componentRefs: { _name: K }[]
+    ...componentRefs: ComponentRef<K>[]
   ): QueryResult<T, K> {
     const entities: EntityId[] = [];
     const componentNames = componentRefs.map((ref) => ref._name);

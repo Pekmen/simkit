@@ -13,6 +13,6 @@ export interface QueryResult<T extends ComponentBlueprint, K extends keyof T> {
   storages: Pick<ComponentStorageMap<T>, K>;
 }
 
-export interface ComponentRef<K extends string = string> {
+export interface ComponentRef<K = string> {
   readonly _name: K;
 }
