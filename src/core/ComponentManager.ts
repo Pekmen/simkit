@@ -1,6 +1,7 @@
 import type {
   EntityId,
   ComponentBlueprint,
+  ComponentStorage,
   ComponentStorageMap,
   QueryResult,
   ComponentRef,
@@ -8,75 +9,63 @@ import type {
 
 export class ComponentManager<T extends ComponentBlueprint> {
   private readonly componentBlueprints: T;
-  private readonly componentStorages: ComponentStorageMap<T>;
-  readonly components: { [K in keyof T]: ComponentRef<K> };
+  private readonly componentStorages: Record<string, ComponentStorage>;
+  readonly components: { [K in keyof T]: ComponentRef };
   private readonly maxEntities: number;
 
   constructor(blueprints: T, maxEntities: number) {
     this.maxEntities = maxEntities;
     this.componentBlueprints = blueprints;
-    this.componentStorages = this.initializeComponentStorages(blueprints);
-    this.components = {} as { [K in keyof T]: ComponentRef<K> };
 
-    for (const key in blueprints) {
-      this.components[key as keyof T] = { _name: key } as ComponentRef<typeof key>;
-    }
-  }
-
-  private initializeComponentStorages(blueprints: T): ComponentStorageMap<T> {
-    const storages = {} as ComponentStorageMap<T>;
-
-    for (const key in blueprints) {
-      const schema = blueprints[key as keyof T];
-      const storage = {} as ComponentStorageMap<T>[typeof key];
-
-      for (const prop in schema) {
-        storage[prop as keyof T[typeof key]] = new Array(this.maxEntities).fill(
-          undefined,
-        );
+    this.componentStorages = {};
+    for (const componentName in blueprints) {
+      const schema = blueprints[componentName];
+      const storage: ComponentStorage = {};
+      for (const propName in schema) {
+        storage[propName] = new Array(this.maxEntities).fill(undefined);
       }
-
-      storages[key as keyof T] = storage;
+      this.componentStorages[componentName] = storage;
     }
 
-    return storages;
+    this.components = {} as { [K in keyof T]: ComponentRef };
+    for (const key in blueprints) {
+      this.components[key] = { _name: key };
+    }
   }
 
   addComponent<K extends keyof T>(
     entityId: EntityId,
-    component: ComponentRef<K>,
+    component: ComponentRef,
     componentData?: Partial<T[K]>,
   ): void {
     const storage = this.componentStorages[component._name];
     const defaultComponentData = this.componentBlueprints[component._name];
 
-    const data = { ...defaultComponentData, ...componentData } as T[K];
+    const data = { ...defaultComponentData, ...componentData };
 
     for (const prop in data) {
       storage[prop][entityId] = data[prop];
     }
   }
 
-  removeComponent(entityId: EntityId, component: ComponentRef<keyof T>): void {
+  removeComponent(entityId: EntityId, component: ComponentRef): void {
     const storage = this.componentStorages[component._name];
     for (const prop in storage) {
-      const p = prop as keyof T[keyof T];
-      storage[p][entityId] = undefined;
+      storage[prop][entityId] = undefined;
     }
   }
 
   removeEntityComponents(entityId: EntityId): void {
     for (const key in this.componentStorages) {
-      const storage = this.componentStorages[key as keyof T];
+      const storage = this.componentStorages[key];
       for (const prop in storage) {
-        const p = prop as keyof T[keyof T];
-        storage[p][entityId] = undefined;
+        storage[prop][entityId] = undefined;
       }
     }
   }
 
   query<K extends keyof T>(
-    ...componentRefs: ComponentRef<K>[]
+    ...componentRefs: ComponentRef[]
   ): QueryResult<T, K> {
     const entities: EntityId[] = [];
     const componentNames = componentRefs.map((ref) => ref._name);
@@ -84,20 +73,20 @@ export class ComponentManager<T extends ComponentBlueprint> {
     for (let entityId = 0; entityId < this.maxEntities; entityId++) {
       const hasAllComponents = componentNames.every((name) => {
         const storage = this.componentStorages[name];
-        const firstProp = Object.keys(storage)[0] as keyof T[K];
+        const firstProp = Object.keys(storage)[0];
         return storage[firstProp][entityId] !== undefined;
       });
 
       if (hasAllComponents) {
-        entities.push(entityId as EntityId);
+        entities.push(entityId);
       }
     }
 
-    const storages = {} as Pick<ComponentStorageMap<T>, K>;
+    const storages: Record<string, ComponentStorage> = {};
     for (const name of componentNames) {
       storages[name] = this.componentStorages[name];
     }
 
-    return { entities, storages };
+    return { entities, storages: storages as Pick<ComponentStorageMap<T>, K> };
   }
 }

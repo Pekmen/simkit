@@ -15,7 +15,7 @@ interface WorldOptions {
 
 export class World<T extends ComponentBlueprint> {
   private readonly options: WorldOptions;
-  readonly components: { [K in keyof T]: ComponentRef<K> };
+  readonly components: { [K in keyof T]: ComponentRef };
 
   private entityManager: EntityManager;
   private systemManager: SystemManager;
@@ -47,13 +47,13 @@ export class World<T extends ComponentBlueprint> {
 
   addComponent<K extends keyof T>(
     entityId: EntityId,
-    component: ComponentRef<K>,
+    component: ComponentRef,
     componentData?: Partial<T[K]>,
   ): void {
     this.componentManager.addComponent(entityId, component, componentData);
   }
 
-  removeComponent(entityId: EntityId, component: ComponentRef<keyof T>): void {
+  removeComponent(entityId: EntityId, component: ComponentRef): void {
     this.componentManager.removeComponent(entityId, component);
   }
 
@@ -69,7 +69,7 @@ export class World<T extends ComponentBlueprint> {
     this.systemManager.updateAll(deltaTime);
   }
 
-  query<K extends keyof T>(...components: ComponentRef<K>[]): QueryResult<T, K> {
+  query<K extends keyof T>(...components: ComponentRef[]): QueryResult<T, K> {
     return this.componentManager.query(...components);
   }
 }

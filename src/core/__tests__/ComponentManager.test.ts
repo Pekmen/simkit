@@ -1,5 +1,4 @@
 import { ComponentManager } from "../ComponentManager";
-import type { EntityId } from "../Entity";
 
 describe("ComponentManager", () => {
   test("initializing creates component storages with correct length", () => {
@@ -24,7 +23,7 @@ describe("ComponentManager", () => {
     const manager = new ComponentManager(blueprints, 5);
     const { Position } = manager.components;
 
-    const entityId = 0 as EntityId;
+    const entityId = 0;
     manager.addComponent(entityId, Position, { x: 10, y: 20 });
 
     // @ts-expect-error Accessing private property
@@ -39,7 +38,7 @@ describe("ComponentManager", () => {
     const manager = new ComponentManager(blueprints, 5);
     const { Position } = manager.components;
 
-    const entityId = 0 as EntityId;
+    const entityId = 0;
     manager.addComponent(entityId, Position, { x: 10, y: 20 });
     manager.removeComponent(entityId, Position);
 
@@ -59,7 +58,7 @@ describe("ComponentManager", () => {
     const manager = new ComponentManager(blueprints, 5);
     const { Position, Velocity } = manager.components;
 
-    const entityId = 0 as EntityId;
+    const entityId = 0;
     manager.addComponent(entityId, Position, { x: 10, y: 20 });
     manager.addComponent(entityId, Velocity, { dx: 1, dy: 2 });
 

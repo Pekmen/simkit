@@ -13,7 +13,7 @@ export class EntityManager {
       throw new Error("Maximum number of entities reached");
     }
 
-    return this.nextEntityId++ as EntityId;
+    return this.nextEntityId++;
   }
 
   removeEntity(_entityId: EntityId): void {

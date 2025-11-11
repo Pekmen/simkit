@@ -1,6 +1,8 @@
-export type EntityId = number & { readonly __brand: "EntityId" };
+export type EntityId = number;
 
 export type ComponentBlueprint = Record<string, Record<string, unknown>>;
+
+export type ComponentStorage = Record<string, unknown[]>;
 
 export type ComponentStorageMap<T extends ComponentBlueprint> = {
   [K in keyof T]: {
@@ -13,6 +15,6 @@ export interface QueryResult<T extends ComponentBlueprint, K extends keyof T> {
   storages: Pick<ComponentStorageMap<T>, K>;
 }
 
-export interface ComponentRef<K = string> {
-  readonly _name: K;
+export interface ComponentRef {
+  readonly _name: string;
 }
