@@ -8,12 +8,9 @@ export type ComponentStorageMap<T extends ComponentBlueprint> = {
   };
 };
 
-export type QueryStorageMap<T extends ComponentBlueprint> =
-  ComponentStorageMap<T>;
-
 export interface QueryResult<T extends ComponentBlueprint, K extends keyof T> {
   entities: EntityId[];
-  storages: Pick<QueryStorageMap<T>, K>;
+  storages: Pick<ComponentStorageMap<T>, K>;
 }
 
 export interface ComponentRef<K extends string = string> {

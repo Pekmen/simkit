@@ -5,7 +5,6 @@ export type {
   EntityId,
   ComponentBlueprint,
   ComponentStorageMap,
-  QueryStorageMap,
   QueryResult,
   ComponentRef,
 } from "./types.js";
