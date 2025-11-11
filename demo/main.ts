@@ -10,12 +10,15 @@ const ctx = canvas.getContext("2d");
 const world = new World({
   Position: { x: 0, y: 0 },
   Velocity: { dx: 0, dy: 0 },
+  Size: { val: 10 },
+  Color: { val: "#ff0000" },
 });
 
-const { Position, Velocity } = world.components;
+const { Position, Velocity, Size, Color } = world.components;
 
 for (let i = 0; i < 3; i++) {
   const entity = world.addEntity();
+
   world.addComponent(entity, Position, {
     x: 50 + i * 100,
     y: 50 + i * 50,
@@ -24,6 +27,8 @@ for (let i = 0; i < 3; i++) {
     dx: 50 + i * 30,
     dy: 100 + i * 50,
   });
+  world.addComponent(entity, Size);
+  world.addComponent(entity, Color);
 }
 
 class PhysicsSystem extends System {
@@ -40,15 +45,6 @@ class PhysicsSystem extends System {
       const y = pos.y[e];
       const dx = vel.dx[e];
       const dy = vel.dy[e];
-
-      if (
-        x === undefined ||
-        y === undefined ||
-        dx === undefined ||
-        dy === undefined
-      ) {
-        continue;
-      }
 
       const newX = x + dx * dt;
       const newY = y + dy * dt;
@@ -71,19 +67,16 @@ class RenderSystem extends System {
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const { entities, storages } = world.query(Position);
+    const { entities, storages } = world.query(Position, Size, Color);
 
     for (const e of entities) {
       const x = storages.Position.x[e];
       const y = storages.Position.y[e];
 
-      if (x === undefined || y === undefined) {
-        continue;
-      }
-
       ctx.beginPath();
-      ctx.arc(x, y, 10, 0, Math.PI * 2);
-      ctx.fillStyle = "skyblue";
+
+      ctx.arc(x, y, storages.Size.val[e], 0, Math.PI * 2);
+      ctx.fillStyle = storages.Color.val[e];
       ctx.fill();
     }
   }

@@ -1,9 +1,14 @@
 import type { EntityId } from "./Entity";
-import type { QueryResult } from "./Query";
 
 export type ComponentBlueprint<T> = {
   [K in keyof T]: {
     [P in keyof T[K]]: T[K][P];
+  };
+};
+
+export type QueryStorageMap<T> = {
+  [K in keyof T]: {
+    [P in keyof T[K]]: T[K][P][];
   };
 };
 
@@ -12,6 +17,14 @@ export type ComponentStorageMap<T> = {
     [P in keyof T[K]]: (T[K][P] | undefined)[];
   };
 };
+
+export interface QueryResult<
+  T extends ComponentBlueprint<T>,
+  K extends keyof T,
+> {
+  entities: EntityId[];
+  storages: Pick<QueryStorageMap<T>, K>;
+}
 
 export class ComponentManager<T extends ComponentBlueprint<T>> {
   private readonly componentBlueprints: ComponentBlueprint<T>;
@@ -52,12 +65,15 @@ export class ComponentManager<T extends ComponentBlueprint<T>> {
   addComponent<K extends keyof T>(
     entityId: EntityId,
     component: { _name: K },
-    componentData: T[K],
+    componentData?: T[K],
   ): void {
     const storage = this.componentStorages[component._name];
-    for (const prop in componentData) {
-      const p = prop as keyof T[K];
-      storage[p][entityId] = componentData[p];
+    const defaultComponentData = this.componentBlueprints[component._name];
+
+    const data = { ...defaultComponentData, ...componentData };
+
+    for (const prop in data) {
+      storage[prop][entityId] = data[prop];
     }
   }
 
@@ -97,9 +113,9 @@ export class ComponentManager<T extends ComponentBlueprint<T>> {
       }
     }
 
-    const storages = {} as Pick<ComponentStorageMap<T>, K>;
+    const storages = {} as Pick<QueryStorageMap<T>, K>;
     for (const name of componentNames) {
-      storages[name] = this.componentStorages[name];
+      storages[name] = this.componentStorages[name] as QueryStorageMap<T>[K];
     }
 
     return { entities, storages };
