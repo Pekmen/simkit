@@ -12,7 +12,7 @@ interface WorldOptions {
   maxEntities: number;
 }
 
-export class World<T extends ComponentBlueprint<T>> {
+export class World<T extends ComponentBlueprint> {
   private readonly options: WorldOptions;
   readonly components: { [K in keyof T]: { _name: K } };
 
@@ -47,7 +47,7 @@ export class World<T extends ComponentBlueprint<T>> {
   addComponent<K extends keyof T>(
     entityId: EntityId,
     component: { _name: K },
-    componentData?: T[K],
+    componentData?: Partial<T[K]>,
   ): void {
     this.componentManager.addComponent(entityId, component, componentData);
   }

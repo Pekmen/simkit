@@ -16,7 +16,7 @@ export class EntityManager {
     return this.nextEntityId++ as EntityId;
   }
 
-  removeEntity(entityId: EntityId): void {
+  removeEntity(_entityId: EntityId): void {
     // Currently, no specific logic is needed here.
   }
 }

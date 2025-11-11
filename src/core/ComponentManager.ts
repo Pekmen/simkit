@@ -2,12 +2,11 @@ import type {
   EntityId,
   ComponentBlueprint,
   ComponentStorageMap,
-  QueryStorageMap,
   QueryResult,
 } from "./types";
 
-export class ComponentManager<T extends ComponentBlueprint<T>> {
-  private readonly componentBlueprints: ComponentBlueprint<T>;
+export class ComponentManager<T extends ComponentBlueprint> {
+  private readonly componentBlueprints: T;
   private readonly componentStorages: ComponentStorageMap<T>;
   readonly components: { [K in keyof T]: { _name: K } };
   private readonly maxEntities: number;
@@ -45,12 +44,12 @@ export class ComponentManager<T extends ComponentBlueprint<T>> {
   addComponent<K extends keyof T>(
     entityId: EntityId,
     component: { _name: K },
-    componentData?: T[K],
+    componentData?: Partial<T[K]>,
   ): void {
     const storage = this.componentStorages[component._name];
     const defaultComponentData = this.componentBlueprints[component._name];
 
-    const data = { ...defaultComponentData, ...componentData };
+    const data = { ...defaultComponentData, ...componentData } as T[K];
 
     for (const prop in data) {
       storage[prop][entityId] = data[prop];
@@ -93,9 +92,9 @@ export class ComponentManager<T extends ComponentBlueprint<T>> {
       }
     }
 
-    const storages = {} as Pick<QueryStorageMap<T>, K>;
+    const storages = {} as Pick<ComponentStorageMap<T>, K>;
     for (const name of componentNames) {
-      storages[name] = this.componentStorages[name] as QueryStorageMap<T>[K];
+      storages[name] = this.componentStorages[name];
     }
 
     return { entities, storages };
