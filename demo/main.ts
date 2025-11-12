@@ -1,11 +1,12 @@
 import { World, System } from "../src/core";
 
-const canvas = document.createElement("canvas");
-canvas.width = 400;
-canvas.height = 300;
-canvas.style.border = "2px solid black";
-document.body.appendChild(canvas);
+const canvas = document.getElementById("demo-canvas") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d");
+const fpsDisplay = document.getElementById("fps-display") as HTMLParagraphElement;
+
+let frameCount = 0;
+let lastFpsUpdate = performance.now();
+let fps = 0;
 
 const world = new World({
   Position: { x: 0, y: 0 },
@@ -16,16 +17,16 @@ const world = new World({
 
 const { Position, Velocity, Size, Color } = world.components;
 
-for (let i = 0; i < 3; i++) {
+for (let i = 0; i < 1000; i++) {
   const entity = world.addEntity();
 
   world.addComponent(entity, Position, {
-    x: 50 + i * 100,
-    y: 50 + i * 50,
+    x: 10 + Math.random() * (canvas.width - 20),
+    y: 10 + Math.random() * (canvas.height - 20),
   });
   world.addComponent(entity, Velocity, {
-    dx: 50 + i * 30,
-    dy: 100 + i * 50,
+    dx: (Math.random() - 0.5) * 200,
+    dy: (Math.random() - 0.5) * 200,
   });
   world.addComponent(entity, Size);
   world.addComponent(entity, Color);
@@ -110,6 +111,16 @@ const loop = (now: number): void => {
   const deltaTime = now - last;
   last = now;
   world.update(deltaTime);
+
+  // Update FPS counter
+  frameCount++;
+  if (now - lastFpsUpdate >= 1000) {
+    fps = Math.round((frameCount * 1000) / (now - lastFpsUpdate));
+    fpsDisplay.textContent = `FPS: ${fps} | Entities: 1000`;
+    frameCount = 0;
+    lastFpsUpdate = now;
+  }
+
   requestAnimationFrame(loop);
 };
 
