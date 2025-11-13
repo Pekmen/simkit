@@ -45,6 +45,7 @@ export default defineConfig([
       "@typescript-eslint/no-unsafe-return": "error",
       "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/restrict-template-expressions": "off",
+      "@typescript-eslint/non-nullable-type-assertion-style": "off",
     },
   },
   {
