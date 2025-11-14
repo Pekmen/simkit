@@ -43,6 +43,7 @@ export class World<T extends ComponentBlueprint> {
 
   removeEntity(entityId: EntityId): void {
     this.componentManager.removeEntityComponents(entityId);
+    this.entityManager.removeEntity(entityId);
   }
 
   addComponent<K extends keyof T>(
