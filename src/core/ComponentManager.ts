@@ -62,6 +62,32 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
   }
 
+  hasComponent(entityId: EntityId, component: ComponentRef): boolean {
+    const storage = this.componentStorages[component._name];
+    const firstProp = Object.keys(storage)[0];
+    if (!firstProp) {
+      return false;
+    }
+    return storage[firstProp][entityId] !== undefined;
+  }
+
+  getComponent(
+    entityId: EntityId,
+    component: ComponentRef,
+  ): Record<string, unknown> | undefined {
+    if (!this.hasComponent(entityId, component)) {
+      return undefined;
+    }
+
+    const storage = this.componentStorages[component._name];
+    const componentData: Record<string, unknown> = {};
+    for (const prop in storage) {
+      componentData[prop] = storage[prop][entityId];
+    }
+
+    return componentData;
+  }
+
   removeEntityComponents(entityId: EntityId): void {
     for (const key in this.componentStorages) {
       const storage = this.componentStorages[key];

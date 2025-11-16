@@ -111,4 +111,42 @@ describe("World", () => {
     world.addEntity(); // Reuses e1's ID
     expect(world.getEntityCount()).toBe(2);
   });
+
+  test("getComponent returns component data as object", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const world = new World(blueprints, { maxEntities: 5 });
+    const { Position } = world.components;
+
+    const entityId = world.addEntity();
+    world.addComponent(entityId, Position, { x: 10, y: 20 });
+
+    const component = world.getComponent(entityId, Position);
+
+    expect(component).toEqual({ x: 10, y: 20 });
+  });
+
+  test("getComponent returns undefined for entity without component", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const world = new World(blueprints, { maxEntities: 5 });
+    const { Position } = world.components;
+
+    const entityId = world.addEntity();
+
+    const component = world.getComponent(entityId, Position);
+
+    expect(component).toBeUndefined();
+  });
+
+  test("getComponent works with partial component data", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const world = new World(blueprints, { maxEntities: 5 });
+    const { Position } = world.components;
+
+    const entityId = world.addEntity();
+    world.addComponent(entityId, Position, { x: 15 }); // Only x, y should use default
+
+    const component = world.getComponent(entityId, Position);
+
+    expect(component).toEqual({ x: 15, y: 0 });
+  });
 });

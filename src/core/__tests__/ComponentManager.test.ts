@@ -77,4 +77,46 @@ describe("ComponentManager", () => {
     expect(storages.Velocity.dx[entityId]).toBeUndefined();
     expect(storages.Velocity.dy[entityId]).toBeUndefined();
   });
+
+  test("getComponent returns component data as object", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Position } = manager.components;
+
+    const entityId = 0;
+    manager.addComponent(entityId, Position, { x: 10, y: 20 });
+
+    const component = manager.getComponent(entityId, Position);
+
+    expect(component).toEqual({ x: 10, y: 20 });
+  });
+
+  test("getComponent returns undefined for entity without component", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Position } = manager.components;
+
+    const entityId = 0;
+
+    const component = manager.getComponent(entityId, Position);
+
+    expect(component).toBeUndefined();
+  });
+
+  test("getComponent returns undefined after component is removed", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Position } = manager.components;
+
+    const entityId = 0;
+    manager.addComponent(entityId, Position, { x: 10, y: 20 });
+    manager.removeComponent(entityId, Position);
+
+    const component = manager.getComponent(entityId, Position);
+
+    expect(component).toBeUndefined();
+  });
 });

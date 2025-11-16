@@ -59,6 +59,17 @@ export class World<T extends ComponentBlueprint> {
     this.componentManager.addComponent(entityId, component, componentData);
   }
 
+  hasComponent(entityId: EntityId, component: ComponentRef): boolean {
+    return this.componentManager.hasComponent(entityId, component);
+  }
+
+  getComponent(
+    entityId: EntityId,
+    component: ComponentRef,
+  ): Record<string, unknown> | undefined {
+    return this.componentManager.getComponent(entityId, component);
+  }
+
   removeComponent(entityId: EntityId, component: ComponentRef): void {
     this.componentManager.removeComponent(entityId, component);
   }
