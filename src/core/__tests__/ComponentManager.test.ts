@@ -1,4 +1,5 @@
 import { ComponentManager } from "../ComponentManager";
+import { EntityManager } from "../EntityManager";
 
 describe("ComponentManager", () => {
   test("initializing creates component storages with correct length", () => {
@@ -7,7 +8,8 @@ describe("ComponentManager", () => {
       Velocity: { dx: 0, dy: 0 },
     };
 
-    const manager = new ComponentManager(blueprints, 10);
+    const entityManager = new EntityManager(10);
+    const manager = new ComponentManager(blueprints, 10, entityManager);
 
     // @ts-expect-error Accessing private property for testing
     const storages = manager.componentStorages;
@@ -20,7 +22,8 @@ describe("ComponentManager", () => {
 
   test("addComponent stores the component data correctly", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
-    const manager = new ComponentManager(blueprints, 5);
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
     const { Position } = manager.components;
 
     const entityId = 0;
@@ -35,7 +38,8 @@ describe("ComponentManager", () => {
 
   test("removeComponent clears the component data for the entity", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
-    const manager = new ComponentManager(blueprints, 5);
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
     const { Position } = manager.components;
 
     const entityId = 0;
@@ -55,7 +59,8 @@ describe("ComponentManager", () => {
       Velocity: { dx: 0, dy: 0 },
     };
 
-    const manager = new ComponentManager(blueprints, 5);
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
     const { Position, Velocity } = manager.components;
 
     const entityId = 0;

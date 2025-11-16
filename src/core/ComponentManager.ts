@@ -6,16 +6,23 @@ import type {
   QueryResult,
   ComponentRef,
 } from "./types";
+import type { EntityManager } from "./EntityManager";
 
 export class ComponentManager<T extends ComponentBlueprint> {
   private readonly componentBlueprints: T;
   private readonly componentStorages: Record<string, ComponentStorage>;
   readonly components: { [K in keyof T]: ComponentRef };
   private readonly maxEntities: number;
+  private readonly entityManager: EntityManager;
 
-  constructor(blueprints: T, maxEntities: number) {
+  constructor(
+    blueprints: T,
+    maxEntities: number,
+    entityManager: EntityManager,
+  ) {
     this.maxEntities = maxEntities;
     this.componentBlueprints = blueprints;
+    this.entityManager = entityManager;
 
     this.componentStorages = {};
     for (const componentName in blueprints) {
@@ -70,7 +77,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     const entities: EntityId[] = [];
     const componentNames = componentRefs.map((ref) => ref._name);
 
-    for (let entityId = 0; entityId < this.maxEntities; entityId++) {
+    for (const entityId of this.entityManager.activeEntities) {
       const hasAllComponents = componentNames.every((name) => {
         const storage = this.componentStorages[name];
         const firstProp = Object.keys(storage)[0];

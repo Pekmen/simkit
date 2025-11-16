@@ -32,6 +32,7 @@ export class World<T extends ComponentBlueprint> {
     this.componentManager = new ComponentManager(
       blueprints,
       this.options.maxEntities,
+      this.entityManager,
     );
 
     this.components = this.componentManager.components;
@@ -44,6 +45,10 @@ export class World<T extends ComponentBlueprint> {
   removeEntity(entityId: EntityId): void {
     this.componentManager.removeEntityComponents(entityId);
     this.entityManager.removeEntity(entityId);
+  }
+
+  getEntityCount(): number {
+    return this.entityManager.getEntityCount();
   }
 
   addComponent<K extends keyof T>(

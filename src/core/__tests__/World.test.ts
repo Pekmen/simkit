@@ -95,4 +95,20 @@ describe("World", () => {
       "Maximum number of entities reached",
     );
   });
+
+  test("getEntityCount tracks entity additions and removals", () => {
+    const world = new World({}, { maxEntities: 10 });
+
+    expect(world.getEntityCount()).toBe(0);
+
+    const e1 = world.addEntity();
+    world.addEntity();
+    expect(world.getEntityCount()).toBe(2);
+
+    world.removeEntity(e1);
+    expect(world.getEntityCount()).toBe(1);
+
+    world.addEntity(); // Reuses e1's ID
+    expect(world.getEntityCount()).toBe(2);
+  });
 });

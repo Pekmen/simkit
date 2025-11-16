@@ -2,7 +2,9 @@ import { World, System } from "../src/core";
 
 const canvas = document.getElementById("demo-canvas") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d");
-const fpsDisplay = document.getElementById("fps-display") as HTMLParagraphElement;
+const fpsDisplay = document.getElementById(
+  "fps-display",
+) as HTMLParagraphElement;
 
 let frameCount = 0;
 let lastFpsUpdate = performance.now();
@@ -116,7 +118,7 @@ const loop = (now: number): void => {
   frameCount++;
   if (now - lastFpsUpdate >= 1000) {
     fps = Math.round((frameCount * 1000) / (now - lastFpsUpdate));
-    fpsDisplay.textContent = `FPS: ${fps} | Entities: 1000`;
+    fpsDisplay.textContent = `FPS: ${fps} | Entities: ${world.getEntityCount()}`;
     frameCount = 0;
     lastFpsUpdate = now;
   }
