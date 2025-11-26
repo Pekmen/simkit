@@ -11,6 +11,10 @@ node_modules
 dist
 dist-ssr
 *.local
+coverage
+
+# Benchmark outputs
+benchmark-results.json
 
 # Editor directories and files
 .vscode/*

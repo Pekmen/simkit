@@ -10,7 +10,9 @@
     "lint:fix": "eslint --fix .",
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
-    "test": "vitest"
+    "test": "vitest",
+    "bench": "vitest bench --outputJson=benchmark-results.json && node benchmarks/benchmark-reporter.js",
+    "bench:ui": "vitest bench --ui"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

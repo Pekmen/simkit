@@ -1,0 +1,32 @@
+import { bench, describe } from "vitest";
+import { World } from "../src/core/World.js";
+
+describe("Add/Remove", () => {
+  bench("add and remove component B from 1000 entities", () => {
+    const blueprints = {
+      A: { value: 0 },
+      B: { value: 0 },
+    };
+
+    const world = new World(blueprints, { maxEntities: 1000 });
+    const { A, B } = world.components;
+
+    // Setup: Create 1000 entities with component A
+    for (let i = 0; i < 1000; i++) {
+      const e = world.addEntity();
+      world.addComponent(e, A, { value: i });
+    }
+
+    // Add component B to all A entities
+    const { entities: aEntities } = world.query(A);
+    for (const e of aEntities) {
+      world.addComponent(e, B, { value: 0 });
+    }
+
+    // Remove component B from all (A, B) entities
+    const { entities: abEntities } = world.query(A, B);
+    for (const e of abEntities) {
+      world.removeComponent(e, B);
+    }
+  });
+});
