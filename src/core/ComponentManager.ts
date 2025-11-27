@@ -7,6 +7,7 @@ import type {
   ComponentRef,
 } from "./types";
 import type { EntityManager } from "./EntityManager";
+import { BitsetManager } from "./BitsetManager";
 
 export class ComponentManager<T extends ComponentBlueprint> {
   private readonly componentBlueprints: T;
@@ -14,6 +15,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
   readonly components: { [K in keyof T]: ComponentRef };
   private readonly maxEntities: number;
   private readonly entityManager: EntityManager;
+  private readonly bitsets: BitsetManager;
 
   constructor(
     blueprints: T,
@@ -23,6 +25,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.maxEntities = maxEntities;
     this.componentBlueprints = blueprints;
     this.entityManager = entityManager;
+
+    const componentCount = Object.keys(blueprints).length;
+    this.bitsets = new BitsetManager(componentCount, maxEntities);
 
     this.componentStorages = {};
     for (const componentName in blueprints) {
@@ -35,8 +40,12 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
 
     this.components = {} as { [K in keyof T]: ComponentRef };
+    let bitPosition = 0;
     for (const key in blueprints) {
-      this.components[key] = { _name: key };
+      this.components[key] = {
+        _name: key,
+        _bitPosition: bitPosition++,
+      };
     }
   }
 
@@ -53,6 +62,8 @@ export class ComponentManager<T extends ComponentBlueprint> {
     for (const prop in data) {
       storage[prop][entityId] = data[prop];
     }
+
+    this.bitsets.add(entityId, component._bitPosition);
   }
 
   removeComponent(entityId: EntityId, component: ComponentRef): void {
@@ -60,15 +71,12 @@ export class ComponentManager<T extends ComponentBlueprint> {
     for (const prop in storage) {
       storage[prop][entityId] = undefined;
     }
+
+    this.bitsets.remove(entityId, component._bitPosition);
   }
 
   hasComponent(entityId: EntityId, component: ComponentRef): boolean {
-    const storage = this.componentStorages[component._name];
-    const firstProp = Object.keys(storage)[0];
-    if (!firstProp) {
-      return false;
-    }
-    return storage[firstProp][entityId] !== undefined;
+    return this.bitsets.has(entityId, component._bitPosition);
   }
 
   getComponent(
@@ -95,27 +103,25 @@ export class ComponentManager<T extends ComponentBlueprint> {
         storage[prop][entityId] = undefined;
       }
     }
+
+    this.bitsets.clear(entityId);
   }
 
   query<K extends keyof T>(
     ...componentRefs: ComponentRef[]
   ): QueryResult<T, K> {
     const entities: EntityId[] = [];
-    const componentNames = componentRefs.map((ref) => ref._name);
+    const bitPositions = componentRefs.map((ref) => ref._bitPosition);
+    const mask = this.bitsets.createMask(bitPositions);
 
     for (const entityId of this.entityManager.activeEntities) {
-      const hasAllComponents = componentNames.every((name) => {
-        const storage = this.componentStorages[name];
-        const firstProp = Object.keys(storage)[0];
-        return storage[firstProp][entityId] !== undefined;
-      });
-
-      if (hasAllComponents) {
+      if (this.bitsets.matchesMask(entityId, mask)) {
         entities.push(entityId);
       }
     }
 
     const storages: Record<string, ComponentStorage> = {};
+    const componentNames = componentRefs.map((ref) => ref._name);
     for (const name of componentNames) {
       storages[name] = this.componentStorages[name];
     }

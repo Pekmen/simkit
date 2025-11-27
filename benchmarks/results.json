@@ -1,49 +1,49 @@
 {
-  "timestamp": "2025-11-26T00:25:02.629Z",
+  "timestamp": "2025-11-27T20:57:47.615Z",
   "results": [
     {
       "name": "add and remove component B from 1000 entities",
-      "ops/sec": 6471.07,
-      "mean (ms)": 0.1545,
-      "p99 (ms)": 0.3465,
-      "rme": "±1.11%",
-      "samples": 3236,
+      "ops/sec": 10377.9,
+      "mean (ms)": 0.0964,
+      "p99 (ms)": 0.1565,
+      "rme": "±0.48%",
+      "samples": 5189,
       "rank": 1
     },
     {
       "name": "create and destroy 1000 entities per iteration",
-      "ops/sec": 4634,
-      "mean (ms)": 0.2158,
-      "p99 (ms)": 0.4064,
-      "rme": "±1.13%",
-      "samples": 2317,
+      "ops/sec": 6380.71,
+      "mean (ms)": 0.1567,
+      "p99 (ms)": 0.2484,
+      "rme": "±0.58%",
+      "samples": 3191,
       "rank": 2
     },
     {
       "name": "query and double 5 components across 1000 entities",
-      "ops/sec": 3137.98,
-      "mean (ms)": 0.3187,
-      "p99 (ms)": 0.688,
-      "rme": "±1.39%",
-      "samples": 1569,
+      "ops/sec": 4366.34,
+      "mean (ms)": 0.229,
+      "p99 (ms)": 0.3569,
+      "rme": "±0.60%",
+      "samples": 2184,
       "rank": 3
     },
     {
       "name": "iterate over fragmented dataset (26 component types, 2600 entities)",
-      "ops/sec": 2051.86,
-      "mean (ms)": 0.4874,
-      "p99 (ms)": 1.1334,
-      "rme": "±1.97%",
-      "samples": 1026,
+      "ops/sec": 2807.05,
+      "mean (ms)": 0.3562,
+      "p99 (ms)": 0.5377,
+      "rme": "±0.78%",
+      "samples": 1404,
       "rank": 4
     },
     {
       "name": "3 systems over 4 entity groups (4000 entities total)",
-      "ops/sec": 1009.51,
-      "mean (ms)": 0.9906,
-      "p99 (ms)": 1.7768,
-      "rme": "±1.52%",
-      "samples": 505,
+      "ops/sec": 1703.98,
+      "mean (ms)": 0.5869,
+      "p99 (ms)": 0.9624,
+      "rme": "±0.95%",
+      "samples": 852,
       "rank": 5
     }
   ]

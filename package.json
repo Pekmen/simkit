@@ -11,7 +11,7 @@
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
     "test": "vitest",
-    "bench": "vitest bench --outputJson=benchmark-results.json && node benchmarks/benchmark-reporter.js",
+    "bench": "vitest bench --run --outputJson=benchmark-results.json && node benchmarks/benchmark-reporter.js",
     "bench:ui": "vitest bench --ui"
   },
   "lint-staged": {
@@ -25,6 +25,8 @@
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@eslint/json": "^0.14.0",
+    "@eslint/markdown": "^7.5.1",
+    "@vitest/ui": "^4.0.8",
     "eslint": "^9.39.1",
     "globals": "^16.5.0",
     "prettier": "3.6.2",
@@ -32,8 +34,5 @@
     "typescript-eslint": "^8.46.3",
     "vite": "^7.1.7",
     "vitest": "^4.0.8"
-  },
-  "dependencies": {
-    "@eslint/markdown": "^7.5.1"
   }
 }

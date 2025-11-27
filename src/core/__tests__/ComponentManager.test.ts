@@ -119,4 +119,51 @@ describe("ComponentManager", () => {
 
     expect(component).toBeUndefined();
   });
+
+  test("hasComponent uses bitset correctly", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Position } = manager.components;
+
+    const entityId = 0;
+    expect(manager.hasComponent(entityId, Position)).toBe(false);
+
+    manager.addComponent(entityId, Position, { x: 10, y: 20 });
+    expect(manager.hasComponent(entityId, Position)).toBe(true);
+
+    manager.removeComponent(entityId, Position);
+    expect(manager.hasComponent(entityId, Position)).toBe(false);
+  });
+
+  test("throws error when more than 32 components", () => {
+    const blueprints = {} as Record<string, Record<string, number>>;
+    for (let i = 0; i < 33; i++) {
+      blueprints[`Component${i}`] = { value: 0 };
+    }
+
+    const entityManager = new EntityManager(10);
+    expect(() => new ComponentManager(blueprints, 10, entityManager)).toThrow(
+      "Too many components (33). Maximum is 32.",
+    );
+  });
+
+  test("removeEntityComponents clears all bitset flags", () => {
+    const blueprints = {
+      Position: { x: 0, y: 0 },
+      Velocity: { dx: 0, dy: 0 },
+    };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Position, Velocity } = manager.components;
+
+    const entityId = 0;
+    manager.addComponent(entityId, Position, { x: 10, y: 20 });
+    manager.addComponent(entityId, Velocity, { dx: 1, dy: 2 });
+
+    manager.removeEntityComponents(entityId);
+
+    expect(manager.hasComponent(entityId, Position)).toBe(false);
+    expect(manager.hasComponent(entityId, Velocity)).toBe(false);
+  });
 });

@@ -17,4 +17,5 @@ export interface QueryResult<T extends ComponentBlueprint, K extends keyof T> {
 
 export interface ComponentRef {
   readonly _name: string;
+  readonly _bitPosition: number;
 }
