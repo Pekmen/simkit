@@ -15,7 +15,7 @@ interface WorldOptions {
 
 export class World<T extends ComponentBlueprint> {
   private readonly options: WorldOptions;
-  readonly components: { [K in keyof T]: ComponentRef };
+  readonly components: { [K in keyof T]: ComponentRef<Extract<K, string>> };
 
   private entityManager: EntityManager;
   private systemManager: SystemManager;
@@ -53,7 +53,7 @@ export class World<T extends ComponentBlueprint> {
 
   addComponent<K extends keyof T>(
     entityId: EntityId,
-    component: ComponentRef,
+    component: ComponentRef<Extract<K, string>>,
     componentData?: Partial<T[K]>,
   ): void {
     this.componentManager.addComponent(entityId, component, componentData);
@@ -63,10 +63,10 @@ export class World<T extends ComponentBlueprint> {
     return this.componentManager.hasComponent(entityId, component);
   }
 
-  getComponent(
+  getComponent<K extends keyof T>(
     entityId: EntityId,
-    component: ComponentRef,
-  ): Record<string, unknown> | undefined {
+    component: ComponentRef<Extract<K, string>>,
+  ): T[K] | undefined {
     return this.componentManager.getComponent(entityId, component);
   }
 
@@ -86,7 +86,59 @@ export class World<T extends ComponentBlueprint> {
     this.systemManager.updateAll(deltaTime);
   }
 
+  query<K1 extends keyof T>(
+    c1: ComponentRef<Extract<K1, string>>,
+  ): QueryResult<T, K1>;
+  query<K1 extends keyof T, K2 extends keyof T>(
+    c1: ComponentRef<Extract<K1, string>>,
+    c2: ComponentRef<Extract<K2, string>>,
+  ): QueryResult<T, K1 | K2>;
+  query<K1 extends keyof T, K2 extends keyof T, K3 extends keyof T>(
+    c1: ComponentRef<Extract<K1, string>>,
+    c2: ComponentRef<Extract<K2, string>>,
+    c3: ComponentRef<Extract<K3, string>>,
+  ): QueryResult<T, K1 | K2 | K3>;
+  query<
+    K1 extends keyof T,
+    K2 extends keyof T,
+    K3 extends keyof T,
+    K4 extends keyof T,
+  >(
+    c1: ComponentRef<Extract<K1, string>>,
+    c2: ComponentRef<Extract<K2, string>>,
+    c3: ComponentRef<Extract<K3, string>>,
+    c4: ComponentRef<Extract<K4, string>>,
+  ): QueryResult<T, K1 | K2 | K3 | K4>;
+  query<
+    K1 extends keyof T,
+    K2 extends keyof T,
+    K3 extends keyof T,
+    K4 extends keyof T,
+    K5 extends keyof T,
+  >(
+    c1: ComponentRef<Extract<K1, string>>,
+    c2: ComponentRef<Extract<K2, string>>,
+    c3: ComponentRef<Extract<K3, string>>,
+    c4: ComponentRef<Extract<K4, string>>,
+    c5: ComponentRef<Extract<K5, string>>,
+  ): QueryResult<T, K1 | K2 | K3 | K4 | K5>;
+  query<
+    K1 extends keyof T,
+    K2 extends keyof T,
+    K3 extends keyof T,
+    K4 extends keyof T,
+    K5 extends keyof T,
+    K6 extends keyof T,
+  >(
+    c1: ComponentRef<Extract<K1, string>>,
+    c2: ComponentRef<Extract<K2, string>>,
+    c3: ComponentRef<Extract<K3, string>>,
+    c4: ComponentRef<Extract<K4, string>>,
+    c5: ComponentRef<Extract<K5, string>>,
+    c6: ComponentRef<Extract<K6, string>>,
+  ): QueryResult<T, K1 | K2 | K3 | K4 | K5 | K6>;
   query<K extends keyof T>(...components: ComponentRef[]): QueryResult<T, K> {
+    // @ts-expect-error - Spreading rest parameter into overloaded method
     return this.componentManager.query(...components);
   }
 }

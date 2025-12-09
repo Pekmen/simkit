@@ -2,7 +2,7 @@ import type {
   EntityId,
   ComponentBlueprint,
   ComponentStorage,
-  ComponentStorageMap,
+  ComponentStorageMapQuery,
   QueryResult,
   ComponentRef,
 } from "./types";
@@ -12,7 +12,7 @@ import { BitsetManager } from "./BitsetManager";
 export class ComponentManager<T extends ComponentBlueprint> {
   private readonly componentBlueprints: T;
   private readonly componentStorages: Record<string, ComponentStorage>;
-  readonly components: { [K in keyof T]: ComponentRef };
+  readonly components: { [K in keyof T]: ComponentRef<Extract<K, string>> };
   private readonly maxEntities: number;
   private readonly entityManager: EntityManager;
   private readonly bitsets: BitsetManager;
@@ -39,7 +39,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
       this.componentStorages[componentName] = storage;
     }
 
-    this.components = {} as { [K in keyof T]: ComponentRef };
+    this.components = {} as {
+      [K in keyof T]: ComponentRef<Extract<K, string>>;
+    };
     let bitPosition = 0;
     for (const key in blueprints) {
       this.components[key] = {
@@ -51,7 +53,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
   addComponent<K extends keyof T>(
     entityId: EntityId,
-    component: ComponentRef,
+    component: ComponentRef<Extract<K, string>>,
     componentData?: Partial<T[K]>,
   ): void {
     const index = this.entityManager.getEntityIndex(entityId);
@@ -82,10 +84,10 @@ export class ComponentManager<T extends ComponentBlueprint> {
     return this.bitsets.has(index, component._bitPosition);
   }
 
-  getComponent(
+  getComponent<K extends keyof T>(
     entityId: EntityId,
-    component: ComponentRef,
-  ): Record<string, unknown> | undefined {
+    component: ComponentRef<Extract<K, string>>,
+  ): T[K] | undefined {
     if (!this.hasComponent(entityId, component)) {
       return undefined;
     }
@@ -97,7 +99,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
       componentData[prop] = storage[prop][index];
     }
 
-    return componentData;
+    return componentData as T[K];
   }
 
   removeEntityComponents(entityId: EntityId): void {
@@ -112,6 +114,57 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.bitsets.clear(index);
   }
 
+  query<K1 extends keyof T>(
+    c1: ComponentRef<Extract<K1, string>>,
+  ): QueryResult<T, K1>;
+  query<K1 extends keyof T, K2 extends keyof T>(
+    c1: ComponentRef<Extract<K1, string>>,
+    c2: ComponentRef<Extract<K2, string>>,
+  ): QueryResult<T, K1 | K2>;
+  query<K1 extends keyof T, K2 extends keyof T, K3 extends keyof T>(
+    c1: ComponentRef<Extract<K1, string>>,
+    c2: ComponentRef<Extract<K2, string>>,
+    c3: ComponentRef<Extract<K3, string>>,
+  ): QueryResult<T, K1 | K2 | K3>;
+  query<
+    K1 extends keyof T,
+    K2 extends keyof T,
+    K3 extends keyof T,
+    K4 extends keyof T,
+  >(
+    c1: ComponentRef<Extract<K1, string>>,
+    c2: ComponentRef<Extract<K2, string>>,
+    c3: ComponentRef<Extract<K3, string>>,
+    c4: ComponentRef<Extract<K4, string>>,
+  ): QueryResult<T, K1 | K2 | K3 | K4>;
+  query<
+    K1 extends keyof T,
+    K2 extends keyof T,
+    K3 extends keyof T,
+    K4 extends keyof T,
+    K5 extends keyof T,
+  >(
+    c1: ComponentRef<Extract<K1, string>>,
+    c2: ComponentRef<Extract<K2, string>>,
+    c3: ComponentRef<Extract<K3, string>>,
+    c4: ComponentRef<Extract<K4, string>>,
+    c5: ComponentRef<Extract<K5, string>>,
+  ): QueryResult<T, K1 | K2 | K3 | K4 | K5>;
+  query<
+    K1 extends keyof T,
+    K2 extends keyof T,
+    K3 extends keyof T,
+    K4 extends keyof T,
+    K5 extends keyof T,
+    K6 extends keyof T,
+  >(
+    c1: ComponentRef<Extract<K1, string>>,
+    c2: ComponentRef<Extract<K2, string>>,
+    c3: ComponentRef<Extract<K3, string>>,
+    c4: ComponentRef<Extract<K4, string>>,
+    c5: ComponentRef<Extract<K5, string>>,
+    c6: ComponentRef<Extract<K6, string>>,
+  ): QueryResult<T, K1 | K2 | K3 | K4 | K5 | K6>;
   query<K extends keyof T>(
     ...componentRefs: ComponentRef[]
   ): QueryResult<T, K> {
@@ -133,6 +186,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
       storages[name] = this.componentStorages[name];
     }
 
-    return { entities, storages: storages as Pick<ComponentStorageMap<T>, K> };
+    return {
+      entities,
+      storages: storages as Pick<ComponentStorageMapQuery<T>, K>,
+    };
   }
 }

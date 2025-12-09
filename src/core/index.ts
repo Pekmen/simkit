@@ -4,7 +4,8 @@ export * from "./System.js";
 export type {
   EntityId,
   ComponentBlueprint,
-  ComponentStorageMap,
+  ComponentStorageMapInternal,
+  ComponentStorageMapQuery,
   QueryResult,
   ComponentRef,
 } from "./types.js";

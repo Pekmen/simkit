@@ -118,8 +118,8 @@ describe("Query", () => {
     } = world.query(Position, Velocity);
 
     for (const e of entities) {
-      pos.x[e] = (pos.x[e] ?? 0) + (vel.dx[e] ?? 0);
-      pos.y[e] = (pos.y[e] ?? 0) + (vel.dy[e] ?? 0);
+      pos.x[e] = pos.x[e] + vel.dx[e];
+      pos.y[e] = pos.y[e] + vel.dy[e];
     }
 
     expect(pos.x[e1]).toBe(11);

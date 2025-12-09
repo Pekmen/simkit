@@ -49,15 +49,6 @@ class PhysicsSystem extends System {
       const dx = vel.dx[e];
       const dy = vel.dy[e];
 
-      if (
-        x === undefined ||
-        y === undefined ||
-        dx === undefined ||
-        dy === undefined
-      ) {
-        continue;
-      }
-
       const newX = x + dx * dt;
       const newY = y + dy * dt;
 
@@ -86,15 +77,6 @@ class RenderSystem extends System {
       const y = storages.Position.y[e];
       const radius = storages.Size.val[e];
       const color = storages.Color.val[e];
-
-      if (
-        x === undefined ||
-        y === undefined ||
-        radius === undefined ||
-        color === undefined
-      ) {
-        continue;
-      }
 
       ctx.beginPath();
       ctx.arc(x, y, radius, 0, Math.PI * 2);
