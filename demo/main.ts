@@ -69,7 +69,7 @@ const physicsSystem = {
 };
 
 const renderSystem = {
-  update(_deltaTime: number): void {
+  update(): void {
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
