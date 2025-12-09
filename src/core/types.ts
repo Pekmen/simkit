@@ -1,6 +1,10 @@
-export type EntityId = number;
+export type EntityId = number & { readonly __brand: "EntityId" };
+export type EntityIndex = number & { readonly __brand: "EntityIndex" };
 
-export type ComponentBlueprint = Record<string, Record<string, unknown>>;
+type ValidComponentProp = number | string | boolean | object;
+export type ComponentBlueprint = Record<string, Record<string, ValidComponentProp>>;
+
+export type ComponentKeys<T extends ComponentBlueprint> = Extract<keyof T, string>;
 
 export type ComponentStorage = Record<string, unknown[]>;
 
@@ -17,7 +21,7 @@ export type ComponentStorageMapQuery<T extends ComponentBlueprint> = {
 };
 
 export interface QueryResult<T extends ComponentBlueprint, K extends keyof T> {
-  entities: number[];
+  entities: EntityIndex[];
   storages: Pick<ComponentStorageMapQuery<T>, K>;
 }
 

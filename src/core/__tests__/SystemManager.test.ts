@@ -2,23 +2,22 @@ import type { System } from "../System";
 import { SystemManager } from "../SystemManager";
 
 describe("SystemManager", () => {
-  test("addSystem adds and initializes a system", () => {
+  test("addSystem adds a system", () => {
     const manager = new SystemManager();
     const system: System = {
-      init: vi.fn(),
       update: vi.fn(),
       destroy: vi.fn(),
     };
 
     manager.addSystem(system);
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(system.init).toHaveBeenCalled();
+
+    // @ts-expect-error accessing private for test
+    expect(manager.systems).toContain(system);
   });
 
   test("removeSystem removes and destroys a system", () => {
     const manager = new SystemManager();
     const system: System = {
-      init: vi.fn(),
       update: vi.fn(),
       destroy: vi.fn(),
     };
@@ -35,7 +34,6 @@ describe("SystemManager", () => {
   test("removeSystem does nothing if system not found", () => {
     const manager = new SystemManager();
     const system: System = {
-      init: vi.fn(),
       update: vi.fn(),
       destroy: vi.fn(),
     };
@@ -66,8 +64,14 @@ describe("SystemManager", () => {
 
   test("destroyAll destroys all systems and clears the list", () => {
     const manager = new SystemManager();
-    const systemA: System = { destroy: vi.fn(), update: vi.fn() };
-    const systemB: System = { destroy: vi.fn(), update: vi.fn() };
+    const systemA: System = {
+      destroy: vi.fn(),
+      update: vi.fn(),
+    };
+    const systemB: System = {
+      destroy: vi.fn(),
+      update: vi.fn(),
+    };
 
     manager.addSystem(systemA);
     manager.addSystem(systemB);

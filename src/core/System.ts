@@ -1,11 +1,5 @@
-export abstract class System {
-  init?(): void {
-    /* empty */
-  }
-
-  destroy?(): void {
-    /* empty */
-  }
-
-  abstract update(deltaTime: number): void;
+export interface System {
+  init?(): void;
+  update(deltaTime: number): void;
+  destroy?(): void;
 }

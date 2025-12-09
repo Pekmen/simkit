@@ -1,5 +1,3 @@
-import type { EntityId } from "./types";
-
 export class BitsetManager {
   private readonly entityBits: number[];
 
@@ -13,20 +11,20 @@ export class BitsetManager {
     this.entityBits = new Array<number>(maxEntities).fill(0);
   }
 
-  add(entityId: EntityId, bitPosition: number): void {
-    this.entityBits[entityId] |= 1 << bitPosition;
+  add(entityIndex: number, bitPosition: number): void {
+    this.entityBits[entityIndex] |= 1 << bitPosition;
   }
 
-  remove(entityId: EntityId, bitPosition: number): void {
-    this.entityBits[entityId] &= ~(1 << bitPosition);
+  remove(entityIndex: number, bitPosition: number): void {
+    this.entityBits[entityIndex] &= ~(1 << bitPosition);
   }
 
-  clear(entityId: EntityId): void {
-    this.entityBits[entityId] = 0;
+  clear(entityIndex: number): void {
+    this.entityBits[entityIndex] = 0;
   }
 
-  has(entityId: EntityId, bitPosition: number): boolean {
-    return (this.entityBits[entityId] & (1 << bitPosition)) !== 0;
+  has(entityIndex: number, bitPosition: number): boolean {
+    return (this.entityBits[entityIndex] & (1 << bitPosition)) !== 0;
   }
 
   createMask(bitPositions: number[]): number {
@@ -37,7 +35,7 @@ export class BitsetManager {
     return mask;
   }
 
-  matchesMask(entityId: EntityId, mask: number): boolean {
-    return (this.entityBits[entityId] & mask) === mask;
+  matchesMask(entityIndex: number, mask: number): boolean {
+    return (this.entityBits[entityIndex] & mask) === mask;
   }
 }

@@ -1,5 +1,6 @@
 import type {
   EntityId,
+  EntityIndex,
   ComponentBlueprint,
   ComponentStorage,
   ComponentStorageMapQuery,
@@ -114,61 +115,10 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.bitsets.clear(index);
   }
 
-  query<K1 extends keyof T>(
-    c1: ComponentRef<Extract<K1, string>>,
-  ): QueryResult<T, K1>;
-  query<K1 extends keyof T, K2 extends keyof T>(
-    c1: ComponentRef<Extract<K1, string>>,
-    c2: ComponentRef<Extract<K2, string>>,
-  ): QueryResult<T, K1 | K2>;
-  query<K1 extends keyof T, K2 extends keyof T, K3 extends keyof T>(
-    c1: ComponentRef<Extract<K1, string>>,
-    c2: ComponentRef<Extract<K2, string>>,
-    c3: ComponentRef<Extract<K3, string>>,
-  ): QueryResult<T, K1 | K2 | K3>;
-  query<
-    K1 extends keyof T,
-    K2 extends keyof T,
-    K3 extends keyof T,
-    K4 extends keyof T,
-  >(
-    c1: ComponentRef<Extract<K1, string>>,
-    c2: ComponentRef<Extract<K2, string>>,
-    c3: ComponentRef<Extract<K3, string>>,
-    c4: ComponentRef<Extract<K4, string>>,
-  ): QueryResult<T, K1 | K2 | K3 | K4>;
-  query<
-    K1 extends keyof T,
-    K2 extends keyof T,
-    K3 extends keyof T,
-    K4 extends keyof T,
-    K5 extends keyof T,
-  >(
-    c1: ComponentRef<Extract<K1, string>>,
-    c2: ComponentRef<Extract<K2, string>>,
-    c3: ComponentRef<Extract<K3, string>>,
-    c4: ComponentRef<Extract<K4, string>>,
-    c5: ComponentRef<Extract<K5, string>>,
-  ): QueryResult<T, K1 | K2 | K3 | K4 | K5>;
-  query<
-    K1 extends keyof T,
-    K2 extends keyof T,
-    K3 extends keyof T,
-    K4 extends keyof T,
-    K5 extends keyof T,
-    K6 extends keyof T,
-  >(
-    c1: ComponentRef<Extract<K1, string>>,
-    c2: ComponentRef<Extract<K2, string>>,
-    c3: ComponentRef<Extract<K3, string>>,
-    c4: ComponentRef<Extract<K4, string>>,
-    c5: ComponentRef<Extract<K5, string>>,
-    c6: ComponentRef<Extract<K6, string>>,
-  ): QueryResult<T, K1 | K2 | K3 | K4 | K5 | K6>;
   query<K extends keyof T>(
-    ...componentRefs: ComponentRef[]
+    ...componentRefs: ComponentRef<Extract<K, string>>[]
   ): QueryResult<T, K> {
-    const entities: number[] = [];
+    const entities: EntityIndex[] = [];
     const bitPositions = componentRefs.map((ref) => ref._bitPosition);
     const mask = this.bitsets.createMask(bitPositions);
 

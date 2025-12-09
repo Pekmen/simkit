@@ -1,4 +1,4 @@
-import type { EntityId } from "./Entity";
+import type { EntityId, EntityIndex } from "./types";
 import {
   ENTITY_INDEX_BITS,
   ENTITY_INDEX_MASK,
@@ -33,7 +33,7 @@ export class EntityManager {
     }
 
     const generation = this.generations[index];
-    const entityId = (generation << ENTITY_INDEX_BITS) | index;
+    const entityId = ((generation << ENTITY_INDEX_BITS) | index) as EntityId;
 
     this.activeEntities.add(entityId);
 
@@ -57,7 +57,7 @@ export class EntityManager {
     return this.activeEntities.size;
   }
 
-  getEntityIndex(entityId: EntityId): number {
-    return entityId & ENTITY_INDEX_MASK;
+  getEntityIndex(entityId: EntityId): EntityIndex {
+    return (entityId & ENTITY_INDEX_MASK) as EntityIndex;
   }
 }

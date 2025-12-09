@@ -11,21 +11,21 @@ describe("Add/Remove", () => {
     const world = new World(blueprints, { maxEntities: 1000 });
     const { A, B } = world.components;
 
-    // Setup: Create 1000 entities with component A
+    // Setup: Create 1000 entities with component A and store their IDs
+    const entityIds = [];
     for (let i = 0; i < 1000; i++) {
       const e = world.addEntity();
       world.addComponent(e, A, { value: i });
+      entityIds.push(e);
     }
 
     // Add component B to all A entities
-    const { entities: aEntities } = world.query(A);
-    for (const e of aEntities) {
+    for (const e of entityIds) {
       world.addComponent(e, B, { value: 0 });
     }
 
     // Remove component B from all (A, B) entities
-    const { entities: abEntities } = world.query(A, B);
-    for (const e of abEntities) {
+    for (const e of entityIds) {
       world.removeComponent(e, B);
     }
   });

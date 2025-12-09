@@ -26,14 +26,15 @@ describe("ComponentManager", () => {
     const manager = new ComponentManager(blueprints, 5, entityManager);
     const { Position } = manager.components;
 
-    const entityId = 0;
+    const entityId = entityManager.addEntity();
     manager.addComponent(entityId, Position, { x: 10, y: 20 });
 
     // @ts-expect-error Accessing private property
     const storages = manager.componentStorages;
+    const index = entityManager.getEntityIndex(entityId);
 
-    expect(storages.Position.x[entityId]).toBe(10);
-    expect(storages.Position.y[entityId]).toBe(20);
+    expect(storages.Position.x[index]).toBe(10);
+    expect(storages.Position.y[index]).toBe(20);
   });
 
   test("removeComponent clears the component data for the entity", () => {
@@ -42,15 +43,16 @@ describe("ComponentManager", () => {
     const manager = new ComponentManager(blueprints, 5, entityManager);
     const { Position } = manager.components;
 
-    const entityId = 0;
+    const entityId = entityManager.addEntity();
     manager.addComponent(entityId, Position, { x: 10, y: 20 });
     manager.removeComponent(entityId, Position);
 
     // @ts-expect-error Accessing private property
     const storages = manager.componentStorages;
+    const index = entityManager.getEntityIndex(entityId);
 
-    expect(storages.Position.x[entityId]).toBeUndefined();
-    expect(storages.Position.y[entityId]).toBeUndefined();
+    expect(storages.Position.x[index]).toBeUndefined();
+    expect(storages.Position.y[index]).toBeUndefined();
   });
 
   test("removeEntityComponents clears all components for the entity", () => {
@@ -63,7 +65,7 @@ describe("ComponentManager", () => {
     const manager = new ComponentManager(blueprints, 5, entityManager);
     const { Position, Velocity } = manager.components;
 
-    const entityId = 0;
+    const entityId = entityManager.addEntity();
     manager.addComponent(entityId, Position, { x: 10, y: 20 });
     manager.addComponent(entityId, Velocity, { dx: 1, dy: 2 });
 
@@ -71,11 +73,12 @@ describe("ComponentManager", () => {
 
     // @ts-expect-error Accessing private property
     const storages = manager.componentStorages;
+    const index = entityManager.getEntityIndex(entityId);
 
-    expect(storages.Position.x[entityId]).toBeUndefined();
-    expect(storages.Position.y[entityId]).toBeUndefined();
-    expect(storages.Velocity.dx[entityId]).toBeUndefined();
-    expect(storages.Velocity.dy[entityId]).toBeUndefined();
+    expect(storages.Position.x[index]).toBeUndefined();
+    expect(storages.Position.y[index]).toBeUndefined();
+    expect(storages.Velocity.dx[index]).toBeUndefined();
+    expect(storages.Velocity.dy[index]).toBeUndefined();
   });
 
   test("getComponent returns component data as object", () => {
@@ -84,7 +87,7 @@ describe("ComponentManager", () => {
     const manager = new ComponentManager(blueprints, 5, entityManager);
     const { Position } = manager.components;
 
-    const entityId = 0;
+    const entityId = entityManager.addEntity();
     manager.addComponent(entityId, Position, { x: 10, y: 20 });
 
     const component = manager.getComponent(entityId, Position);
@@ -98,7 +101,7 @@ describe("ComponentManager", () => {
     const manager = new ComponentManager(blueprints, 5, entityManager);
     const { Position } = manager.components;
 
-    const entityId = 0;
+    const entityId = entityManager.addEntity();
 
     const component = manager.getComponent(entityId, Position);
 
@@ -111,7 +114,7 @@ describe("ComponentManager", () => {
     const manager = new ComponentManager(blueprints, 5, entityManager);
     const { Position } = manager.components;
 
-    const entityId = 0;
+    const entityId = entityManager.addEntity();
     manager.addComponent(entityId, Position, { x: 10, y: 20 });
     manager.removeComponent(entityId, Position);
 
@@ -126,7 +129,7 @@ describe("ComponentManager", () => {
     const manager = new ComponentManager(blueprints, 5, entityManager);
     const { Position } = manager.components;
 
-    const entityId = 0;
+    const entityId = entityManager.addEntity();
     expect(manager.hasComponent(entityId, Position)).toBe(false);
 
     manager.addComponent(entityId, Position, { x: 10, y: 20 });
@@ -157,7 +160,7 @@ describe("ComponentManager", () => {
     const manager = new ComponentManager(blueprints, 5, entityManager);
     const { Position, Velocity } = manager.components;
 
-    const entityId = 0;
+    const entityId = entityManager.addEntity();
     manager.addComponent(entityId, Position, { x: 10, y: 20 });
     manager.addComponent(entityId, Velocity, { dx: 1, dy: 2 });
 

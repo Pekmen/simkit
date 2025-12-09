@@ -1,4 +1,4 @@
-import { World, System } from "../src/core";
+import { World } from "../src/core";
 
 const canvas = document.getElementById("demo-canvas") as HTMLCanvasElement;
 const ctx = canvas.getContext("2d");
@@ -10,12 +10,14 @@ let frameCount = 0;
 let lastFpsUpdate = performance.now();
 let fps = 0;
 
-const world = new World({
+const blueprints = {
   Position: { x: 0, y: 0 },
   Velocity: { dx: 0, dy: 0 },
   Size: { val: 10 },
   Color: { val: "#ff0000" },
-});
+};
+
+const world = new World(blueprints);
 
 const { Position, Velocity, Size, Color } = world.components;
 
@@ -34,10 +36,11 @@ for (let i = 0; i < 1000; i++) {
   world.addComponent(entity, Color);
 }
 
-class PhysicsSystem extends System {
+const physicsSystem = {
   update(deltaTime: number): void {
     const dt = deltaTime / 1000;
 
+    const { Position, Velocity } = world.components;
     const {
       entities,
       storages: { Position: pos, Velocity: vel },
@@ -62,14 +65,15 @@ class PhysicsSystem extends System {
         vel.dy[e] = -dy;
       }
     }
-  }
-}
+  },
+};
 
-class RenderSystem extends System {
-  update(): void {
+const renderSystem = {
+  update(_deltaTime: number): void {
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    const { Position, Size, Color } = world.components;
     const { entities, storages } = world.query(Position, Size, Color);
 
     for (const e of entities) {
@@ -83,11 +87,11 @@ class RenderSystem extends System {
       ctx.fillStyle = color;
       ctx.fill();
     }
-  }
-}
+  },
+};
 
-world.addSystem(new PhysicsSystem());
-world.addSystem(new RenderSystem());
+world.addSystem(physicsSystem);
+world.addSystem(renderSystem);
 
 let last = performance.now();
 
