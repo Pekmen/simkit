@@ -39,9 +39,11 @@ describe("World", () => {
 
     // @ts-expect-error Accessing private storage for testing
     const storages = world.componentManager.componentStorages;
+    // @ts-expect-error Accessing private entityManager for testing
+    const index = world.entityManager.getEntityIndex(entityId);
 
-    expect(storages.Position.x[entityId]).toBe(10);
-    expect(storages.Position.y[entityId]).toBe(20);
+    expect(storages.Position.x[index]).toBe(10);
+    expect(storages.Position.y[index]).toBe(20);
   });
 
   test("removing a component clears its data for the entity", () => {
@@ -56,9 +58,11 @@ describe("World", () => {
 
     // @ts-expect-error Accessing private storage for testing
     const storages = world.componentManager.componentStorages;
+    // @ts-expect-error Accessing private entityManager for testing
+    const index = world.entityManager.getEntityIndex(entityId);
 
-    expect(storages.Position.x[entityId]).toBeUndefined();
-    expect(storages.Position.y[entityId]).toBeUndefined();
+    expect(storages.Position.x[index]).toBeUndefined();
+    expect(storages.Position.y[index]).toBeUndefined();
   });
 
   test("removing an entity clears all its components", () => {
@@ -78,11 +82,13 @@ describe("World", () => {
 
     // @ts-expect-error Accessing private storage for testing
     const storages = world.componentManager.componentStorages;
+    // @ts-expect-error Accessing private entityManager for testing
+    const index = world.entityManager.getEntityIndex(entityId);
 
-    expect(storages.Position.x[entityId]).toBeUndefined();
-    expect(storages.Position.y[entityId]).toBeUndefined();
-    expect(storages.Velocity.dx[entityId]).toBeUndefined();
-    expect(storages.Velocity.dy[entityId]).toBeUndefined();
+    expect(storages.Position.x[index]).toBeUndefined();
+    expect(storages.Position.y[index]).toBeUndefined();
+    expect(storages.Velocity.dx[index]).toBeUndefined();
+    expect(storages.Velocity.dy[index]).toBeUndefined();
   });
 
   test("adding an entity beyond maxEntities throws an error", () => {
@@ -148,5 +154,43 @@ describe("World", () => {
     const component = world.getComponent(entityId, Position);
 
     expect(component).toEqual({ x: 15, y: 0 });
+  });
+
+  test("component storage works correctly after entity recycling", () => {
+    const blueprints = {
+      Position: { x: 0, y: 0 },
+      Velocity: { dx: 0, dy: 0 },
+    };
+
+    const world = new World(blueprints, { maxEntities: 10 });
+    const { Position, Velocity } = world.components;
+
+    // Create and destroy entity at index 0
+    const e1 = world.addEntity();
+    expect(e1).toBe(0); // generation 0, index 0
+    world.addComponent(e1, Position, { x: 100, y: 200 });
+    world.removeEntity(e1);
+
+    // Recycle index 0 - should have generation 1
+    const e2 = world.addEntity();
+    expect(e2).toBe((1 << 24) | 0); // generation 1, index 0
+    expect(e2).not.toBe(e1); // Different entity IDs
+
+    // Add component to recycled entity
+    world.addComponent(e2, Position, { x: 50, y: 75 });
+
+    // Verify correct data is stored (using index, not entityId)
+    // @ts-expect-error Accessing private storage for testing
+    const storages = world.componentManager.componentStorages;
+    // @ts-expect-error Accessing private entityManager for testing
+    const index = world.entityManager.getEntityIndex(e2);
+
+    expect(index).toBe(0); // Same index as e1
+    expect(storages.Position.x[index]).toBe(50);
+    expect(storages.Position.y[index]).toBe(75);
+
+    // Old entity ID should not work
+    expect(world.hasComponent(e1, Position)).toBe(false);
+    expect(world.hasComponent(e2, Position)).toBe(true);
   });
 });

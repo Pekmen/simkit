@@ -57,6 +57,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
     component: ComponentRef<Extract<K, string>>,
     componentData?: Partial<T[K]>,
   ): void {
+    if (!this.entityManager.activeEntities.has(entityId)) {
+      return;
+    }
     const index = this.entityManager.getEntityIndex(entityId);
     const storage = this.componentStorages[component._name];
     const defaultComponentData = this.componentBlueprints[component._name];
@@ -71,6 +74,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
   }
 
   removeComponent(entityId: EntityId, component: ComponentRef): void {
+    if (!this.entityManager.activeEntities.has(entityId)) {
+      return;
+    }
     const index = this.entityManager.getEntityIndex(entityId);
     const storage = this.componentStorages[component._name];
     for (const prop in storage) {
@@ -81,6 +87,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
   }
 
   hasComponent(entityId: EntityId, component: ComponentRef): boolean {
+    if (!this.entityManager.activeEntities.has(entityId)) {
+      return false;
+    }
     const index = this.entityManager.getEntityIndex(entityId);
     return this.bitsets.has(index, component._bitPosition);
   }

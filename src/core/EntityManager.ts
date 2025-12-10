@@ -45,7 +45,7 @@ export class EntityManager {
       return;
     }
 
-    const index = entityId & ENTITY_INDEX_MASK;
+    const index = this.getEntityIndex(entityId);
 
     this.generations[index] = (this.generations[index] + 1) & MAX_GENERATION;
 

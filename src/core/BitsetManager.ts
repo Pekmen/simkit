@@ -1,3 +1,5 @@
+import type { EntityIndex } from "./types";
+
 export class BitsetManager {
   private readonly entityBits: number[];
 
@@ -11,19 +13,19 @@ export class BitsetManager {
     this.entityBits = new Array<number>(maxEntities).fill(0);
   }
 
-  add(entityIndex: number, bitPosition: number): void {
+  add(entityIndex: EntityIndex, bitPosition: number): void {
     this.entityBits[entityIndex] |= 1 << bitPosition;
   }
 
-  remove(entityIndex: number, bitPosition: number): void {
+  remove(entityIndex: EntityIndex, bitPosition: number): void {
     this.entityBits[entityIndex] &= ~(1 << bitPosition);
   }
 
-  clear(entityIndex: number): void {
+  clear(entityIndex: EntityIndex): void {
     this.entityBits[entityIndex] = 0;
   }
 
-  has(entityIndex: number, bitPosition: number): boolean {
+  has(entityIndex: EntityIndex, bitPosition: number): boolean {
     return (this.entityBits[entityIndex] & (1 << bitPosition)) !== 0;
   }
 
@@ -35,7 +37,7 @@ export class BitsetManager {
     return mask;
   }
 
-  matchesMask(entityIndex: number, mask: number): boolean {
+  matchesMask(entityIndex: EntityIndex, mask: number): boolean {
     return (this.entityBits[entityIndex] & mask) === mask;
   }
 }
