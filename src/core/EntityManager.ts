@@ -1,39 +1,22 @@
-import type { EntityId, EntityIndex } from "./types";
-import {
-  ENTITY_INDEX_BITS,
-  ENTITY_INDEX_MASK,
-  MAX_ENTITY_INDEX,
-  MAX_GENERATION,
-} from "./constants";
+import type { EntityId } from "./types";
 
 export class EntityManager {
-  private nextEntityIndex = 0;
+  private nextEntityId = 0;
   private readonly maxEntities: number;
-  private freeEntityIndices: number[] = [];
-  private readonly generations: Uint8Array;
+  private freeEntityIds: EntityId[] = [];
   readonly activeEntities = new Set<EntityId>();
 
   constructor(maxEntities: number) {
     this.maxEntities = maxEntities;
-    this.generations = new Uint8Array(maxEntities);
   }
 
   addEntity(): EntityId {
-    const recycled = this.freeEntityIndices.pop();
-    const index = recycled ?? this.nextEntityIndex++;
+    const recycled = this.freeEntityIds.pop();
+    const entityId = (recycled ?? this.nextEntityId++) as EntityId;
 
-    if (index >= this.maxEntities) {
+    if (entityId >= this.maxEntities) {
       throw new Error("Maximum number of entities reached");
     }
-
-    if (index > MAX_ENTITY_INDEX) {
-      throw new Error(
-        `Entity index ${index} exceeds maximum supported index ${MAX_ENTITY_INDEX}`,
-      );
-    }
-
-    const generation = this.generations[index];
-    const entityId = ((generation << ENTITY_INDEX_BITS) | index) as EntityId;
 
     this.activeEntities.add(entityId);
 
@@ -45,19 +28,11 @@ export class EntityManager {
       return;
     }
 
-    const index = this.getEntityIndex(entityId);
-
-    this.generations[index] = (this.generations[index] + 1) & MAX_GENERATION;
-
-    this.freeEntityIndices.push(index);
+    this.freeEntityIds.push(entityId);
     this.activeEntities.delete(entityId);
   }
 
   getEntityCount(): number {
     return this.activeEntities.size;
-  }
-
-  getEntityIndex(entityId: EntityId): EntityIndex {
-    return (entityId & ENTITY_INDEX_MASK) as EntityIndex;
   }
 }

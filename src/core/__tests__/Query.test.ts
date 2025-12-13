@@ -25,17 +25,10 @@ describe("Query", () => {
 
     const { entities } = world.query(Position, Velocity);
 
-    // @ts-expect-error Accessing private entityManager for testing
-    const e1Index = world.entityManager.getEntityIndex(e1);
-    // @ts-expect-error Accessing private entityManager for testing
-    const e2Index = world.entityManager.getEntityIndex(e2);
-    // @ts-expect-error Accessing private entityManager for testing
-    const e3Index = world.entityManager.getEntityIndex(e3);
-
     expect(entities).toHaveLength(1);
-    expect(entities).toContain(e1Index);
-    expect(entities).not.toContain(e2Index);
-    expect(entities).not.toContain(e3Index);
+    expect(entities).toContain(e1);
+    expect(entities).not.toContain(e2);
+    expect(entities).not.toContain(e3);
   });
 
   test("query returns correct storages", () => {
@@ -55,13 +48,10 @@ describe("Query", () => {
 
     const { storages } = world.query(Position, Velocity);
 
-    // @ts-expect-error Accessing private entityManager for testing
-    const e1Index = world.entityManager.getEntityIndex(e1);
-
-    expect(storages.Position.x[e1Index]).toBe(10);
-    expect(storages.Position.y[e1Index]).toBe(20);
-    expect(storages.Velocity.dx[e1Index]).toBe(1);
-    expect(storages.Velocity.dy[e1Index]).toBe(2);
+    expect(storages.Position.x[e1]).toBe(10);
+    expect(storages.Position.y[e1]).toBe(20);
+    expect(storages.Velocity.dx[e1]).toBe(1);
+    expect(storages.Velocity.dy[e1]).toBe(2);
   });
 
   test("query with single component returns matching entities", () => {
@@ -85,17 +75,10 @@ describe("Query", () => {
 
     const { entities } = world.query(Position);
 
-    // @ts-expect-error Accessing private entityManager for testing
-    const e1Index = world.entityManager.getEntityIndex(e1);
-    // @ts-expect-error Accessing private entityManager for testing
-    const e2Index = world.entityManager.getEntityIndex(e2);
-    // @ts-expect-error Accessing private entityManager for testing
-    const e3Index = world.entityManager.getEntityIndex(e3);
-
     expect(entities).toHaveLength(2);
-    expect(entities).toContain(e1Index);
-    expect(entities).toContain(e2Index);
-    expect(entities).not.toContain(e3Index);
+    expect(entities).toContain(e1);
+    expect(entities).toContain(e2);
+    expect(entities).not.toContain(e3);
   });
 
   test("query returns empty array when no entities match", () => {
@@ -139,11 +122,8 @@ describe("Query", () => {
       pos.y[e] = pos.y[e] + vel.dy[e];
     }
 
-    // @ts-expect-error Accessing private entityManager for testing
-    const e1Index = world.entityManager.getEntityIndex(e1);
-
-    expect(pos.x[e1Index]).toBe(11);
-    expect(pos.y[e1Index]).toBe(22);
+    expect(pos.x[e1]).toBe(11);
+    expect(pos.y[e1]).toBe(22);
   });
 
   test("query updates after components are added", () => {
@@ -166,10 +146,8 @@ describe("Query", () => {
     world.addComponent(e1, Velocity, { dx: 3, dy: 4 });
 
     ({ entities } = world.query(Position, Velocity));
-    // @ts-expect-error Accessing private entityManager for testing
-    const e1Index = world.entityManager.getEntityIndex(e1);
     expect(entities).toHaveLength(1);
-    expect(entities).toContain(e1Index);
+    expect(entities).toContain(e1);
   });
 
   test("query updates after components are removed", () => {
@@ -219,19 +197,14 @@ describe("Query", () => {
     const movingEntities = world.query(Position, Velocity);
     const livingEntities = world.query(Position, Health);
 
-    // @ts-expect-error Accessing private entityManager for testing
-    const e1Index = world.entityManager.getEntityIndex(e1);
-    // @ts-expect-error Accessing private entityManager for testing
-    const e2Index = world.entityManager.getEntityIndex(e2);
-
     expect(movingEntities.entities).toHaveLength(1);
-    expect(movingEntities.entities).toContain(e1Index);
+    expect(movingEntities.entities).toContain(e1);
 
     expect(livingEntities.entities).toHaveLength(1);
-    expect(livingEntities.entities).toContain(e2Index);
+    expect(livingEntities.entities).toContain(e2);
   });
 
-  test("query results contain EntityIndex, not EntityId", () => {
+  test("query results contain EntityId which can be used directly as index", () => {
     const world = new World(
       { Position: { x: 0, y: 0 } },
       { maxEntities: 10 },
@@ -243,24 +216,22 @@ describe("Query", () => {
     world.addComponent(e1, Position, { x: 1, y: 1 });
     world.removeEntity(e1);
 
-    // Recycled entity with generation > 0
+    // Recycled entity ID will be the same as e1
     const e2 = world.addEntity();
     world.addComponent(e2, Position, { x: 2, y: 2 });
 
     const { entities, storages } = world.query(Position);
 
-    // Entity array contains indices, not IDs
+    // Entity array contains EntityIds
     expect(entities).toHaveLength(1);
-    const indexInResult = entities[0];
-    // @ts-expect-error Accessing private entityManager for testing
-    const e2Index = world.entityManager.getEntityIndex(e2);
+    const entityInResult = entities[0];
 
-    expect(indexInResult).toBe(e2Index);
-    expect(indexInResult).toBe(0); // Index 0 was recycled
-    expect(indexInResult).not.toBe(e2); // e2 has generation bits set
+    expect(entityInResult).toBe(e2);
+    expect(entityInResult).toBe(0); // ID 0 was recycled
+    expect(entityInResult).toBe(e1); // e2 has the same ID as e1 (no generation tracking)
 
-    // Storage access works with the index
-    expect(storages.Position.x[indexInResult]).toBe(2);
-    expect(storages.Position.y[indexInResult]).toBe(2);
+    // Storage access works with the EntityId directly
+    expect(storages.Position.x[entityInResult]).toBe(2);
+    expect(storages.Position.y[entityInResult]).toBe(2);
   });
 });

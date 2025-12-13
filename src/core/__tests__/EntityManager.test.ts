@@ -9,9 +9,9 @@ describe("EntityManager", () => {
     const e2: EntityId = manager.addEntity();
     const e3: EntityId = manager.addEntity();
 
-    expect(manager.getEntityIndex(e1)).toBe(0);
-    expect(manager.getEntityIndex(e2)).toBe(1);
-    expect(manager.getEntityIndex(e3)).toBe(2);
+    expect(e1).toBe(0);
+    expect(e2).toBe(1);
+    expect(e3).toBe(2);
   });
 
   test("addEntity throws error when exceeding maxEntities", () => {
@@ -31,8 +31,8 @@ describe("EntityManager", () => {
     const e1 = manager.addEntity();
     const e2 = manager.addEntity();
 
-    expect(manager.getEntityIndex(e1)).toBe(0);
-    expect(manager.getEntityIndex(e2)).toBe(1);
+    expect(e1).toBe(0);
+    expect(e2).toBe(1);
   });
 
   test("removeEntity allows entity ID to be reused", () => {
@@ -46,14 +46,14 @@ describe("EntityManager", () => {
 
     const e4 = manager.addEntity();
 
-    expect(manager.getEntityIndex(e4)).toBe(1);
-    expect(e4).not.toBe(e2);
-    expect(e4).toBe((1 << 24) | 1);
+    expect(e4).toBe(1);
+    expect(e4).toBe(e2);
 
     expect(manager.activeEntities.has(e1)).toBe(true);
     expect(manager.activeEntities.has(e4)).toBe(true);
     expect(manager.activeEntities.has(e3)).toBe(true);
-    expect(manager.activeEntities.has(e2)).toBe(false);
+    // e2 and e4 are the same ID, so checking e2 is the same as checking e4
+    expect(manager.activeEntities.has(e2)).toBe(true);
     expect(manager.activeEntities.size).toBe(3);
   });
 
@@ -68,9 +68,8 @@ describe("EntityManager", () => {
     const e2 = manager.addEntity();
     const e3 = manager.addEntity();
 
-    expect(manager.getEntityIndex(e2)).toBe(0);
-    expect(manager.getEntityIndex(e3)).toBe(1);
-    expect(e2).toBe((1 << 24) | 0);
+    expect(e2).toBe(0);
+    expect(e3).toBe(1);
     expect(manager.activeEntities.size).toBe(2);
   });
 
@@ -90,22 +89,22 @@ describe("EntityManager", () => {
     expect(manager.getEntityCount()).toBe(2);
   });
 
-  test("generation IDs prevent stale entity references", () => {
+  test("recycled entity IDs have the same value as the deleted entity", () => {
     const manager = new EntityManager(10);
 
     const e1 = manager.addEntity();
-    expect(manager.getEntityIndex(e1)).toBe(0);
+    expect(e1).toBe(0);
     expect(manager.activeEntities.has(e1)).toBe(true);
 
     manager.removeEntity(e1);
     expect(manager.activeEntities.has(e1)).toBe(false);
 
     const e2 = manager.addEntity();
-    expect(manager.getEntityIndex(e2)).toBe(0);
+    expect(e2).toBe(0);
     expect(manager.activeEntities.has(e2)).toBe(true);
-    expect(manager.activeEntities.has(e1)).toBe(false);
+    // e1 and e2 are the same ID, so checking e1 is the same as checking e2
+    expect(manager.activeEntities.has(e1)).toBe(true);
 
-    expect(e1).not.toBe(e2);
-    expect(e2).toBe((1 << 24) | 0);
+    expect(e1).toBe(e2);
   });
 });

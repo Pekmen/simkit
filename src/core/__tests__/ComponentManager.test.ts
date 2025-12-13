@@ -9,7 +9,7 @@ describe("ComponentManager", () => {
     };
 
     const entityManager = new EntityManager(10);
-    const manager = new ComponentManager(blueprints, 10, entityManager);
+    const manager = new ComponentManager(blueprints, 10, entityManager.activeEntities);
 
     // @ts-expect-error Accessing private property for testing
     const storages = manager.componentStorages;
@@ -23,7 +23,7 @@ describe("ComponentManager", () => {
   test("addComponent stores the component data correctly", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const manager = new ComponentManager(blueprints, 5, entityManager.activeEntities);
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
@@ -31,16 +31,15 @@ describe("ComponentManager", () => {
 
     // @ts-expect-error Accessing private property
     const storages = manager.componentStorages;
-    const index = entityManager.getEntityIndex(entityId);
 
-    expect(storages.Position.x[index]).toBe(10);
-    expect(storages.Position.y[index]).toBe(20);
+    expect(storages.Position.x[entityId]).toBe(10);
+    expect(storages.Position.y[entityId]).toBe(20);
   });
 
   test("removeComponent clears the component data for the entity", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const manager = new ComponentManager(blueprints, 5, entityManager.activeEntities);
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
@@ -49,10 +48,9 @@ describe("ComponentManager", () => {
 
     // @ts-expect-error Accessing private property
     const storages = manager.componentStorages;
-    const index = entityManager.getEntityIndex(entityId);
 
-    expect(storages.Position.x[index]).toBeUndefined();
-    expect(storages.Position.y[index]).toBeUndefined();
+    expect(storages.Position.x[entityId]).toBeUndefined();
+    expect(storages.Position.y[entityId]).toBeUndefined();
   });
 
   test("removeEntityComponents clears all components for the entity", () => {
@@ -62,7 +60,7 @@ describe("ComponentManager", () => {
     };
 
     const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const manager = new ComponentManager(blueprints, 5, entityManager.activeEntities);
     const { Position, Velocity } = manager.components;
 
     const entityId = entityManager.addEntity();
@@ -73,18 +71,17 @@ describe("ComponentManager", () => {
 
     // @ts-expect-error Accessing private property
     const storages = manager.componentStorages;
-    const index = entityManager.getEntityIndex(entityId);
 
-    expect(storages.Position.x[index]).toBeUndefined();
-    expect(storages.Position.y[index]).toBeUndefined();
-    expect(storages.Velocity.dx[index]).toBeUndefined();
-    expect(storages.Velocity.dy[index]).toBeUndefined();
+    expect(storages.Position.x[entityId]).toBeUndefined();
+    expect(storages.Position.y[entityId]).toBeUndefined();
+    expect(storages.Velocity.dx[entityId]).toBeUndefined();
+    expect(storages.Velocity.dy[entityId]).toBeUndefined();
   });
 
   test("getComponent returns component data as object", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const manager = new ComponentManager(blueprints, 5, entityManager.activeEntities);
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
@@ -98,7 +95,7 @@ describe("ComponentManager", () => {
   test("getComponent returns undefined for entity without component", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const manager = new ComponentManager(blueprints, 5, entityManager.activeEntities);
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
@@ -111,7 +108,7 @@ describe("ComponentManager", () => {
   test("getComponent returns undefined after component is removed", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const manager = new ComponentManager(blueprints, 5, entityManager.activeEntities);
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
@@ -126,7 +123,7 @@ describe("ComponentManager", () => {
   test("hasComponent uses bitset correctly", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const manager = new ComponentManager(blueprints, 5, entityManager.activeEntities);
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
@@ -146,7 +143,7 @@ describe("ComponentManager", () => {
     }
 
     const entityManager = new EntityManager(10);
-    expect(() => new ComponentManager(blueprints, 10, entityManager)).toThrow(
+    expect(() => new ComponentManager(blueprints, 10, entityManager.activeEntities)).toThrow(
       "Too many components (33). Maximum is 32.",
     );
   });
@@ -157,7 +154,7 @@ describe("ComponentManager", () => {
       Velocity: { dx: 0, dy: 0 },
     };
     const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const manager = new ComponentManager(blueprints, 5, entityManager.activeEntities);
     const { Position, Velocity } = manager.components;
 
     const entityId = entityManager.addEntity();

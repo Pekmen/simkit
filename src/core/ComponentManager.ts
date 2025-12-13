@@ -1,13 +1,11 @@
 import type {
   EntityId,
-  EntityIndex,
   ComponentBlueprint,
   ComponentStorage,
   ComponentStorageMapQuery,
   QueryResult,
   ComponentRef,
 } from "./types";
-import { EntityManager } from "./EntityManager";
 import { BitsetManager } from "./BitsetManager";
 
 export class ComponentManager<T extends ComponentBlueprint> {
@@ -15,17 +13,13 @@ export class ComponentManager<T extends ComponentBlueprint> {
   private readonly componentStorages: Record<string, ComponentStorage>;
   readonly components: { [K in keyof T]: ComponentRef<Extract<K, string>> };
   private readonly maxEntities: number;
-  private readonly entityManager: EntityManager;
+  private readonly entities: Set<EntityId>;
   private readonly bitsets: BitsetManager;
 
-  constructor(
-    blueprints: T,
-    maxEntities: number,
-    entityManager: EntityManager,
-  ) {
+  constructor(blueprints: T, maxEntities: number, entities: Set<EntityId>) {
     this.maxEntities = maxEntities;
     this.componentBlueprints = blueprints;
-    this.entityManager = entityManager;
+    this.entities = entities;
 
     const componentCount = Object.keys(blueprints).length;
     this.bitsets = new BitsetManager(componentCount, maxEntities);
@@ -57,41 +51,38 @@ export class ComponentManager<T extends ComponentBlueprint> {
     component: ComponentRef<Extract<K, string>>,
     componentData?: Partial<T[K]>,
   ): void {
-    if (!this.entityManager.activeEntities.has(entityId)) {
+    if (!this.entities.has(entityId)) {
       return;
     }
-    const index = this.entityManager.getEntityIndex(entityId);
     const storage = this.componentStorages[component._name];
     const defaultComponentData = this.componentBlueprints[component._name];
 
     const data = { ...defaultComponentData, ...componentData };
 
     for (const prop in data) {
-      storage[prop][index] = data[prop];
+      storage[prop][entityId] = data[prop];
     }
 
-    this.bitsets.add(index, component._bitPosition);
+    this.bitsets.add(entityId, component._bitPosition);
   }
 
   removeComponent(entityId: EntityId, component: ComponentRef): void {
-    if (!this.entityManager.activeEntities.has(entityId)) {
+    if (!this.entities.has(entityId)) {
       return;
     }
-    const index = this.entityManager.getEntityIndex(entityId);
     const storage = this.componentStorages[component._name];
     for (const prop in storage) {
-      storage[prop][index] = undefined;
+      storage[prop][entityId] = undefined;
     }
 
-    this.bitsets.remove(index, component._bitPosition);
+    this.bitsets.remove(entityId, component._bitPosition);
   }
 
   hasComponent(entityId: EntityId, component: ComponentRef): boolean {
-    if (!this.entityManager.activeEntities.has(entityId)) {
+    if (!this.entities.has(entityId)) {
       return false;
     }
-    const index = this.entityManager.getEntityIndex(entityId);
-    return this.bitsets.has(index, component._bitPosition);
+    return this.bitsets.has(entityId, component._bitPosition);
   }
 
   getComponent<K extends keyof T>(
@@ -102,40 +93,36 @@ export class ComponentManager<T extends ComponentBlueprint> {
       return undefined;
     }
 
-    const index = this.entityManager.getEntityIndex(entityId);
     const storage = this.componentStorages[component._name];
     const componentData: Record<string, unknown> = {};
     for (const prop in storage) {
-      componentData[prop] = storage[prop][index];
+      componentData[prop] = storage[prop][entityId];
     }
 
     return componentData as T[K];
   }
 
   removeEntityComponents(entityId: EntityId): void {
-    const index = this.entityManager.getEntityIndex(entityId);
     for (const key in this.componentStorages) {
       const storage = this.componentStorages[key];
       for (const prop in storage) {
-        storage[prop][index] = undefined;
+        storage[prop][entityId] = undefined;
       }
     }
 
-    this.bitsets.clear(index);
+    this.bitsets.clear(entityId);
   }
 
   query<K extends keyof T>(
     ...componentRefs: ComponentRef<Extract<K, string>>[]
   ): QueryResult<T, K> {
-    const entities: EntityIndex[] = [];
+    const entities: EntityId[] = [];
     const bitPositions = componentRefs.map((ref) => ref._bitPosition);
     const mask = this.bitsets.createMask(bitPositions);
 
-    for (const entityId of this.entityManager.activeEntities) {
-      const index = this.entityManager.getEntityIndex(entityId);
-      if (this.bitsets.matchesMask(index, mask)) {
-        // Return the index for direct storage access
-        entities.push(index);
+    for (const entityId of this.entities) {
+      if (this.bitsets.matchesMask(entityId, mask)) {
+        entities.push(entityId);
       }
     }
 
