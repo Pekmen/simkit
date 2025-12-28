@@ -15,6 +15,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
   private readonly maxEntities: number;
   private readonly entities: Set<EntityId>;
   private readonly bitsets: BitsetManager;
+  private queryCacheEntities = new Map<number, EntityId[]>();
 
   constructor(blueprints: T, maxEntities: number, entities: Set<EntityId>) {
     this.maxEntities = maxEntities;
@@ -64,6 +65,10 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
 
     this.bitsets.add(entityId, component._bitPosition);
+
+    if (this.queryCacheEntities.size > 0) {
+      this.queryCacheEntities.clear();
+    }
   }
 
   removeComponent(entityId: EntityId, component: ComponentRef): void {
@@ -76,6 +81,10 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
 
     this.bitsets.remove(entityId, component._bitPosition);
+
+    if (this.queryCacheEntities.size > 0) {
+      this.queryCacheEntities.clear();
+    }
   }
 
   hasComponent(entityId: EntityId, component: ComponentRef): boolean {
@@ -111,30 +120,52 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
 
     this.bitsets.clear(entityId);
+
+    if (this.queryCacheEntities.size > 0) {
+      this.queryCacheEntities.clear();
+    }
   }
 
   query<K extends keyof T>(
     ...componentRefs: ComponentRef<Extract<K, string>>[]
   ): QueryResult<T, K> {
-    const entities: EntityId[] = [];
     const bitPositions = componentRefs.map((ref) => ref._bitPosition);
     const mask = this.bitsets.createMask(bitPositions);
 
+    const cachedEntities = this.queryCacheEntities.get(mask);
+
+    if (cachedEntities) {
+      const componentNames = componentRefs.map((ref) => ref._name);
+      const storages: Record<string, ComponentStorage> = {};
+      for (const name of componentNames) {
+        storages[name] = this.componentStorages[name];
+      }
+      return {
+        entities: cachedEntities,
+        storages: storages as Pick<ComponentStorageMapQuery<T>, K>,
+      };
+    }
+
+    const entities: EntityId[] = [];
     for (const entityId of this.entities) {
       if (this.bitsets.matchesMask(entityId, mask)) {
         entities.push(entityId);
       }
     }
 
-    const storages: Record<string, ComponentStorage> = {};
     const componentNames = componentRefs.map((ref) => ref._name);
+    const storages: Record<string, ComponentStorage> = {};
     for (const name of componentNames) {
       storages[name] = this.componentStorages[name];
     }
 
-    return {
+    const result: QueryResult<T, K> = {
       entities,
       storages: storages as Pick<ComponentStorageMapQuery<T>, K>,
     };
+
+    this.queryCacheEntities.set(mask, entities);
+
+    return result;
   }
 }

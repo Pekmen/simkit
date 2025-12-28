@@ -166,4 +166,177 @@ describe("ComponentManager", () => {
     expect(manager.hasComponent(entityId, Position)).toBe(false);
     expect(manager.hasComponent(entityId, Velocity)).toBe(false);
   });
+
+  describe("Query Caching", () => {
+    test("query returns cached result on second call with same components", () => {
+      const blueprints = {
+        Position: { x: 0, y: 0 },
+        Velocity: { dx: 0, dy: 0 },
+      };
+      const entityManager = new EntityManager(10);
+      const manager = new ComponentManager(blueprints, 10, entityManager.activeEntities);
+      const { Position, Velocity } = manager.components;
+
+      const entity1 = entityManager.addEntity();
+      const entity2 = entityManager.addEntity();
+      manager.addComponent(entity1, Position, { x: 10, y: 20 });
+      manager.addComponent(entity1, Velocity, { dx: 1, dy: 2 });
+      manager.addComponent(entity2, Position, { x: 30, y: 40 });
+
+      const result1 = manager.query(Position, Velocity);
+      const result2 = manager.query(Position, Velocity);
+
+      // Should return the same cached entities array
+      expect(result1.entities).toBe(result2.entities);
+      expect(result1.entities).toEqual([entity1]);
+      // Storage arrays should be the same references
+      expect(result1.storages.Position).toBe(result2.storages.Position);
+      expect(result1.storages.Velocity).toBe(result2.storages.Velocity);
+    });
+
+    test("cache invalidates on addComponent", () => {
+      const blueprints = {
+        Position: { x: 0, y: 0 },
+        Velocity: { dx: 0, dy: 0 },
+      };
+      const entityManager = new EntityManager(10);
+      const manager = new ComponentManager(blueprints, 10, entityManager.activeEntities);
+      const { Position, Velocity } = manager.components;
+
+      const entity1 = entityManager.addEntity();
+      const entity2 = entityManager.addEntity();
+      manager.addComponent(entity1, Position, { x: 10, y: 20 });
+      manager.addComponent(entity1, Velocity, { dx: 1, dy: 2 });
+
+      const result1 = manager.query(Position, Velocity);
+      expect(result1.entities).toEqual([entity1]);
+
+      // Add component to entity2 - should invalidate cache
+      manager.addComponent(entity2, Position, { x: 30, y: 40 });
+      manager.addComponent(entity2, Velocity, { dx: 3, dy: 4 });
+
+      const result2 = manager.query(Position, Velocity);
+
+      // Should not be the same object (cache was invalidated)
+      expect(result1).not.toBe(result2);
+      expect(result2.entities).toEqual([entity1, entity2]);
+    });
+
+    test("cache invalidates on removeComponent", () => {
+      const blueprints = {
+        Position: { x: 0, y: 0 },
+        Velocity: { dx: 0, dy: 0 },
+      };
+      const entityManager = new EntityManager(10);
+      const manager = new ComponentManager(blueprints, 10, entityManager.activeEntities);
+      const { Position, Velocity } = manager.components;
+
+      const entity1 = entityManager.addEntity();
+      const entity2 = entityManager.addEntity();
+      manager.addComponent(entity1, Position, { x: 10, y: 20 });
+      manager.addComponent(entity1, Velocity, { dx: 1, dy: 2 });
+      manager.addComponent(entity2, Position, { x: 30, y: 40 });
+      manager.addComponent(entity2, Velocity, { dx: 3, dy: 4 });
+
+      const result1 = manager.query(Position, Velocity);
+      expect(result1.entities).toEqual([entity1, entity2]);
+
+      // Remove component - should invalidate cache
+      manager.removeComponent(entity2, Velocity);
+
+      const result2 = manager.query(Position, Velocity);
+
+      // Should not be the same object (cache was invalidated)
+      expect(result1).not.toBe(result2);
+      expect(result2.entities).toEqual([entity1]);
+    });
+
+    test("cache invalidates on removeEntityComponents", () => {
+      const blueprints = {
+        Position: { x: 0, y: 0 },
+        Velocity: { dx: 0, dy: 0 },
+      };
+      const entityManager = new EntityManager(10);
+      const manager = new ComponentManager(blueprints, 10, entityManager.activeEntities);
+      const { Position, Velocity } = manager.components;
+
+      const entity1 = entityManager.addEntity();
+      const entity2 = entityManager.addEntity();
+      manager.addComponent(entity1, Position, { x: 10, y: 20 });
+      manager.addComponent(entity1, Velocity, { dx: 1, dy: 2 });
+      manager.addComponent(entity2, Position, { x: 30, y: 40 });
+      manager.addComponent(entity2, Velocity, { dx: 3, dy: 4 });
+
+      const result1 = manager.query(Position, Velocity);
+      expect(result1.entities).toEqual([entity1, entity2]);
+
+      // Remove all components from entity - should invalidate cache
+      manager.removeEntityComponents(entity2);
+
+      const result2 = manager.query(Position, Velocity);
+
+      // Should not be the same object (cache was invalidated)
+      expect(result1).not.toBe(result2);
+      expect(result2.entities).toEqual([entity1]);
+    });
+
+    test("different queries cache separately", () => {
+      const blueprints = {
+        Position: { x: 0, y: 0 },
+        Velocity: { dx: 0, dy: 0 },
+        Size: { width: 0, height: 0 },
+      };
+      const entityManager = new EntityManager(10);
+      const manager = new ComponentManager(blueprints, 10, entityManager.activeEntities);
+      const { Position, Velocity, Size } = manager.components;
+
+      const entity1 = entityManager.addEntity();
+      const entity2 = entityManager.addEntity();
+      manager.addComponent(entity1, Position, { x: 10, y: 20 });
+      manager.addComponent(entity1, Velocity, { dx: 1, dy: 2 });
+      manager.addComponent(entity2, Position, { x: 30, y: 40 });
+      manager.addComponent(entity2, Size, { width: 5, height: 5 });
+
+      const result1 = manager.query(Position, Velocity);
+      const result2 = manager.query(Position, Size);
+      const result3 = manager.query(Position, Velocity); // Same as result1
+      const result4 = manager.query(Position, Size); // Same as result2
+
+      // Different queries should have different results
+      expect(result1.entities).toEqual([entity1]);
+      expect(result2.entities).toEqual([entity2]);
+
+      // Same queries should return cached entities arrays
+      expect(result1.entities).toBe(result3.entities);
+      expect(result2.entities).toBe(result4.entities);
+      // Storage arrays should also be the same references
+      expect(result1.storages.Position).toBe(result3.storages.Position);
+      expect(result2.storages.Position).toBe(result4.storages.Position);
+    });
+
+    test("query cache returns correct storages from cache", () => {
+      const blueprints = {
+        Position: { x: 0, y: 0 },
+        Velocity: { dx: 0, dy: 0 },
+      };
+      const entityManager = new EntityManager(10);
+      const manager = new ComponentManager(blueprints, 10, entityManager.activeEntities);
+      const { Position, Velocity } = manager.components;
+
+      const entity = entityManager.addEntity();
+      manager.addComponent(entity, Position, { x: 10, y: 20 });
+      manager.addComponent(entity, Velocity, { dx: 1, dy: 2 });
+
+      const result1 = manager.query(Position, Velocity);
+      const result2 = manager.query(Position, Velocity);
+
+      // Storage arrays should be the same references (pointing to actual storage arrays)
+      expect(result1.storages.Position).toBe(result2.storages.Position);
+      expect(result1.storages.Velocity).toBe(result2.storages.Velocity);
+      expect(result1.storages.Position).toBeDefined();
+      expect(result1.storages.Velocity).toBeDefined();
+      expect(result1.storages.Position.x[entity]).toBe(10);
+      expect(result1.storages.Velocity.dx[entity]).toBe(1);
+    });
+  });
 });
