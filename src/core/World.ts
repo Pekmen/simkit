@@ -1,6 +1,7 @@
 import { ComponentManager } from "./ComponentManager";
 import { EntityManager } from "./EntityManager";
 import { SystemManager } from "./SystemManager";
+import { EntityBuilder } from "./EntityBuilder";
 import type { System } from "./System";
 import type {
   EntityId,
@@ -90,5 +91,9 @@ export class World<T extends ComponentBlueprint> {
     ...components: ComponentRef<Extract<K, string>>[]
   ): QueryResult<T, K> {
     return this.componentManager.query(...components);
+  }
+
+  spawn(): EntityBuilder<T> {
+    return new EntityBuilder(this);
   }
 }

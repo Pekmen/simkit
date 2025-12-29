@@ -48,27 +48,27 @@ describe("Simple Iteration", () => {
     }
 
     // System 1: Swap A and B
-    const { entities: abEntities, storages: abStorages } = world.query(A, B);
+    const { entities: abEntities, A: aComp, B: bComp } = world.query(A, B);
     for (const e of abEntities) {
-      const temp = abStorages.A.value[e];
-      abStorages.A.value[e] = abStorages.B.value[e];
-      abStorages.B.value[e] = temp;
+      const temp = aComp.value[e];
+      aComp.value[e] = bComp.value[e];
+      bComp.value[e] = temp;
     }
 
     // System 2: Swap C and D
-    const { entities: cdEntities, storages: cdStorages } = world.query(C, D);
+    const { entities: cdEntities, C: cComp, D: dComp } = world.query(C, D);
     for (const e of cdEntities) {
-      const temp = cdStorages.C.value[e];
-      cdStorages.C.value[e] = cdStorages.D.value[e];
-      cdStorages.D.value[e] = temp;
+      const temp = cComp.value[e];
+      cComp.value[e] = dComp.value[e];
+      dComp.value[e] = temp;
     }
 
     // System 3: Swap C and E
-    const { entities: ceEntities, storages: ceStorages } = world.query(C, E);
+    const { entities: ceEntities, C: cComp2, E: eComp } = world.query(C, E);
     for (const e of ceEntities) {
-      const temp = ceStorages.C.value[e];
-      ceStorages.C.value[e] = ceStorages.E.value[e];
-      ceStorages.E.value[e] = temp;
+      const temp = cComp2.value[e];
+      cComp2.value[e] = eComp.value[e];
+      eComp.value[e] = temp;
     }
   });
 });

@@ -46,12 +46,12 @@ describe("Query", () => {
     world.addComponent(e1, Position, { x: 10, y: 20 });
     world.addComponent(e1, Velocity, { dx: 1, dy: 2 });
 
-    const { storages } = world.query(Position, Velocity);
+    const { Position: pos, Velocity: vel } = world.query(Position, Velocity);
 
-    expect(storages.Position.x[e1]).toBe(10);
-    expect(storages.Position.y[e1]).toBe(20);
-    expect(storages.Velocity.dx[e1]).toBe(1);
-    expect(storages.Velocity.dy[e1]).toBe(2);
+    expect(pos.x[e1]).toBe(10);
+    expect(pos.y[e1]).toBe(20);
+    expect(vel.dx[e1]).toBe(1);
+    expect(vel.dy[e1]).toBe(2);
   });
 
   test("query with single component returns matching entities", () => {
@@ -112,10 +112,10 @@ describe("Query", () => {
     world.addComponent(e1, Position, { x: 10, y: 20 });
     world.addComponent(e1, Velocity, { dx: 1, dy: 2 });
 
-    const {
-      entities,
-      storages: { Position: pos, Velocity: vel },
-    } = world.query(Position, Velocity);
+    const { entities, Position: pos, Velocity: vel } = world.query(
+      Position,
+      Velocity,
+    );
 
     for (const e of entities) {
       pos.x[e] = pos.x[e] + vel.dx[e];
@@ -220,7 +220,7 @@ describe("Query", () => {
     const e2 = world.addEntity();
     world.addComponent(e2, Position, { x: 2, y: 2 });
 
-    const { entities, storages } = world.query(Position);
+    const { entities, Position: pos } = world.query(Position);
 
     // Entity array contains EntityIds
     expect(entities).toHaveLength(1);
@@ -231,7 +231,7 @@ describe("Query", () => {
     expect(entityInResult).toBe(e1); // e2 has the same ID as e1 (no generation tracking)
 
     // Storage access works with the EntityId directly
-    expect(storages.Position.x[entityInResult]).toBe(2);
-    expect(storages.Position.y[entityInResult]).toBe(2);
+    expect(pos.x[entityInResult]).toBe(2);
+    expect(pos.y[entityInResult]).toBe(2);
   });
 });

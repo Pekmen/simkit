@@ -21,30 +21,30 @@ const world = new World(blueprints);
 
 const { Position, Velocity, Size, Color } = world.components;
 
+// Using the new entity builder API for cleaner entity creation
 for (let i = 0; i < 1000; i++) {
-  const entity = world.addEntity();
-
-  world.addComponent(entity, Position, {
-    x: 10 + Math.random() * (canvas.width - 20),
-    y: 10 + Math.random() * (canvas.height - 20),
-  });
-  world.addComponent(entity, Velocity, {
-    dx: (Math.random() - 0.5) * 200,
-    dy: (Math.random() - 0.5) * 200,
-  });
-  world.addComponent(entity, Size);
-  world.addComponent(entity, Color);
+  world
+    .spawn()
+    .with(Position, {
+      x: 10 + Math.random() * (canvas.width - 20),
+      y: 10 + Math.random() * (canvas.height - 20),
+    })
+    .with(Velocity, {
+      dx: (Math.random() - 0.5) * 200,
+      dy: (Math.random() - 0.5) * 200,
+    })
+    .with(Size)
+    .with(Color);
 }
 
 const physicsSystem = {
   update(deltaTime: number): void {
     const dt = deltaTime / 1000;
-
     const { Position, Velocity } = world.components;
-    const {
-      entities,
-      storages: { Position: pos, Velocity: vel },
-    } = world.query(Position, Velocity);
+    const { entities, Position: pos, Velocity: vel } = world.query(
+      Position,
+      Velocity,
+    );
 
     for (const e of entities) {
       const x = pos.x[e];
@@ -74,17 +74,21 @@ const renderSystem = {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const { Position, Size, Color } = world.components;
-    const { entities, storages } = world.query(Position, Size, Color);
+    const { entities, Position: pos, Size: size, Color: color } = world.query(
+      Position,
+      Size,
+      Color,
+    );
 
     for (const e of entities) {
-      const x = storages.Position.x[e];
-      const y = storages.Position.y[e];
-      const radius = storages.Size.val[e];
-      const color = storages.Color.val[e];
+      const x = pos.x[e];
+      const y = pos.y[e];
+      const radius = size.val[e];
+      const colorVal = color.val[e];
 
       ctx.beginPath();
       ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.fillStyle = color;
+      ctx.fillStyle = colorVal;
       ctx.fill();
     }
   },

@@ -18,11 +18,11 @@ describe("Entity Cycle", () => {
     }
 
     // Spawn B entities (one for each A entity)
-    const { entities: aEntities, storages: aStorages } = world.query(A);
+    const { entities: aEntities, A: aComp } = world.query(A);
     const bEntityIds = [];
     for (const e of aEntities) {
       const newEntity = world.addEntity();
-      world.addComponent(newEntity, B, { value: aStorages.A.value[e] ?? 0 });
+      world.addComponent(newEntity, B, { value: aComp.value[e] ?? 0 });
       bEntityIds.push(newEntity);
     }
 

@@ -2,7 +2,6 @@ import type {
   EntityId,
   ComponentBlueprint,
   ComponentStorage,
-  ComponentStorageMapQuery,
   QueryResult,
   ComponentRef,
 } from "./types";
@@ -18,7 +17,11 @@ export class ComponentManager<T extends ComponentBlueprint> {
   private readonly bitsets: BitsetManager;
   private queryCacheEntities = new Map<number, EntityId[]>();
 
-  constructor(blueprints: T, maxEntities: number, entityManager: EntityManager) {
+  constructor(
+    blueprints: T,
+    maxEntities: number,
+    entityManager: EntityManager,
+  ) {
     this.maxEntities = maxEntities;
     this.componentBlueprints = blueprints;
     this.entityManager = entityManager;
@@ -140,14 +143,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     if (cachedEntities) {
       const componentNames = componentRefs.map((ref) => ref._name);
-      const storages: Record<string, ComponentStorage> = {};
-      for (const name of componentNames) {
-        storages[name] = this.componentStorages[name];
-      }
-      return {
-        entities: cachedEntities,
-        storages: storages as Pick<ComponentStorageMapQuery<T>, K>,
-      };
+      return this.buildQueryResult(cachedEntities, componentNames);
     }
 
     const entities: EntityId[] = [];
@@ -158,18 +154,25 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
 
     const componentNames = componentRefs.map((ref) => ref._name);
-    const storages: Record<string, ComponentStorage> = {};
-    for (const name of componentNames) {
-      storages[name] = this.componentStorages[name];
-    }
-
-    const result: QueryResult<T, K> = {
-      entities,
-      storages: storages as Pick<ComponentStorageMapQuery<T>, K>,
-    };
+    const result = this.buildQueryResult<K>(entities, componentNames);
 
     this.queryCacheEntities.set(mask, entities);
 
     return result;
+  }
+
+  private buildQueryResult<K extends keyof T>(
+    entities: EntityId[],
+    componentNames: string[],
+  ): QueryResult<T, K> {
+    const result = {
+      entities,
+    } as { entities: EntityId[] } & Record<string, ComponentStorage>;
+
+    for (const name of componentNames) {
+      result[name] = this.componentStorages[name];
+    }
+
+    return result as QueryResult<T, K>;
   }
 }

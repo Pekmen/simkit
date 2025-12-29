@@ -25,29 +25,29 @@ describe("Packed Iteration (5 queries)", () => {
     }
 
     // Benchmark: 5 separate queries doubling values
-    const { entities: aEntities, storages: aStorages } = world.query(A);
+    const { entities: aEntities, A: aComp } = world.query(A);
     for (const e of aEntities) {
-      aStorages.A.value[e] = (aStorages.A.value[e] ?? 0) * 2;
+      aComp.value[e] = (aComp.value[e] ?? 0) * 2;
     }
 
-    const { entities: bEntities, storages: bStorages } = world.query(B);
+    const { entities: bEntities, B: bComp } = world.query(B);
     for (const e of bEntities) {
-      bStorages.B.value[e] = (bStorages.B.value[e] ?? 0) * 2;
+      bComp.value[e] = (bComp.value[e] ?? 0) * 2;
     }
 
-    const { entities: cEntities, storages: cStorages } = world.query(C);
+    const { entities: cEntities, C: cComp } = world.query(C);
     for (const e of cEntities) {
-      cStorages.C.value[e] = (cStorages.C.value[e] ?? 0) * 2;
+      cComp.value[e] = (cComp.value[e] ?? 0) * 2;
     }
 
-    const { entities: dEntities, storages: dStorages } = world.query(D);
+    const { entities: dEntities, D: dComp } = world.query(D);
     for (const e of dEntities) {
-      dStorages.D.value[e] = (dStorages.D.value[e] ?? 0) * 2;
+      dComp.value[e] = (dComp.value[e] ?? 0) * 2;
     }
 
-    const { entities: eEntities, storages: eStorages } = world.query(E);
+    const { entities: eEntities, E: eComp } = world.query(E);
     for (const e of eEntities) {
-      eStorages.E.value[e] = (eStorages.E.value[e] ?? 0) * 2;
+      eComp.value[e] = (eComp.value[e] ?? 0) * 2;
     }
   });
 });

@@ -190,8 +190,8 @@ describe("ComponentManager", () => {
       expect(result1.entities).toBe(result2.entities);
       expect(result1.entities).toEqual([entity1]);
       // Storage arrays should be the same references
-      expect(result1.storages.Position).toBe(result2.storages.Position);
-      expect(result1.storages.Velocity).toBe(result2.storages.Velocity);
+      expect(result1.Position).toBe(result2.Position);
+      expect(result1.Velocity).toBe(result2.Velocity);
     });
 
     test("cache invalidates on addComponent", () => {
@@ -310,8 +310,8 @@ describe("ComponentManager", () => {
       expect(result1.entities).toBe(result3.entities);
       expect(result2.entities).toBe(result4.entities);
       // Storage arrays should also be the same references
-      expect(result1.storages.Position).toBe(result3.storages.Position);
-      expect(result2.storages.Position).toBe(result4.storages.Position);
+      expect(result1.Position).toBe(result3.Position);
+      expect(result2.Position).toBe(result4.Position);
     });
 
     test("query cache returns correct storages from cache", () => {
@@ -331,12 +331,12 @@ describe("ComponentManager", () => {
       const result2 = manager.query(Position, Velocity);
 
       // Storage arrays should be the same references (pointing to actual storage arrays)
-      expect(result1.storages.Position).toBe(result2.storages.Position);
-      expect(result1.storages.Velocity).toBe(result2.storages.Velocity);
-      expect(result1.storages.Position).toBeDefined();
-      expect(result1.storages.Velocity).toBeDefined();
-      expect(result1.storages.Position.x[entity]).toBe(10);
-      expect(result1.storages.Velocity.dx[entity]).toBe(1);
+      expect(result1.Position).toBe(result2.Position);
+      expect(result1.Velocity).toBe(result2.Velocity);
+      expect(result1.Position).toBeDefined();
+      expect(result1.Velocity).toBeDefined();
+      expect(result1.Position.x[entity]).toBe(10);
+      expect(result1.Velocity.dx[entity]).toBe(1);
     });
   });
 });
