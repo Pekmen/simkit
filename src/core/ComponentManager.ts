@@ -7,20 +7,21 @@ import type {
   ComponentRef,
 } from "./types";
 import { BitsetManager } from "./BitsetManager";
+import type { EntityManager } from "./EntityManager";
 
 export class ComponentManager<T extends ComponentBlueprint> {
   private readonly componentBlueprints: T;
   private readonly componentStorages: Record<string, ComponentStorage>;
   readonly components: { [K in keyof T]: ComponentRef<Extract<K, string>> };
   private readonly maxEntities: number;
-  private readonly entities: Set<EntityId>;
+  private readonly entityManager: EntityManager;
   private readonly bitsets: BitsetManager;
   private queryCacheEntities = new Map<number, EntityId[]>();
 
-  constructor(blueprints: T, maxEntities: number, entities: Set<EntityId>) {
+  constructor(blueprints: T, maxEntities: number, entityManager: EntityManager) {
     this.maxEntities = maxEntities;
     this.componentBlueprints = blueprints;
-    this.entities = entities;
+    this.entityManager = entityManager;
 
     const componentCount = Object.keys(blueprints).length;
     this.bitsets = new BitsetManager(componentCount, maxEntities);
@@ -52,9 +53,10 @@ export class ComponentManager<T extends ComponentBlueprint> {
     component: ComponentRef<Extract<K, string>>,
     componentData?: Partial<T[K]>,
   ): void {
-    if (!this.entities.has(entityId)) {
-      return;
+    if (!this.entityManager.isValid(entityId)) {
+      throw new Error(`Stale entity reference: EntityId ${entityId}`);
     }
+
     const storage = this.componentStorages[component._name];
     const defaultComponentData = this.componentBlueprints[component._name];
 
@@ -72,9 +74,10 @@ export class ComponentManager<T extends ComponentBlueprint> {
   }
 
   removeComponent(entityId: EntityId, component: ComponentRef): void {
-    if (!this.entities.has(entityId)) {
-      return;
+    if (!this.entityManager.isValid(entityId)) {
+      throw new Error(`Stale entity reference: EntityId ${entityId}`);
     }
+
     const storage = this.componentStorages[component._name];
     for (const prop in storage) {
       storage[prop][entityId] = undefined;
@@ -88,9 +91,6 @@ export class ComponentManager<T extends ComponentBlueprint> {
   }
 
   hasComponent(entityId: EntityId, component: ComponentRef): boolean {
-    if (!this.entities.has(entityId)) {
-      return false;
-    }
     return this.bitsets.has(entityId, component._bitPosition);
   }
 
@@ -112,6 +112,10 @@ export class ComponentManager<T extends ComponentBlueprint> {
   }
 
   removeEntityComponents(entityId: EntityId): void {
+    if (!this.entityManager.isValid(entityId)) {
+      throw new Error(`Stale entity reference: EntityId ${entityId}`);
+    }
+
     for (const key in this.componentStorages) {
       const storage = this.componentStorages[key];
       for (const prop in storage) {
@@ -147,7 +151,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
 
     const entities: EntityId[] = [];
-    for (const entityId of this.entities) {
+    for (const entityId of this.entityManager.activeEntities) {
       if (this.bitsets.matchesMask(entityId, mask)) {
         entities.push(entityId);
       }

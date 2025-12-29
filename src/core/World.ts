@@ -32,7 +32,7 @@ export class World<T extends ComponentBlueprint> {
     this.componentManager = new ComponentManager(
       blueprints,
       this.options.maxEntities,
-      this.entityManager.activeEntities,
+      this.entityManager,
     );
 
     this.components = this.componentManager.components;

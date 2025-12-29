@@ -12,12 +12,13 @@ export class EntityManager {
 
   addEntity(): EntityId {
     const recycled = this.freeEntityIds.pop();
-    const entityId = (recycled ?? this.nextEntityId++) as EntityId;
+    const index = recycled ?? this.nextEntityId++;
 
-    if (entityId >= this.maxEntities) {
+    if (index >= this.maxEntities) {
       throw new Error("Maximum number of entities reached");
     }
 
+    const entityId = index as EntityId;
     this.activeEntities.add(entityId);
 
     return entityId;
@@ -25,11 +26,15 @@ export class EntityManager {
 
   removeEntity(entityId: EntityId): void {
     if (!this.activeEntities.has(entityId)) {
-      return;
+      throw new Error(`Stale entity reference: EntityId ${entityId}`);
     }
 
     this.freeEntityIds.push(entityId);
     this.activeEntities.delete(entityId);
+  }
+
+  isValid(entityId: EntityId): boolean {
+    return this.activeEntities.has(entityId);
   }
 
   getEntityCount(): number {

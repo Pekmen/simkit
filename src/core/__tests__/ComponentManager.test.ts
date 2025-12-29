@@ -9,7 +9,7 @@ describe("ComponentManager", () => {
     };
 
     const entityManager = new EntityManager(10);
-    const manager = new ComponentManager(blueprints, 10, entityManager.activeEntities);
+    const manager = new ComponentManager(blueprints, 10, entityManager);
 
     // @ts-expect-error Accessing private property for testing
     const storages = manager.componentStorages;
@@ -23,7 +23,7 @@ describe("ComponentManager", () => {
   test("addComponent stores the component data correctly", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager.activeEntities);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
@@ -39,7 +39,7 @@ describe("ComponentManager", () => {
   test("removeComponent clears the component data for the entity", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager.activeEntities);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
@@ -60,7 +60,7 @@ describe("ComponentManager", () => {
     };
 
     const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager.activeEntities);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
     const { Position, Velocity } = manager.components;
 
     const entityId = entityManager.addEntity();
@@ -81,7 +81,7 @@ describe("ComponentManager", () => {
   test("getComponent returns component data as object", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager.activeEntities);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
@@ -95,7 +95,7 @@ describe("ComponentManager", () => {
   test("getComponent returns undefined for entity without component", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager.activeEntities);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
@@ -108,7 +108,7 @@ describe("ComponentManager", () => {
   test("getComponent returns undefined after component is removed", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager.activeEntities);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
@@ -123,7 +123,7 @@ describe("ComponentManager", () => {
   test("hasComponent uses bitset correctly", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager.activeEntities);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
@@ -143,7 +143,7 @@ describe("ComponentManager", () => {
     }
 
     const entityManager = new EntityManager(10);
-    expect(() => new ComponentManager(blueprints, 10, entityManager.activeEntities)).toThrow(
+    expect(() => new ComponentManager(blueprints, 10, entityManager)).toThrow(
       "Too many components (33). Maximum is 32.",
     );
   });
@@ -154,7 +154,7 @@ describe("ComponentManager", () => {
       Velocity: { dx: 0, dy: 0 },
     };
     const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager.activeEntities);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
     const { Position, Velocity } = manager.components;
 
     const entityId = entityManager.addEntity();
@@ -174,7 +174,7 @@ describe("ComponentManager", () => {
         Velocity: { dx: 0, dy: 0 },
       };
       const entityManager = new EntityManager(10);
-      const manager = new ComponentManager(blueprints, 10, entityManager.activeEntities);
+      const manager = new ComponentManager(blueprints, 10, entityManager);
       const { Position, Velocity } = manager.components;
 
       const entity1 = entityManager.addEntity();
@@ -200,7 +200,7 @@ describe("ComponentManager", () => {
         Velocity: { dx: 0, dy: 0 },
       };
       const entityManager = new EntityManager(10);
-      const manager = new ComponentManager(blueprints, 10, entityManager.activeEntities);
+      const manager = new ComponentManager(blueprints, 10, entityManager);
       const { Position, Velocity } = manager.components;
 
       const entity1 = entityManager.addEntity();
@@ -228,7 +228,7 @@ describe("ComponentManager", () => {
         Velocity: { dx: 0, dy: 0 },
       };
       const entityManager = new EntityManager(10);
-      const manager = new ComponentManager(blueprints, 10, entityManager.activeEntities);
+      const manager = new ComponentManager(blueprints, 10, entityManager);
       const { Position, Velocity } = manager.components;
 
       const entity1 = entityManager.addEntity();
@@ -257,7 +257,7 @@ describe("ComponentManager", () => {
         Velocity: { dx: 0, dy: 0 },
       };
       const entityManager = new EntityManager(10);
-      const manager = new ComponentManager(blueprints, 10, entityManager.activeEntities);
+      const manager = new ComponentManager(blueprints, 10, entityManager);
       const { Position, Velocity } = manager.components;
 
       const entity1 = entityManager.addEntity();
@@ -287,7 +287,7 @@ describe("ComponentManager", () => {
         Size: { width: 0, height: 0 },
       };
       const entityManager = new EntityManager(10);
-      const manager = new ComponentManager(blueprints, 10, entityManager.activeEntities);
+      const manager = new ComponentManager(blueprints, 10, entityManager);
       const { Position, Velocity, Size } = manager.components;
 
       const entity1 = entityManager.addEntity();
@@ -320,7 +320,7 @@ describe("ComponentManager", () => {
         Velocity: { dx: 0, dy: 0 },
       };
       const entityManager = new EntityManager(10);
-      const manager = new ComponentManager(blueprints, 10, entityManager.activeEntities);
+      const manager = new ComponentManager(blueprints, 10, entityManager);
       const { Position, Velocity } = manager.components;
 
       const entity = entityManager.addEntity();
