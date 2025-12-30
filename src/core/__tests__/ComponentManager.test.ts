@@ -338,5 +338,50 @@ describe("ComponentManager", () => {
       expect(result1.Position.x[entity]).toBe(10);
       expect(result1.Velocity.dx[entity]).toBe(1);
     });
+
+    test("selective cache invalidation on entity deletion", () => {
+      const blueprints = {
+        Position: { x: 0, y: 0 },
+        Velocity: { dx: 0, dy: 0 },
+        Health: { hp: 100 },
+      };
+      const entityManager = new EntityManager(10);
+      const manager = new ComponentManager(blueprints, 10, entityManager);
+      const { Position, Velocity, Health } = manager.components;
+
+      // Create entity 1 with Position and Velocity
+      const entity1 = entityManager.addEntity();
+      manager.addComponent(entity1, Position, { x: 10, y: 20 });
+      manager.addComponent(entity1, Velocity, { dx: 1, dy: 2 });
+
+      // Create entity 2 with Health
+      const entity2 = entityManager.addEntity();
+      manager.addComponent(entity2, Health, { hp: 50 });
+
+      // Cache two different queries
+      const posVelResult1 = manager.query(Position, Velocity);
+      const healthResult1 = manager.query(Health);
+
+      expect(posVelResult1.entities).toEqual([entity1]);
+      expect(healthResult1.entities).toEqual([entity2]);
+
+      // Delete entity2 (which has Health component)
+      manager.removeEntityComponents(entity2);
+
+      // Query for Position+Velocity again - should still be cached
+      const posVelResult2 = manager.query(Position, Velocity);
+      // Query for Health again - should be invalidated and rebuilt
+      const healthResult2 = manager.query(Health);
+
+      // Position+Velocity query should return the SAME cached object
+      // because entity2's deletion didn't affect Position or Velocity components
+      expect(posVelResult1).toBe(posVelResult2);
+      expect(posVelResult2.entities).toEqual([entity1]);
+
+      // Health query should return a NEW object (cache was invalidated)
+      // because entity2 had the Health component
+      expect(healthResult1).not.toBe(healthResult2);
+      expect(healthResult2.entities).toEqual([]);
+    });
   });
 });

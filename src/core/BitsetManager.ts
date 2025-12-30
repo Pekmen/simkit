@@ -1,7 +1,7 @@
 import type { EntityId } from "./types";
 
 export class BitsetManager {
-  private readonly entityBits: number[];
+  private readonly entityBits: Uint32Array;
 
   constructor(componentCount: number, maxEntities: number) {
     if (componentCount > 32) {
@@ -10,7 +10,7 @@ export class BitsetManager {
       );
     }
 
-    this.entityBits = new Array<number>(maxEntities).fill(0);
+    this.entityBits = new Uint32Array(maxEntities);
   }
 
   add(entityId: EntityId, bitPosition: number): void {
@@ -39,5 +39,9 @@ export class BitsetManager {
 
   matchesMask(entityId: EntityId, mask: number): boolean {
     return (this.entityBits[entityId] & mask) === mask;
+  }
+
+  getBits(entityId: EntityId): number {
+    return this.entityBits[entityId];
   }
 }
