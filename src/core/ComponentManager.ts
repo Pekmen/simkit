@@ -63,20 +63,37 @@ export class ComponentManager<T extends ComponentBlueprint> {
     const storage = this.componentStorages[component._name];
     const defaultComponentData = this.componentBlueprints[component._name];
 
-    const data = { ...defaultComponentData, ...componentData };
-
-    for (const prop in data) {
-      storage[prop][entityId] = data[prop];
+    if (!componentData) {
+      for (const prop in defaultComponentData) {
+        storage[prop][entityId] = defaultComponentData[prop];
+      }
+    } else {
+      for (const prop in defaultComponentData) {
+        storage[prop][entityId] =
+          (componentData as Record<string, unknown>)[prop] ??
+          defaultComponentData[prop];
+      }
     }
 
+    const hadComponent = this.bitsets.has(entityId, component._bitPosition);
     this.bitsets.add(entityId, component._bitPosition);
 
-    this.invalidateCachesFor(component._bitPosition);
+    if (!hadComponent) {
+      this.invalidateCachesFor(component._bitPosition);
+    }
   }
 
   removeComponent(entityId: EntityId, component: ComponentRef): void {
     if (!this.entityManager.isValid(entityId)) {
       throw new Error(`Stale entity reference: EntityId ${entityId}`);
+    }
+
+    const hadComponent = this.bitsets.has(entityId, component._bitPosition);
+
+    if (!hadComponent) {
+      throw new Error(
+        `Entity ${entityId} does not have component ${component._name}`,
+      );
     }
 
     const storage = this.componentStorages[component._name];

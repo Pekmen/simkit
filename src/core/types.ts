@@ -1,6 +1,6 @@
 export type EntityId = number & { readonly __brand: "EntityId" };
 
-type ValidComponentProp = number | string | boolean | object;
+type ValidComponentProp = number | string | boolean;
 export type ComponentBlueprint = Record<
   string,
   Record<string, ValidComponentProp>
