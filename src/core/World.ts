@@ -12,6 +12,7 @@ import type {
 
 interface WorldOptions {
   maxEntities: number;
+  queryCacheSize?: number;
 }
 
 export class World<T extends ComponentBlueprint> {
@@ -25,6 +26,7 @@ export class World<T extends ComponentBlueprint> {
   constructor(blueprints: T, options?: Partial<WorldOptions>) {
     this.options = {
       maxEntities: 1000,
+      queryCacheSize: 64,
       ...options,
     };
 
@@ -34,6 +36,7 @@ export class World<T extends ComponentBlueprint> {
       blueprints,
       this.options.maxEntities,
       this.entityManager,
+      this.options.queryCacheSize,
     );
 
     this.components = this.componentManager.components;

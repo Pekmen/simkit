@@ -186,4 +186,31 @@ describe("World", () => {
     expect(world.hasComponent(e1, Position)).toBe(true);
     expect(world.hasComponent(e2, Position)).toBe(true);
   });
+
+  test("world respects queryCacheSize option", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const world = new World(blueprints, {
+      maxEntities: 100,
+      queryCacheSize: 32,
+    });
+
+    // Verify it was passed through (implementation detail test)
+    // @ts-expect-error Accessing private property
+    expect(world.componentManager.maxCacheSize).toBe(32);
+  });
+
+  test("world uses default queryCacheSize of 64", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const world = new World(blueprints, { maxEntities: 100 });
+
+    // @ts-expect-error Accessing private property
+    expect(world.componentManager.maxCacheSize).toBe(64);
+  });
+
+  test("rejects negative queryCacheSize", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    expect(() => {
+      new World(blueprints, { maxEntities: 100, queryCacheSize: -1 });
+    }).toThrow("queryCacheSize must be non-negative");
+  });
 });

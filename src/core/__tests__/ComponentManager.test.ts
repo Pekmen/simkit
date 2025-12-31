@@ -385,5 +385,46 @@ describe("ComponentManager", () => {
       expect(healthResult1).not.toBe(healthResult2);
       expect(healthResult2.entities).toEqual([]);
     });
+
+    test("query cache respects size limit", () => {
+      const blueprints = {
+        A: { value: 0 },
+        B: { value: 0 },
+        C: { value: 0 },
+      };
+      const entityManager = new EntityManager(100);
+      // Create manager with small cache (size 2)
+      const manager = new ComponentManager(blueprints, 100, entityManager, 2);
+      const { A, B, C } = manager.components;
+
+      const e1 = entityManager.addEntity();
+      manager.addComponent(e1, A, { value: 1 });
+      manager.addComponent(e1, B, { value: 2 });
+      manager.addComponent(e1, C, { value: 3 });
+
+      // Execute 3 queries with cache size 2
+      manager.query(A); // Cache: [A]
+      manager.query(B); // Cache: [A, B]
+      manager.query(C); // Cache: [B, C] (A evicted)
+
+      // Accessing internal cache to verify
+      // @ts-expect-error Accessing private for testing
+      expect(manager.queryCache.size).toBe(2);
+    });
+
+    test("query cache can be disabled with size 0", () => {
+      const blueprints = { A: { value: 0 } };
+      const entityManager = new EntityManager(100);
+      const manager = new ComponentManager(blueprints, 100, entityManager, 0);
+      const { A } = manager.components;
+
+      const e1 = entityManager.addEntity();
+      manager.addComponent(e1, A, { value: 1 });
+
+      manager.query(A);
+
+      // @ts-expect-error Accessing private for testing
+      expect(manager.queryCache.size).toBe(0);
+    });
   });
 });
