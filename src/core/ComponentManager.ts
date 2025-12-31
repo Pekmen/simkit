@@ -34,7 +34,16 @@ export class ComponentManager<T extends ComponentBlueprint> {
       const schema = blueprints[componentName];
       const storage: ComponentStorage = {};
       for (const propName in schema) {
-        storage[propName] = new Array(this.maxEntities).fill(undefined);
+        const defaultValue = schema[propName];
+        const valueType = typeof defaultValue;
+
+        if (valueType === "number") {
+          storage[propName] = new Float64Array(this.maxEntities);
+        } else if (valueType === "boolean") {
+          storage[propName] = new Uint8Array(this.maxEntities);
+        } else {
+          storage[propName] = new Array(this.maxEntities).fill(undefined);
+        }
       }
       this.componentStorages[componentName] = storage;
     }
@@ -98,7 +107,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     const storage = this.componentStorages[component._name];
     for (const prop in storage) {
-      storage[prop][entityId] = undefined;
+      this.clearStorageValue(storage[prop], entityId);
     }
 
     this.bitsets.remove(entityId, component._bitPosition);
@@ -108,6 +117,17 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
   hasComponent(entityId: EntityId, component: ComponentRef): boolean {
     return this.bitsets.has(entityId, component._bitPosition);
+  }
+
+  private clearStorageValue(
+    array: unknown[] | Float64Array | Uint8Array,
+    index: number,
+  ): void {
+    if (array instanceof Float64Array || array instanceof Uint8Array) {
+      array[index] = 0;
+    } else {
+      array[index] = undefined;
+    }
   }
 
   getComponent<K extends keyof T>(
@@ -135,11 +155,15 @@ export class ComponentManager<T extends ComponentBlueprint> {
     const entityBits = this.bitsets.getBits(entityId);
     this.invalidateCachesForBitset(entityBits);
 
+    let bitPosition = 0;
     for (const key in this.componentStorages) {
-      const storage = this.componentStorages[key];
-      for (const prop in storage) {
-        storage[prop][entityId] = undefined;
+      if ((entityBits & (1 << bitPosition)) !== 0) {
+        const storage = this.componentStorages[key];
+        for (const prop in storage) {
+          this.clearStorageValue(storage[prop], entityId);
+        }
       }
+      bitPosition++;
     }
 
     this.bitsets.clear(entityId);

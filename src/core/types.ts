@@ -11,7 +11,10 @@ export type ComponentKeys<T extends ComponentBlueprint> = Extract<
   string
 >;
 
-export type ComponentStorage = Record<string, unknown[]>;
+export type ComponentStorage = Record<
+  string,
+  unknown[] | Float64Array | Uint8Array
+>;
 
 export type ComponentStorageMapInternal<T extends ComponentBlueprint> = {
   [K in keyof T]: {

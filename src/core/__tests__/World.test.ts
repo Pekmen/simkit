@@ -57,8 +57,9 @@ describe("World", () => {
     // @ts-expect-error Accessing private storage for testing
     const storages = world.componentManager.componentStorages;
 
-    expect(storages.Position.x[entityId]).toBeUndefined();
-    expect(storages.Position.y[entityId]).toBeUndefined();
+    // TypedArrays (Float64Array) default to 0, not undefined
+    expect(storages.Position.x[entityId]).toBe(0);
+    expect(storages.Position.y[entityId]).toBe(0);
   });
 
   test("removing an entity clears all its components", () => {
@@ -79,10 +80,11 @@ describe("World", () => {
     // @ts-expect-error Accessing private storage for testing
     const storages = world.componentManager.componentStorages;
 
-    expect(storages.Position.x[entityId]).toBeUndefined();
-    expect(storages.Position.y[entityId]).toBeUndefined();
-    expect(storages.Velocity.dx[entityId]).toBeUndefined();
-    expect(storages.Velocity.dy[entityId]).toBeUndefined();
+    // TypedArrays (Float64Array) default to 0, not undefined
+    expect(storages.Position.x[entityId]).toBe(0);
+    expect(storages.Position.y[entityId]).toBe(0);
+    expect(storages.Velocity.dx[entityId]).toBe(0);
+    expect(storages.Velocity.dy[entityId]).toBe(0);
   });
 
   test("adding an entity beyond maxEntities throws an error", () => {

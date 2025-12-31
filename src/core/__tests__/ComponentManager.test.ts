@@ -49,8 +49,9 @@ describe("ComponentManager", () => {
     // @ts-expect-error Accessing private property
     const storages = manager.componentStorages;
 
-    expect(storages.Position.x[entityId]).toBeUndefined();
-    expect(storages.Position.y[entityId]).toBeUndefined();
+    // TypedArrays (Float64Array) default to 0, not undefined
+    expect(storages.Position.x[entityId]).toBe(0);
+    expect(storages.Position.y[entityId]).toBe(0);
   });
 
   test("removeEntityComponents clears all components for the entity", () => {
@@ -72,10 +73,11 @@ describe("ComponentManager", () => {
     // @ts-expect-error Accessing private property
     const storages = manager.componentStorages;
 
-    expect(storages.Position.x[entityId]).toBeUndefined();
-    expect(storages.Position.y[entityId]).toBeUndefined();
-    expect(storages.Velocity.dx[entityId]).toBeUndefined();
-    expect(storages.Velocity.dy[entityId]).toBeUndefined();
+    // TypedArrays (Float64Array) default to 0, not undefined
+    expect(storages.Position.x[entityId]).toBe(0);
+    expect(storages.Position.y[entityId]).toBe(0);
+    expect(storages.Velocity.dx[entityId]).toBe(0);
+    expect(storages.Velocity.dy[entityId]).toBe(0);
   });
 
   test("getComponent returns component data as object", () => {
