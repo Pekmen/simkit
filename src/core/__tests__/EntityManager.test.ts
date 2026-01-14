@@ -49,12 +49,12 @@ describe("EntityManager", () => {
     expect(e4).toBe(1);
     expect(e4).toBe(e2);
 
-    expect(manager.activeEntities.has(e1)).toBe(true);
-    expect(manager.activeEntities.has(e4)).toBe(true);
-    expect(manager.activeEntities.has(e3)).toBe(true);
+    expect(manager.isValid(e1)).toBe(true);
+    expect(manager.isValid(e4)).toBe(true);
+    expect(manager.isValid(e3)).toBe(true);
     // e2 and e4 are the same ID, so checking e2 is the same as checking e4
-    expect(manager.activeEntities.has(e2)).toBe(true);
-    expect(manager.activeEntities.size).toBe(3);
+    expect(manager.isValid(e2)).toBe(true);
+    expect(manager.activeEntities.length).toBe(3);
   });
 
   test("removeEntity throws error on double deletion (stale reference)", () => {
@@ -71,7 +71,7 @@ describe("EntityManager", () => {
 
     const e2 = manager.addEntity();
     expect(e2).toBe(0); // Reuses the same index
-    expect(manager.activeEntities.size).toBe(1);
+    expect(manager.activeEntities.length).toBe(1);
   });
 
   test("getEntityCount returns correct count", () => {
@@ -95,14 +95,14 @@ describe("EntityManager", () => {
 
     const e1 = manager.addEntity();
     expect(e1).toBe(0);
-    expect(manager.activeEntities.has(e1)).toBe(true);
+    expect(manager.isValid(e1)).toBe(true);
 
     manager.removeEntity(e1);
-    expect(manager.activeEntities.has(e1)).toBe(false);
+    expect(manager.isValid(e1)).toBe(false);
 
     const e2 = manager.addEntity();
     expect(e2).toBe(0);
-    expect(manager.activeEntities.has(e2)).toBe(true);
+    expect(manager.isValid(e2)).toBe(true);
 
     // e1 and e2 are the same numeric value, so both are valid
     // (generation tracking works at operation boundaries, not for saved references)
