@@ -191,6 +191,8 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     const cached = this.queryCache.get(mask);
     if (cached) {
+      this.queryCache.delete(mask);
+      this.queryCache.set(mask, cached);
       return cached as QueryResult<T, K>;
     }
 

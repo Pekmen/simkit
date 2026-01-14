@@ -412,6 +412,36 @@ describe("ComponentManager", () => {
       expect(manager.queryCache.size).toBe(2);
     });
 
+    test("query cache evicts least recently used entry", () => {
+      const blueprints = { A: { v: 0 }, B: { v: 0 }, C: { v: 0 } };
+      const entityManager = new EntityManager(100);
+      const manager = new ComponentManager(blueprints, 100, entityManager, 2); // Cache size 2
+      const { A, B, C } = manager.components;
+
+      const e1 = entityManager.addEntity();
+      manager.addComponent(e1, A, { v: 1 });
+      manager.addComponent(e1, B, { v: 2 });
+      manager.addComponent(e1, C, { v: 3 });
+
+      const r1 = manager.query(A); // Cache: [A]
+      const r2 = manager.query(B); // Cache: [A, B]
+
+      // Access A again to make it most recent
+      const r3 = manager.query(A); // Cache: [B, A] (A moved to end)
+      expect(r1.entities).toBe(r3.entities); // Should be cached
+
+      // Add C - should evict B (least recently used)
+      const r4 = manager.query(C); // Cache: [A, C] (B evicted)
+
+      // Verify A is still cached
+      const r5 = manager.query(A);
+      expect(r3.entities).toBe(r5.entities); // Same cached object
+
+      // Verify B was evicted and rebuilt
+      const r6 = manager.query(B);
+      expect(r2.entities).not.toBe(r6.entities); // New object
+    });
+
     test("query cache can be disabled with size 0", () => {
       const blueprints = { A: { value: 0 } };
       const entityManager = new EntityManager(100);
