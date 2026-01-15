@@ -90,6 +90,10 @@ export class World<T extends ComponentBlueprint> {
     this.systemManager.updateAll(deltaTime);
   }
 
+  destroy(): void {
+    this.systemManager.destroyAll();
+  }
+
   query<K extends keyof T>(
     ...components: ComponentRef<Extract<K, string>>[]
   ): QueryResult<T, K> {
