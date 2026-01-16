@@ -186,8 +186,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
   query<K extends keyof T>(
     ...componentRefs: ComponentRef<Extract<K, string>>[]
   ): QueryResult<T, K> {
-    const bitPositions = componentRefs.map((ref) => ref._bitPosition);
-    const mask = this.bitsets.createMask(bitPositions);
+    const mask = this.bitsets.createMask(componentRefs);
 
     const cached = this.queryCache.get(mask);
     if (cached) {
@@ -203,8 +202,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
       }
     }
 
-    const componentNames = componentRefs.map((ref) => ref._name);
-    const result = this.buildQueryResult<K>(entities, componentNames);
+    const result = this.buildQueryResult<K>(entities, componentRefs);
 
     if (this.maxCacheSize > 0) {
       if (this.queryCache.size >= this.maxCacheSize) {
@@ -218,14 +216,14 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
   private buildQueryResult<K extends keyof T>(
     entities: EntityId[],
-    componentNames: string[],
+    componentRefs: ComponentRef<Extract<K, string>>[],
   ): QueryResult<T, K> {
     const result = {
       entities,
     } as { entities: EntityId[] } & Record<string, ComponentStorage>;
 
-    for (const name of componentNames) {
-      result[name] = this.componentStorages[name];
+    for (const ref of componentRefs) {
+      result[ref._name] = this.componentStorages[ref._name];
     }
 
     return result as QueryResult<T, K>;

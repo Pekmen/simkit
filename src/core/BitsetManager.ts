@@ -29,10 +29,10 @@ export class BitsetManager {
     return (this.entityBits[entityId] & (1 << bitPosition)) !== 0;
   }
 
-  createMask(bitPositions: number[]): number {
+  createMask(refs: Iterable<{ _bitPosition: number }>): number {
     let mask = 0;
-    for (const bitPos of bitPositions) {
-      mask |= 1 << bitPos;
+    for (const ref of refs) {
+      mask |= 1 << ref._bitPosition;
     }
     return mask;
   }
