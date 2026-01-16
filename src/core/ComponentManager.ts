@@ -169,15 +169,13 @@ export class ComponentManager<T extends ComponentBlueprint> {
     const entityBits = this.bitsets.getBits(entityId);
     this.invalidateCachesForBitset(entityBits);
 
-    let bitPosition = 0;
-    for (const key in this.componentStorages) {
-      if ((entityBits & (1 << bitPosition)) !== 0) {
+    for (const key in this.components) {
+      if ((entityBits & (1 << this.components[key]._bitPosition)) !== 0) {
         const storage = this.componentStorages[key];
         for (const prop in storage) {
           this.clearStorageValue(storage[prop], entityId);
         }
       }
-      bitPosition++;
     }
 
     this.bitsets.clear(entityId);
