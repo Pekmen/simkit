@@ -96,7 +96,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     if (!hadComponent) {
       const entityMask = this.bitsets.getBits(entityId);
-      this.queryCache.invalidateForEntity(entityMask);
+      this.queryCache.invalidateMatchingQueries(entityMask);
     }
   }
 
@@ -120,7 +120,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     this.bitsets.remove(entityId, component._bitPosition);
 
-    this.queryCache.invalidateForEntity(entityMask);
+    this.queryCache.invalidateMatchingQueries(entityMask);
   }
 
   hasComponent(entityId: EntityId, component: ComponentRef): boolean {
@@ -159,7 +159,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.validateEntity(entityId);
 
     const entityBits = this.bitsets.getBits(entityId);
-    this.queryCache.invalidateForBitset(entityBits);
+    this.queryCache.invalidateMatchingQueries(entityBits);
 
     for (const key in this.components) {
       if ((entityBits & (1 << this.components[key]._bitPosition)) !== 0) {
