@@ -19,7 +19,7 @@ export class QueryCache {
 
   get(mask: number): unknown {
     const cached = this.cache.get(mask);
-    if (cached) {
+    if (cached !== undefined) {
       this.cache.delete(mask);
       this.cache.set(mask, cached);
     }
@@ -36,14 +36,13 @@ export class QueryCache {
     this.cache.set(mask, value);
   }
 
-  invalidateFor(componentBitPosition: number): void {
+  invalidateForEntity(entityMask: number): void {
     if (!this.isEnabled || this.cache.size === 0) {
       return;
     }
 
-    const componentMask = 1 << componentBitPosition;
     for (const mask of this.cache.keys()) {
-      if ((mask & componentMask) !== 0) {
+      if ((mask & entityMask) === mask) {
         this.cache.delete(mask);
       }
     }
@@ -55,10 +54,14 @@ export class QueryCache {
     }
 
     for (const mask of this.cache.keys()) {
-      if ((mask & entityBits) !== 0) {
+      if ((mask & entityBits) === mask) {
         this.cache.delete(mask);
       }
     }
+  }
+
+  invalidateEmptyQuery(): void {
+    this.cache.delete(0);
   }
 
   private evictOldestEntry(): void {

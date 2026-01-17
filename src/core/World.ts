@@ -39,7 +39,9 @@ export class World<T extends ComponentBlueprint> {
   }
 
   addEntity(): EntityId {
-    return this.entityManager.addEntity();
+    const entityId = this.entityManager.addEntity();
+    this.componentManager.invalidateEmptyQueryCache();
+    return entityId;
   }
 
   removeEntity(entityId: EntityId): void {
@@ -88,6 +90,9 @@ export class World<T extends ComponentBlueprint> {
 
   destroy(): void {
     this.systemManager.destroyAll();
+    for (const entityId of [...this.entityManager.activeEntities]) {
+      this.removeEntity(entityId);
+    }
   }
 
   query<K extends keyof T>(
