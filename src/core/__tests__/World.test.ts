@@ -1,5 +1,5 @@
 import { World } from "../World";
-import type { EntityId } from "../Entity";
+import type { EntityId } from "../types";
 
 describe("World", () => {
   test("initializing world sets up component manager and handles", () => {
@@ -191,20 +191,31 @@ describe("World", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const world = new World(blueprints, {
       maxEntities: 100,
-      queryCacheSize: 32,
+      queryCacheSize: 2,
     });
 
-    // Verify it was passed through (implementation detail test)
+    const { Position } = world.components;
+    const e = world.addEntity();
+    world.addComponent(e, Position, { x: 1, y: 2 });
+
+    world.query(Position);
+
     // @ts-expect-error Accessing private property
-    expect(world.componentManager.maxCacheSize).toBe(32);
+    expect(world.componentManager.queryCache.size).toBe(1);
   });
 
   test("world uses default queryCacheSize of 64", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const world = new World(blueprints, { maxEntities: 100 });
 
+    const { Position } = world.components;
+    const e = world.addEntity();
+    world.addComponent(e, Position, { x: 1, y: 2 });
+
+    world.query(Position);
+
     // @ts-expect-error Accessing private property
-    expect(world.componentManager.maxCacheSize).toBe(64);
+    expect(world.componentManager.queryCache.size).toBe(1);
   });
 
   test("rejects negative queryCacheSize", () => {

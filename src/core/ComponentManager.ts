@@ -6,6 +6,7 @@ import type {
   ComponentRef,
 } from "./types";
 import { BitsetManager } from "./BitsetManager";
+import { QueryCache } from "./QueryCache";
 import type { EntityManager } from "./EntityManager";
 
 export class ComponentManager<T extends ComponentBlueprint> {
@@ -15,8 +16,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
   private readonly maxEntities: number;
   private readonly entityManager: EntityManager;
   private readonly bitsets: BitsetManager;
-  private queryCache = new Map<number, unknown>();
-  private readonly maxCacheSize: number;
+  private readonly queryCache: QueryCache;
 
   constructor(
     blueprints: T,
@@ -24,12 +24,8 @@ export class ComponentManager<T extends ComponentBlueprint> {
     entityManager: EntityManager,
     maxCacheSize = 64,
   ) {
-    if (maxCacheSize < 0) {
-      throw new Error("queryCacheSize must be non-negative");
-    }
-
     this.maxEntities = maxEntities;
-    this.maxCacheSize = maxCacheSize;
+    this.queryCache = new QueryCache(maxCacheSize);
     this.componentBlueprints = blueprints;
     this.entityManager = entityManager;
 
@@ -67,14 +63,18 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
   }
 
+  private validateEntity(entityId: EntityId): void {
+    if (!this.entityManager.isValid(entityId)) {
+      throw new Error(`Stale entity reference: EntityId ${entityId}`);
+    }
+  }
+
   addComponent<K extends keyof T>(
     entityId: EntityId,
     component: ComponentRef<Extract<K, string>>,
     componentData?: Partial<T[K]>,
   ): void {
-    if (!this.entityManager.isValid(entityId)) {
-      throw new Error(`Stale entity reference: EntityId ${entityId}`);
-    }
+    this.validateEntity(entityId);
 
     const storage = this.componentStorages[component._name];
     const defaultComponentData = this.componentBlueprints[component._name];
@@ -95,14 +95,12 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.bitsets.add(entityId, component._bitPosition);
 
     if (!hadComponent) {
-      this.invalidateCachesFor(component._bitPosition);
+      this.queryCache.invalidateFor(component._bitPosition);
     }
   }
 
   removeComponent(entityId: EntityId, component: ComponentRef): void {
-    if (!this.entityManager.isValid(entityId)) {
-      throw new Error(`Stale entity reference: EntityId ${entityId}`);
-    }
+    this.validateEntity(entityId);
 
     const hadComponent = this.bitsets.has(entityId, component._bitPosition);
 
@@ -119,7 +117,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     this.bitsets.remove(entityId, component._bitPosition);
 
-    this.invalidateCachesFor(component._bitPosition);
+    this.queryCache.invalidateFor(component._bitPosition);
   }
 
   hasComponent(entityId: EntityId, component: ComponentRef): boolean {
@@ -134,13 +132,6 @@ export class ComponentManager<T extends ComponentBlueprint> {
       array[index] = 0;
     } else {
       array[index] = undefined;
-    }
-  }
-
-  private evictOldestCacheEntry(): void {
-    const iterator = this.queryCache.keys().next();
-    if (!iterator.done) {
-      this.queryCache.delete(iterator.value);
     }
   }
 
@@ -162,12 +153,10 @@ export class ComponentManager<T extends ComponentBlueprint> {
   }
 
   removeEntityComponents(entityId: EntityId): void {
-    if (!this.entityManager.isValid(entityId)) {
-      throw new Error(`Stale entity reference: EntityId ${entityId}`);
-    }
+    this.validateEntity(entityId);
 
     const entityBits = this.bitsets.getBits(entityId);
-    this.invalidateCachesForBitset(entityBits);
+    this.queryCache.invalidateForBitset(entityBits);
 
     for (const key in this.components) {
       if ((entityBits & (1 << this.components[key]._bitPosition)) !== 0) {
@@ -188,8 +177,6 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     const cached = this.queryCache.get(mask);
     if (cached) {
-      this.queryCache.delete(mask);
-      this.queryCache.set(mask, cached);
       return cached as QueryResult<T, K>;
     }
 
@@ -202,12 +189,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     const result = this.buildQueryResult<K>(entities, componentRefs);
 
-    if (this.maxCacheSize > 0) {
-      if (this.queryCache.size >= this.maxCacheSize) {
-        this.evictOldestCacheEntry();
-      }
-      this.queryCache.set(mask, result);
-    }
+    this.queryCache.set(mask, result);
 
     return result;
   }
@@ -225,34 +207,5 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
 
     return result as QueryResult<T, K>;
-  }
-
-  private invalidateCachesFor(componentBitPosition: number): void {
-    if (this.maxCacheSize === 0 || this.queryCache.size === 0) {
-      return;
-    }
-
-    const componentMask = 1 << componentBitPosition;
-    for (const mask of this.queryCache.keys()) {
-      if ((mask & componentMask) !== 0) {
-        this.queryCache.delete(mask);
-      }
-    }
-  }
-
-  private invalidateCachesForBitset(entityBits: number): void {
-    if (
-      this.maxCacheSize === 0 ||
-      this.queryCache.size === 0 ||
-      entityBits === 0
-    ) {
-      return;
-    }
-
-    for (const mask of this.queryCache.keys()) {
-      if ((mask & entityBits) !== 0) {
-        this.queryCache.delete(mask);
-      }
-    }
   }
 }

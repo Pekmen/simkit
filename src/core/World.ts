@@ -8,12 +8,8 @@ import type {
   ComponentBlueprint,
   QueryResult,
   ComponentRef,
+  WorldOptions,
 } from "./types";
-
-interface WorldOptions {
-  maxEntities: number;
-  queryCacheSize?: number;
-}
 
 export class World<T extends ComponentBlueprint> {
   private readonly options: WorldOptions;

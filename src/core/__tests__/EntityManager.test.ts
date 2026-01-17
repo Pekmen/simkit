@@ -1,5 +1,5 @@
 import { EntityManager } from "../EntityManager";
-import type { EntityId } from "../Entity";
+import type { EntityId } from "../types";
 
 describe("EntityManager", () => {
   test("addEntity returns sequential entity IDs", () => {

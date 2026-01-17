@@ -36,3 +36,8 @@ export interface ComponentRef<K extends string = string> {
   readonly _name: K;
   readonly _bitPosition: number;
 }
+
+export interface WorldOptions {
+  maxEntities: number;
+  queryCacheSize?: number;
+}

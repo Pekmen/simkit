@@ -1,5 +1,4 @@
 export * from "./World.js";
-export * from "./Entity.js";
 export * from "./System.js";
 export * from "./EntityBuilder.js";
 export type {
@@ -9,4 +8,5 @@ export type {
   ComponentStorageMapQuery,
   QueryResult,
   ComponentRef,
+  WorldOptions,
 } from "./types.js";
