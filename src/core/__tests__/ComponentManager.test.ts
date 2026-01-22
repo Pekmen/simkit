@@ -431,7 +431,7 @@ describe("ComponentManager", () => {
       expect(r1.entities).toBe(r3.entities); // Should be cached
 
       // Add C - should evict B (least recently used)
-      const r4 = manager.query(C); // Cache: [A, C] (B evicted)
+      manager.query(C); // Cache: [A, C] (B evicted)
 
       // Verify A is still cached
       const r5 = manager.query(A);

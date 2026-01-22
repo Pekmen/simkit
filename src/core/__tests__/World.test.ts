@@ -12,8 +12,8 @@ describe("World", () => {
 
     const { Position, Velocity } = world.components;
 
-    expect(Position._name).toBe("Position");
-    expect(Velocity._name).toBe("Velocity");
+    expect(Position.name).toBe("Position");
+    expect(Velocity.name).toBe("Velocity");
   });
 
   test("addEntity returns valid sequential entity IDs", () => {

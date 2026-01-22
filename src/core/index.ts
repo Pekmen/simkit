@@ -1,6 +1,5 @@
 export * from "./World.js";
 export * from "./System.js";
-export * from "./EntityBuilder.js";
 export type {
   EntityId,
   ComponentBlueprint,
@@ -9,4 +8,5 @@ export type {
   QueryResult,
   ComponentRef,
   WorldOptions,
+  SpawnConfig,
 } from "./types.js";

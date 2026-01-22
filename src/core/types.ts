@@ -33,11 +33,15 @@ export type QueryResult<T extends ComponentBlueprint, K extends keyof T> = {
 } & Pick<ComponentStorageMapQuery<T>, K>;
 
 export interface ComponentRef<K extends string = string> {
-  readonly _name: K;
-  readonly _bitPosition: number;
+  readonly name: K;
+  readonly bitPosition: number;
 }
 
 export interface WorldOptions {
   maxEntities: number;
   queryCacheSize?: number;
 }
+
+export type SpawnConfig<T extends ComponentBlueprint> = Partial<{
+  [K in keyof T]: Partial<T[K]>;
+}>;

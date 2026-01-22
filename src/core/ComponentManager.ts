@@ -4,6 +4,7 @@ import type {
   ComponentStorage,
   QueryResult,
   ComponentRef,
+  SpawnConfig,
 } from "./types";
 import { BitsetManager } from "./BitsetManager";
 import { QueryCache } from "./QueryCache";
@@ -57,8 +58,8 @@ export class ComponentManager<T extends ComponentBlueprint> {
     let bitPosition = 0;
     for (const key in blueprints) {
       this.components[key] = {
-        _name: key,
-        _bitPosition: bitPosition++,
+        name: key,
+        bitPosition: bitPosition++,
       };
     }
   }
@@ -76,8 +77,8 @@ export class ComponentManager<T extends ComponentBlueprint> {
   ): void {
     this.validateEntity(entityId);
 
-    const storage = this.componentStorages[component._name];
-    const defaultComponentData = this.componentBlueprints[component._name];
+    const storage = this.componentStorages[component.name];
+    const defaultComponentData = this.componentBlueprints[component.name];
 
     if (!componentData) {
       for (const prop in defaultComponentData) {
@@ -91,8 +92,8 @@ export class ComponentManager<T extends ComponentBlueprint> {
       }
     }
 
-    const hadComponent = this.bitsets.has(entityId, component._bitPosition);
-    this.bitsets.add(entityId, component._bitPosition);
+    const hadComponent = this.bitsets.has(entityId, component.bitPosition);
+    this.bitsets.add(entityId, component.bitPosition);
 
     if (!hadComponent) {
       const entityMask = this.bitsets.getBits(entityId);
@@ -100,31 +101,65 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
   }
 
+  addComponentsFromConfig(entityId: EntityId, config: SpawnConfig<T>): void {
+    let mask = 0;
+
+    for (const key in config) {
+      const component = this.components[key];
+      const data = config[key];
+      const storage = this.componentStorages[key];
+      const defaults = this.componentBlueprints[key];
+
+      for (const prop in defaults) {
+        const value = data?.[prop] ?? defaults[prop];
+        const expectedType = typeof defaults[prop];
+        const actualType = typeof value;
+
+        if (actualType !== expectedType) {
+          throw new TypeError(
+            `${key}.${prop}: expected ${expectedType}, got ${actualType}`,
+          );
+        }
+
+        storage[prop][entityId] = value;
+      }
+
+      mask |= 1 << component.bitPosition;
+    }
+
+    if (mask !== 0) {
+      this.bitsets.setBits(entityId, mask);
+      this.queryCache.invalidateMatchingQueries(mask);
+    } else {
+      this.queryCache.invalidateEmptyQuery();
+    }
+  }
+
   removeComponent(entityId: EntityId, component: ComponentRef): void {
     this.validateEntity(entityId);
 
-    const hadComponent = this.bitsets.has(entityId, component._bitPosition);
+    const hadComponent = this.bitsets.has(entityId, component.bitPosition);
 
     if (!hadComponent) {
       throw new Error(
-        `Entity ${entityId} does not have component ${component._name}`,
+        `Entity ${entityId} does not have component ${component.name}`,
       );
     }
 
     const entityMask = this.bitsets.getBits(entityId);
 
-    const storage = this.componentStorages[component._name];
+    const storage = this.componentStorages[component.name];
     for (const prop in storage) {
       this.clearStorageValue(storage[prop], entityId);
     }
 
-    this.bitsets.remove(entityId, component._bitPosition);
+    this.bitsets.remove(entityId, component.bitPosition);
 
     this.queryCache.invalidateMatchingQueries(entityMask);
   }
 
   hasComponent(entityId: EntityId, component: ComponentRef): boolean {
-    return this.bitsets.has(entityId, component._bitPosition);
+    return this.bitsets.has(entityId, component.bitPosition);
   }
 
   private clearStorageValue(
@@ -146,7 +181,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
       return undefined;
     }
 
-    const storage = this.componentStorages[component._name];
+    const storage = this.componentStorages[component.name];
     const componentData: Record<string, unknown> = {};
     for (const prop in storage) {
       componentData[prop] = storage[prop][entityId];
@@ -162,7 +197,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.queryCache.invalidateMatchingQueries(entityBits);
 
     for (const key in this.components) {
-      if ((entityBits & (1 << this.components[key]._bitPosition)) !== 0) {
+      if ((entityBits & (1 << this.components[key].bitPosition)) !== 0) {
         const storage = this.componentStorages[key];
         for (const prop in storage) {
           this.clearStorageValue(storage[prop], entityId);
@@ -210,7 +245,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     } as { entities: EntityId[] } & Record<string, ComponentStorage>;
 
     for (const ref of componentRefs) {
-      result[ref._name] = this.componentStorages[ref._name];
+      result[ref.name] = this.componentStorages[ref.name];
     }
 
     return result as QueryResult<T, K>;

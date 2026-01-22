@@ -1,7 +1,6 @@
 import { ComponentManager } from "./ComponentManager";
 import { EntityManager } from "./EntityManager";
 import { SystemManager } from "./SystemManager";
-import { EntityBuilder } from "./EntityBuilder";
 import type { System } from "./System";
 import type {
   EntityId,
@@ -9,6 +8,7 @@ import type {
   QueryResult,
   ComponentRef,
   WorldOptions,
+  SpawnConfig,
 } from "./types";
 
 export class World<T extends ComponentBlueprint> {
@@ -101,7 +101,9 @@ export class World<T extends ComponentBlueprint> {
     return this.componentManager.query(...components);
   }
 
-  spawn(): EntityBuilder<T> {
-    return new EntityBuilder(this);
+  spawn(config: SpawnConfig<T>): EntityId {
+    const entityId = this.entityManager.addEntity();
+    this.componentManager.addComponentsFromConfig(entityId, config);
+    return entityId;
   }
 }

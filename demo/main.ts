@@ -19,22 +19,20 @@ const blueprints = {
 
 const world = new World(blueprints);
 
-const { Position, Velocity, Size, Color } = world.components;
-
-// Using the new entity builder API for cleaner entity creation
+// Using the object-based spawn API for cleaner entity creation
 for (let i = 0; i < 1000; i++) {
-  world
-    .spawn()
-    .with(Position, {
+  world.spawn({
+    Position: {
       x: 10 + Math.random() * (canvas.width - 20),
       y: 10 + Math.random() * (canvas.height - 20),
-    })
-    .with(Velocity, {
+    },
+    Velocity: {
       dx: (Math.random() - 0.5) * 200,
       dy: (Math.random() - 0.5) * 200,
-    })
-    .with(Size)
-    .with(Color);
+    },
+    Size: {},
+    Color: {},
+  });
 }
 
 const physicsSystem = {
