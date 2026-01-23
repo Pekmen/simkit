@@ -61,6 +61,14 @@ export class World<T extends ComponentBlueprint> {
     this.componentManager.addComponent(entityId, component, componentData);
   }
 
+  updateComponent<K extends keyof T>(
+    entityId: EntityId,
+    component: ComponentRef<Extract<K, string>>,
+    componentData?: Partial<T[K]>,
+  ): void {
+    this.componentManager.updateComponent(entityId, component, componentData);
+  }
+
   hasComponent(entityId: EntityId, component: ComponentRef): boolean {
     return this.componentManager.hasComponent(entityId, component);
   }

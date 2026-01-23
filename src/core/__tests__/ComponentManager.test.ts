@@ -169,6 +169,61 @@ describe("ComponentManager", () => {
     expect(manager.hasComponent(entityId, Velocity)).toBe(false);
   });
 
+  test("addComponent throws when component already exists", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Position } = manager.components;
+
+    const entityId = entityManager.addEntity();
+    manager.addComponent(entityId, Position, { x: 10, y: 20 });
+
+    expect(() => {
+      manager.addComponent(entityId, Position, { x: 30, y: 40 });
+    }).toThrow(`Entity ${entityId} already has component Position`);
+  });
+
+  test("updateComponent updates existing component data", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Position } = manager.components;
+
+    const entityId = entityManager.addEntity();
+    manager.addComponent(entityId, Position, { x: 10, y: 20 });
+    manager.updateComponent(entityId, Position, { x: 30, y: 40 });
+
+    const component = manager.getComponent(entityId, Position);
+    expect(component).toEqual({ x: 30, y: 40 });
+  });
+
+  test("updateComponent throws when component does not exist", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Position } = manager.components;
+
+    const entityId = entityManager.addEntity();
+
+    expect(() => {
+      manager.updateComponent(entityId, Position, { x: 10, y: 20 });
+    }).toThrow(`Entity ${entityId} does not have component Position`);
+  });
+
+  test("updateComponent with no data resets to defaults", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Position } = manager.components;
+
+    const entityId = entityManager.addEntity();
+    manager.addComponent(entityId, Position, { x: 10, y: 20 });
+    manager.updateComponent(entityId, Position);
+
+    const component = manager.getComponent(entityId, Position);
+    expect(component).toEqual({ x: 0, y: 0 });
+  });
+
   describe("Query Caching", () => {
     test("query returns cached result on second call with same components", () => {
       const blueprints = {

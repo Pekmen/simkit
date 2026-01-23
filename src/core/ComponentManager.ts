@@ -77,6 +77,12 @@ export class ComponentManager<T extends ComponentBlueprint> {
   ): void {
     this.validateEntity(entityId);
 
+    if (this.bitsets.has(entityId, component.bitPosition)) {
+      throw new Error(
+        `Entity ${entityId} already has component ${component.name}`,
+      );
+    }
+
     const storage = this.componentStorages[component.name];
     const defaultComponentData = this.componentBlueprints[component.name];
 
@@ -92,13 +98,40 @@ export class ComponentManager<T extends ComponentBlueprint> {
       }
     }
 
-    const hadComponent = this.bitsets.has(entityId, component.bitPosition);
     this.bitsets.add(entityId, component.bitPosition);
+    const entityMask = this.bitsets.getBits(entityId);
+    this.queryCache.invalidateMatchingQueries(entityMask);
+  }
 
-    if (!hadComponent) {
-      const entityMask = this.bitsets.getBits(entityId);
-      this.queryCache.invalidateMatchingQueries(entityMask);
+  updateComponent<K extends keyof T>(
+    entityId: EntityId,
+    component: ComponentRef<Extract<K, string>>,
+    componentData?: Partial<T[K]>,
+  ): void {
+    this.validateEntity(entityId);
+
+    if (!this.bitsets.has(entityId, component.bitPosition)) {
+      throw new Error(
+        `Entity ${entityId} does not have component ${component.name}`,
+      );
     }
+
+    const storage = this.componentStorages[component.name];
+    const defaultComponentData = this.componentBlueprints[component.name];
+
+    if (!componentData) {
+      for (const prop in defaultComponentData) {
+        storage[prop][entityId] = defaultComponentData[prop];
+      }
+    } else {
+      for (const prop in defaultComponentData) {
+        storage[prop][entityId] =
+          (componentData as Record<string, unknown>)[prop] ??
+          defaultComponentData[prop];
+      }
+    }
+    // No bitset change needed - component already exists
+    // No query cache invalidation needed - entity composition unchanged
   }
 
   addComponentsFromConfig(entityId: EntityId, config: SpawnConfig<T>): void {
