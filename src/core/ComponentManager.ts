@@ -135,6 +135,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
   }
 
   addComponentsFromConfig(entityId: EntityId, config: SpawnConfig<T>): void {
+    this.validateEntity(entityId);
     let mask = 0;
 
     for (const key in config) {
@@ -192,6 +193,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
   }
 
   hasComponent(entityId: EntityId, component: ComponentRef): boolean {
+    if (!this.entityManager.isValid(entityId)) {
+      return false; // Invalid entity cannot have any component
+    }
     return this.bitsets.has(entityId, component.bitPosition);
   }
 

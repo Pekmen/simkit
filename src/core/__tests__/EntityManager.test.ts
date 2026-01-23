@@ -105,14 +105,13 @@ describe("EntityManager", () => {
     expect(manager.isValid(e2)).toBe(true);
 
     // e1 and e2 are the same numeric value, so both are valid
-    // (generation tracking works at operation boundaries, not for saved references)
     expect(manager.isValid(e1)).toBe(true);
     expect(manager.isValid(e2)).toBe(true);
 
     expect(e1).toBe(e2); // Same index value
   });
 
-  test("generation increments on entity reuse", () => {
+  test("entity ID is reused after deletion", () => {
     const manager = new EntityManager(10);
 
     const e1 = manager.addEntity();
@@ -152,7 +151,7 @@ describe("EntityManager", () => {
     expect(manager.isValid(e1)).toBe(true);
   });
 
-  test("generation tracking detects deleted entities before recycling", () => {
+  test("deleted entities are marked invalid before recycling", () => {
     const manager = new EntityManager(10);
 
     const e1 = manager.addEntity();
