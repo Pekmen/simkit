@@ -150,6 +150,19 @@ describe("ComponentManager", () => {
     );
   });
 
+  test("supports exactly 32 components", () => {
+    const blueprints = {} as Record<string, Record<string, number>>;
+    for (let i = 0; i < 32; i++) {
+      blueprints[`Component${i}`] = { value: 0 };
+    }
+
+    const entityManager = new EntityManager(10);
+    const manager = new ComponentManager(blueprints, 10, entityManager);
+
+    // Should not throw
+    expect(Object.keys(manager.components)).toHaveLength(32);
+  });
+
   test("removeEntityComponents clears all bitset flags", () => {
     const blueprints = {
       Position: { x: 0, y: 0 },

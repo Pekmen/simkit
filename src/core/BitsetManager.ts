@@ -1,12 +1,14 @@
 import type { EntityId } from "./types";
 
+export const MAX_COMPONENTS = 32;
+
 export class BitsetManager {
   private readonly entityBits: Uint32Array;
 
   constructor(componentCount: number, maxEntities: number) {
-    if (componentCount > 32) {
+    if (componentCount > MAX_COMPONENTS) {
       throw new Error(
-        `Too many components (${componentCount}). Maximum is 32.`,
+        `Too many components (${componentCount}). Maximum is ${MAX_COMPONENTS}.`,
       );
     }
 
