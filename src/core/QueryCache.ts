@@ -36,18 +36,12 @@ export class QueryCache {
     this.cache.set(mask, value);
   }
 
-  /**
-   * Invalidates all cached queries whose required components are a subset
-   * of the given component bits. This ensures queries that could match
-   * an entity with these components are refreshed.
-   */
   invalidateMatchingQueries(componentBits: number): void {
     if (!this.isEnabled || this.cache.size === 0 || componentBits === 0) {
       return;
     }
 
     for (const mask of this.cache.keys()) {
-      // Invalidate if query components are subset of entity components
       if ((mask & componentBits) === mask) {
         this.cache.delete(mask);
       }

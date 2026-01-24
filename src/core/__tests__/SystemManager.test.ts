@@ -93,4 +93,98 @@ describe("SystemManager", () => {
       manager.updateAll(16);
     }).not.toThrow();
   });
+
+  test("addSystem calls init on the system", () => {
+    const manager = new SystemManager();
+    const system: System = { init: vi.fn(), update: vi.fn() };
+    manager.addSystem(system);
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(system.init).toHaveBeenCalledOnce();
+  });
+
+  test("addSystem throws on duplicate system", () => {
+    const manager = new SystemManager();
+    const system: System = { update: vi.fn() };
+    manager.addSystem(system);
+    expect(() => {
+      manager.addSystem(system);
+    }).toThrow("System already registered");
+  });
+
+  test("hasSystem returns true for registered system", () => {
+    const manager = new SystemManager();
+    const system: System = { update: vi.fn() };
+    expect(manager.hasSystem(system)).toBe(false);
+    manager.addSystem(system);
+    expect(manager.hasSystem(system)).toBe(true);
+  });
+
+  test("hasSystem returns false after system is removed", () => {
+    const manager = new SystemManager();
+    const system: System = { update: vi.fn() };
+    manager.addSystem(system);
+    manager.removeSystem(system);
+    expect(manager.hasSystem(system)).toBe(false);
+  });
+
+  test("systems with higher priority run first", () => {
+    const manager = new SystemManager();
+    const order: string[] = [];
+    const systemA: System = { update: () => order.push("A") };
+    const systemB: System = { update: () => order.push("B") };
+    const systemC: System = { update: () => order.push("C") };
+    manager.addSystem(systemA, 0);
+    manager.addSystem(systemB, 10);
+    manager.addSystem(systemC, 5);
+    manager.updateAll(16);
+    expect(order).toEqual(["B", "C", "A"]);
+  });
+
+  test("systems with same priority maintain insertion order", () => {
+    const manager = new SystemManager();
+    const order: string[] = [];
+    const systemA: System = { update: () => order.push("A") };
+    const systemB: System = { update: () => order.push("B") };
+    const systemC: System = { update: () => order.push("C") };
+    manager.addSystem(systemA, 0);
+    manager.addSystem(systemB, 0);
+    manager.addSystem(systemC, 0);
+    manager.updateAll(16);
+    expect(order).toEqual(["A", "B", "C"]);
+  });
+
+  test("removeSystem during updateAll is safe and skips removed system", () => {
+    const manager = new SystemManager();
+    const systemB: System = { update: vi.fn() };
+    const systemA: System = {
+      update: () => {
+        manager.removeSystem(systemB);
+      },
+    };
+    manager.addSystem(systemA);
+    manager.addSystem(systemB);
+    expect(() => {
+      manager.updateAll(16);
+    }).not.toThrow();
+    // systemB was removed by systemA, so it should not be called
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(systemB.update).not.toHaveBeenCalled();
+  });
+
+  test("addSystem during updateAll is safe", () => {
+    const manager = new SystemManager();
+    const systemB: System = { update: vi.fn() };
+    const systemA: System = {
+      update: () => {
+        manager.addSystem(systemB);
+      },
+    };
+    manager.addSystem(systemA);
+    expect(() => {
+      manager.updateAll(16);
+    }).not.toThrow();
+    // systemB should not be called in this update cycle
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(systemB.update).not.toHaveBeenCalled();
+  });
 });
