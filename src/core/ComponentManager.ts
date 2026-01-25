@@ -3,7 +3,7 @@ import type {
   ComponentBlueprint,
   ComponentStorage,
   QueryResult,
-  ComponentRef,
+  ComponentHandle,
   SpawnConfig,
   StringKey,
 } from "./types";
@@ -14,7 +14,7 @@ import type { EntityManager } from "./EntityManager";
 export class ComponentManager<T extends ComponentBlueprint> {
   private readonly componentBlueprints: T;
   private readonly componentStorages: Record<string, ComponentStorage>;
-  readonly components: { [K in StringKey<T>]: ComponentRef<K> };
+  readonly components: { [K in StringKey<T>]: ComponentHandle<K> };
   private readonly maxEntities: number;
   private readonly entityManager: EntityManager;
   private readonly bitsets: BitsetManager;
@@ -54,7 +54,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
 
     this.components = {} as {
-      [K in StringKey<T>]: ComponentRef<K>;
+      [K in StringKey<T>]: ComponentHandle<K>;
     };
     let bitPosition = 0;
     for (const key in blueprints) {
@@ -96,7 +96,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
   addComponent<K extends StringKey<T>>(
     entityId: EntityId,
-    component: ComponentRef<K>,
+    component: ComponentHandle<K>,
     componentData?: Partial<T[K]>,
   ): void {
     this.validateEntity(entityId);
@@ -116,7 +116,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
   setComponent<K extends StringKey<T>>(
     entityId: EntityId,
-    component: ComponentRef<K>,
+    component: ComponentHandle<K>,
     componentData?: Partial<T[K]>,
   ): void {
     this.validateEntity(entityId);
@@ -130,7 +130,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.setComponentData(entityId, component.name, componentData);
   }
 
-  addComponentsFromConfig(entityId: EntityId, config: SpawnConfig<T>): void {
+  setComponentsFromConfig(entityId: EntityId, config: SpawnConfig<T>): void {
     this.validateEntity(entityId);
     let mask = 0;
 
@@ -148,7 +148,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
   removeComponent(
     entityId: EntityId,
-    component: ComponentRef<StringKey<T>>,
+    component: ComponentHandle<StringKey<T>>,
   ): void {
     this.validateEntity(entityId);
 
@@ -174,7 +174,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
   hasComponent(
     entityId: EntityId,
-    component: ComponentRef<StringKey<T>>,
+    component: ComponentHandle<StringKey<T>>,
   ): boolean {
     this.validateEntity(entityId);
     return this.bitsets.has(entityId, component.bitPosition);
@@ -193,7 +193,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
   getComponent<K extends StringKey<T>>(
     entityId: EntityId,
-    component: ComponentRef<K>,
+    component: ComponentHandle<K>,
   ): T[K] {
     this.validateEntity(entityId);
 
@@ -211,8 +211,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     return componentData as T[K];
   }
-
-  removeEntityComponents(entityId: EntityId): void {
+  removeAllComponents(entityId: EntityId): void {
     this.validateEntity(entityId);
 
     const entityBits = this.bitsets.getBits(entityId);
@@ -231,12 +230,12 @@ export class ComponentManager<T extends ComponentBlueprint> {
   }
 
   query<K extends StringKey<T>>(
-    ...componentRefs: ComponentRef<K>[]
+    ...componentHandles: ComponentHandle<K>[]
   ): QueryResult<T, K> {
-    if (componentRefs.length === 0) {
+    if (componentHandles.length === 0) {
       throw new Error("query() requires at least one component");
     }
-    const mask = this.bitsets.createMask(componentRefs);
+    const mask = this.bitsets.createMask(componentHandles);
 
     const cached = this.queryCache.get(mask);
     if (cached) {
@@ -250,7 +249,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
       }
     }
 
-    const result = this.buildQueryResult<K>(entities, componentRefs);
+    const result = this.buildQueryResult<K>(entities, componentHandles);
 
     this.queryCache.set(mask, result);
 
@@ -259,14 +258,14 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
   private buildQueryResult<K extends StringKey<T>>(
     entities: EntityId[],
-    componentRefs: ComponentRef<K>[],
+    componentHandles: ComponentHandle<K>[],
   ): QueryResult<T, K> {
     const result = {
       entities,
     } as { entities: EntityId[] } & Record<string, ComponentStorage>;
 
-    for (const ref of componentRefs) {
-      result[ref.name] = this.componentStorages[ref.name];
+    for (const handle of componentHandles) {
+      result[handle.name] = this.componentStorages[handle.name];
     }
 
     return result as QueryResult<T, K>;

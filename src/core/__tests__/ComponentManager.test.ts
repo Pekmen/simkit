@@ -54,7 +54,7 @@ describe("ComponentManager", () => {
     expect(storages.Position.y[entityId]).toBe(0);
   });
 
-  test("removeEntityComponents clears all components for the entity", () => {
+  test("removeAllComponents clears all components for the entity", () => {
     const blueprints = {
       Position: { x: 0, y: 0 },
       Velocity: { dx: 0, dy: 0 },
@@ -68,7 +68,7 @@ describe("ComponentManager", () => {
     manager.addComponent(entityId, Position, { x: 10, y: 20 });
     manager.addComponent(entityId, Velocity, { dx: 1, dy: 2 });
 
-    manager.removeEntityComponents(entityId);
+    manager.removeAllComponents(entityId);
 
     // @ts-expect-error Accessing private property
     const storages = manager.componentStorages;
@@ -163,7 +163,7 @@ describe("ComponentManager", () => {
     expect(Object.keys(manager.components)).toHaveLength(32);
   });
 
-  test("removeEntityComponents clears all bitset flags", () => {
+  test("removeAllComponents clears all bitset flags", () => {
     const blueprints = {
       Position: { x: 0, y: 0 },
       Velocity: { dx: 0, dy: 0 },
@@ -176,7 +176,7 @@ describe("ComponentManager", () => {
     manager.addComponent(entityId, Position, { x: 10, y: 20 });
     manager.addComponent(entityId, Velocity, { dx: 1, dy: 2 });
 
-    manager.removeEntityComponents(entityId);
+    manager.removeAllComponents(entityId);
 
     expect(manager.hasComponent(entityId, Position)).toBe(false);
     expect(manager.hasComponent(entityId, Velocity)).toBe(false);
@@ -394,7 +394,7 @@ describe("ComponentManager", () => {
       expect(result2.entities).toEqual([entity1]);
     });
 
-    test("cache invalidates on removeEntityComponents", () => {
+    test("cache invalidates on removeAllComponents", () => {
       const blueprints = {
         Position: { x: 0, y: 0 },
         Velocity: { dx: 0, dy: 0 },
@@ -414,7 +414,7 @@ describe("ComponentManager", () => {
       expect(result1.entities).toEqual([entity1, entity2]);
 
       // Remove all components from entity - should invalidate cache
-      manager.removeEntityComponents(entity2);
+      manager.removeAllComponents(entity2);
 
       const result2 = manager.query(Position, Velocity);
 
@@ -509,7 +509,7 @@ describe("ComponentManager", () => {
       expect(healthResult1.entities).toEqual([entity2]);
 
       // Delete entity2 (which has Health component)
-      manager.removeEntityComponents(entity2);
+      manager.removeAllComponents(entity2);
 
       // Query for Position+Velocity again - should still be cached
       const posVelResult2 = manager.query(Position, Velocity);

@@ -3,11 +3,14 @@ export * from "./System.js";
 export { MAX_COMPONENTS } from "./BitsetManager.js";
 export type {
   EntityId,
+  StringKey,
+  ValidComponentProp,
   ComponentBlueprint,
-  ComponentStorageMapInternal,
+  ComponentStorage,
+  ComponentStorageMap,
   ComponentStorageMapQuery,
   QueryResult,
-  ComponentRef,
+  ComponentHandle,
   WorldOptions,
   SpawnConfig,
 } from "./types.js";

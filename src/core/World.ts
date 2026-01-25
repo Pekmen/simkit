@@ -6,7 +6,7 @@ import type {
   EntityId,
   ComponentBlueprint,
   QueryResult,
-  ComponentRef,
+  ComponentHandle,
   WorldOptions,
   SpawnConfig,
   StringKey,
@@ -14,7 +14,7 @@ import type {
 
 export class World<T extends ComponentBlueprint> {
   private readonly options: WorldOptions;
-  readonly components: { [K in StringKey<T>]: ComponentRef<K> };
+  readonly components: { [K in StringKey<T>]: ComponentHandle<K> };
 
   private entityManager: EntityManager;
   private systemManager: SystemManager;
@@ -44,7 +44,7 @@ export class World<T extends ComponentBlueprint> {
   }
 
   removeEntity(entityId: EntityId): void {
-    this.componentManager.removeEntityComponents(entityId);
+    this.componentManager.removeAllComponents(entityId);
     this.entityManager.removeEntity(entityId);
   }
 
@@ -54,7 +54,7 @@ export class World<T extends ComponentBlueprint> {
 
   addComponent<K extends StringKey<T>>(
     entityId: EntityId,
-    component: ComponentRef<K>,
+    component: ComponentHandle<K>,
     componentData?: Partial<T[K]>,
   ): void {
     this.componentManager.addComponent(entityId, component, componentData);
@@ -62,7 +62,7 @@ export class World<T extends ComponentBlueprint> {
 
   setComponent<K extends StringKey<T>>(
     entityId: EntityId,
-    component: ComponentRef<K>,
+    component: ComponentHandle<K>,
     componentData?: Partial<T[K]>,
   ): void {
     this.componentManager.setComponent(entityId, component, componentData);
@@ -70,21 +70,21 @@ export class World<T extends ComponentBlueprint> {
 
   hasComponent(
     entityId: EntityId,
-    component: ComponentRef<StringKey<T>>,
+    component: ComponentHandle<StringKey<T>>,
   ): boolean {
     return this.componentManager.hasComponent(entityId, component);
   }
 
   getComponent<K extends StringKey<T>>(
     entityId: EntityId,
-    component: ComponentRef<K>,
+    component: ComponentHandle<K>,
   ): T[K] {
     return this.componentManager.getComponent(entityId, component);
   }
 
   removeComponent(
     entityId: EntityId,
-    component: ComponentRef<StringKey<T>>,
+    component: ComponentHandle<StringKey<T>>,
   ): void {
     this.componentManager.removeComponent(entityId, component);
   }
@@ -113,14 +113,14 @@ export class World<T extends ComponentBlueprint> {
   }
 
   query<K extends StringKey<T>>(
-    ...components: ComponentRef<K>[]
+    ...components: ComponentHandle<K>[]
   ): QueryResult<T, K> {
     return this.componentManager.query(...components);
   }
 
   spawn(config: SpawnConfig<T>): EntityId {
     const entityId = this.entityManager.addEntity();
-    this.componentManager.addComponentsFromConfig(entityId, config);
+    this.componentManager.setComponentsFromConfig(entityId, config);
     return entityId;
   }
 }
