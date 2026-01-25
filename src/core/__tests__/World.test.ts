@@ -128,16 +128,16 @@ describe("World", () => {
     expect(component).toEqual({ x: 10, y: 20 });
   });
 
-  test("getComponent returns undefined for entity without component", () => {
+  test("getComponent throws for entity without component", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const world = new World(blueprints, { maxEntities: 5 });
     const { Position } = world.components;
 
     const entityId = world.addEntity();
 
-    const component = world.getComponent(entityId, Position);
-
-    expect(component).toBeUndefined();
+    expect(() => world.getComponent(entityId, Position)).toThrow(
+      "Entity 0 does not have component Position",
+    );
   });
 
   test("getComponent works with partial component data", () => {

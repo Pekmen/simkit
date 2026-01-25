@@ -1,14 +1,11 @@
 export type EntityId = number & { readonly __brand: "EntityId" };
 
+export type StringKey<T> = Extract<keyof T, string>;
+
 type ValidComponentProp = number | string | boolean;
 export type ComponentBlueprint = Record<
   string,
   Record<string, ValidComponentProp>
->;
-
-export type ComponentKeys<T extends ComponentBlueprint> = Extract<
-  keyof T,
-  string
 >;
 
 export type ComponentStorage = Record<

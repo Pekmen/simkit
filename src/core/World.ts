@@ -9,11 +9,12 @@ import type {
   ComponentRef,
   WorldOptions,
   SpawnConfig,
+  StringKey,
 } from "./types";
 
 export class World<T extends ComponentBlueprint> {
   private readonly options: WorldOptions;
-  readonly components: { [K in keyof T]: ComponentRef<Extract<K, string>> };
+  readonly components: { [K in StringKey<T>]: ComponentRef<K> };
 
   private entityManager: EntityManager;
   private systemManager: SystemManager;
@@ -39,9 +40,7 @@ export class World<T extends ComponentBlueprint> {
   }
 
   addEntity(): EntityId {
-    const entityId = this.entityManager.addEntity();
-    this.componentManager.invalidateEmptyQueryCache();
-    return entityId;
+    return this.entityManager.addEntity();
   }
 
   removeEntity(entityId: EntityId): void {
@@ -53,39 +52,39 @@ export class World<T extends ComponentBlueprint> {
     return this.entityManager.getEntityCount();
   }
 
-  addComponent<K extends keyof T>(
+  addComponent<K extends StringKey<T>>(
     entityId: EntityId,
-    component: ComponentRef<Extract<K, string>>,
+    component: ComponentRef<K>,
     componentData?: Partial<T[K]>,
   ): void {
     this.componentManager.addComponent(entityId, component, componentData);
   }
 
-  setComponent<K extends keyof T>(
+  setComponent<K extends StringKey<T>>(
     entityId: EntityId,
-    component: ComponentRef<Extract<K, string>>,
+    component: ComponentRef<K>,
     componentData?: Partial<T[K]>,
   ): void {
     this.componentManager.setComponent(entityId, component, componentData);
   }
 
-  hasComponent<K extends keyof T>(
+  hasComponent(
     entityId: EntityId,
-    component: ComponentRef<Extract<K, string>>,
+    component: ComponentRef<StringKey<T>>,
   ): boolean {
     return this.componentManager.hasComponent(entityId, component);
   }
 
-  getComponent<K extends keyof T>(
+  getComponent<K extends StringKey<T>>(
     entityId: EntityId,
-    component: ComponentRef<Extract<K, string>>,
-  ): T[K] | undefined {
+    component: ComponentRef<K>,
+  ): T[K] {
     return this.componentManager.getComponent(entityId, component);
   }
 
-  removeComponent<K extends keyof T>(
+  removeComponent(
     entityId: EntityId,
-    component: ComponentRef<Extract<K, string>>,
+    component: ComponentRef<StringKey<T>>,
   ): void {
     this.componentManager.removeComponent(entityId, component);
   }
@@ -113,8 +112,8 @@ export class World<T extends ComponentBlueprint> {
     }
   }
 
-  query<K extends keyof T>(
-    ...components: ComponentRef<Extract<K, string>>[]
+  query<K extends StringKey<T>>(
+    ...components: ComponentRef<K>[]
   ): QueryResult<T, K> {
     return this.componentManager.query(...components);
   }

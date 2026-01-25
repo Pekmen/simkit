@@ -48,10 +48,6 @@ export class QueryCache {
     }
   }
 
-  invalidateEmptyQuery(): void {
-    this.cache.delete(0);
-  }
-
   private evictOldestEntry(): void {
     const iterator = this.cache.keys().next();
     if (!iterator.done) {

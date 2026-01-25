@@ -94,7 +94,7 @@ describe("ComponentManager", () => {
     expect(component).toEqual({ x: 10, y: 20 });
   });
 
-  test("getComponent returns undefined for entity without component", () => {
+  test("getComponent throws for entity without component", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
     const manager = new ComponentManager(blueprints, 5, entityManager);
@@ -102,12 +102,12 @@ describe("ComponentManager", () => {
 
     const entityId = entityManager.addEntity();
 
-    const component = manager.getComponent(entityId, Position);
-
-    expect(component).toBeUndefined();
+    expect(() => manager.getComponent(entityId, Position)).toThrow(
+      "Entity 0 does not have component Position",
+    );
   });
 
-  test("getComponent returns undefined after component is removed", () => {
+  test("getComponent throws after component is removed", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
     const manager = new ComponentManager(blueprints, 5, entityManager);
@@ -117,9 +117,9 @@ describe("ComponentManager", () => {
     manager.addComponent(entityId, Position, { x: 10, y: 20 });
     manager.removeComponent(entityId, Position);
 
-    const component = manager.getComponent(entityId, Position);
-
-    expect(component).toBeUndefined();
+    expect(() => manager.getComponent(entityId, Position)).toThrow(
+      "Entity 0 does not have component Position",
+    );
   });
 
   test("hasComponent uses bitset correctly", () => {

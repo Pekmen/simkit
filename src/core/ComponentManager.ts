@@ -5,6 +5,7 @@ import type {
   QueryResult,
   ComponentRef,
   SpawnConfig,
+  StringKey,
 } from "./types";
 import { BitsetManager } from "./BitsetManager";
 import { QueryCache } from "./QueryCache";
@@ -13,7 +14,7 @@ import type { EntityManager } from "./EntityManager";
 export class ComponentManager<T extends ComponentBlueprint> {
   private readonly componentBlueprints: T;
   private readonly componentStorages: Record<string, ComponentStorage>;
-  readonly components: { [K in keyof T]: ComponentRef<Extract<K, string>> };
+  readonly components: { [K in StringKey<T>]: ComponentRef<K> };
   private readonly maxEntities: number;
   private readonly entityManager: EntityManager;
   private readonly bitsets: BitsetManager;
@@ -53,7 +54,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
 
     this.components = {} as {
-      [K in keyof T]: ComponentRef<Extract<K, string>>;
+      [K in StringKey<T>]: ComponentRef<K>;
     };
     let bitPosition = 0;
     for (const key in blueprints) {
@@ -93,9 +94,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
   }
 
-  addComponent<K extends keyof T>(
+  addComponent<K extends StringKey<T>>(
     entityId: EntityId,
-    component: ComponentRef<Extract<K, string>>,
+    component: ComponentRef<K>,
     componentData?: Partial<T[K]>,
   ): void {
     this.validateEntity(entityId);
@@ -113,9 +114,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.queryCache.invalidateMatchingQueries(entityMask);
   }
 
-  setComponent<K extends keyof T>(
+  setComponent<K extends StringKey<T>>(
     entityId: EntityId,
-    component: ComponentRef<Extract<K, string>>,
+    component: ComponentRef<K>,
     componentData?: Partial<T[K]>,
   ): void {
     this.validateEntity(entityId);
@@ -140,16 +141,14 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
 
     if (mask !== 0) {
-      this.bitsets.setBits(entityId, mask);
+      this.bitsets.setComponentMask(entityId, mask);
       this.queryCache.invalidateMatchingQueries(mask);
-    } else {
-      this.queryCache.invalidateEmptyQuery();
     }
   }
 
-  removeComponent<K extends keyof T>(
+  removeComponent(
     entityId: EntityId,
-    component: ComponentRef<Extract<K, string>>,
+    component: ComponentRef<StringKey<T>>,
   ): void {
     this.validateEntity(entityId);
 
@@ -173,9 +172,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.queryCache.invalidateMatchingQueries(entityMask);
   }
 
-  hasComponent<K extends keyof T>(
+  hasComponent(
     entityId: EntityId,
-    component: ComponentRef<Extract<K, string>>,
+    component: ComponentRef<StringKey<T>>,
   ): boolean {
     this.validateEntity(entityId);
     return this.bitsets.has(entityId, component.bitPosition);
@@ -192,14 +191,16 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
   }
 
-  getComponent<K extends keyof T>(
+  getComponent<K extends StringKey<T>>(
     entityId: EntityId,
-    component: ComponentRef<Extract<K, string>>,
-  ): T[K] | undefined {
+    component: ComponentRef<K>,
+  ): T[K] {
     this.validateEntity(entityId);
 
     if (!this.bitsets.has(entityId, component.bitPosition)) {
-      return undefined;
+      throw new Error(
+        `Entity ${entityId} does not have component ${component.name}`,
+      );
     }
 
     const storage = this.componentStorages[component.name];
@@ -229,12 +230,8 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.bitsets.clear(entityId);
   }
 
-  invalidateEmptyQueryCache(): void {
-    this.queryCache.invalidateEmptyQuery();
-  }
-
-  query<K extends keyof T>(
-    ...componentRefs: ComponentRef<Extract<K, string>>[]
+  query<K extends StringKey<T>>(
+    ...componentRefs: ComponentRef<K>[]
   ): QueryResult<T, K> {
     if (componentRefs.length === 0) {
       throw new Error("query() requires at least one component");
@@ -260,9 +257,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
     return result;
   }
 
-  private buildQueryResult<K extends keyof T>(
+  private buildQueryResult<K extends StringKey<T>>(
     entities: EntityId[],
-    componentRefs: ComponentRef<Extract<K, string>>[],
+    componentRefs: ComponentRef<K>[],
   ): QueryResult<T, K> {
     const result = {
       entities,
