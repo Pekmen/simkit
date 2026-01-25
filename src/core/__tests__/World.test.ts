@@ -1,5 +1,6 @@
 import { World } from "../World";
 import type { EntityId } from "../types";
+import type { System } from "../System";
 
 describe("World", () => {
   test("initializing world sets up component manager and handles", () => {
@@ -223,5 +224,111 @@ describe("World", () => {
     expect(() => {
       new World(blueprints, { maxEntities: 100, queryCacheSize: -1 });
     }).toThrow("queryCacheSize must be non-negative");
+  });
+
+  test("hasSystem returns true for registered system", () => {
+    const world = new World({}, { maxEntities: 10 });
+    const system: System = { update: vi.fn() };
+
+    world.addSystem(system);
+
+    expect(world.hasSystem(system)).toBe(true);
+  });
+
+  test("hasSystem returns false for unregistered system", () => {
+    const world = new World({}, { maxEntities: 10 });
+    const system: System = { update: vi.fn() };
+
+    expect(world.hasSystem(system)).toBe(false);
+  });
+
+  test("hasSystem returns false after system is removed", () => {
+    const world = new World({}, { maxEntities: 10 });
+    const system: System = { update: vi.fn() };
+
+    world.addSystem(system);
+    world.removeSystem(system);
+
+    expect(world.hasSystem(system)).toBe(false);
+  });
+
+  test("addSystem with priority controls execution order", () => {
+    const world = new World({}, { maxEntities: 10 });
+    const order: string[] = [];
+
+    const systemA: System = {
+      update: () => order.push("A"),
+    };
+    const systemB: System = {
+      update: () => order.push("B"),
+    };
+    const systemC: System = {
+      update: () => order.push("C"),
+    };
+
+    world.addSystem(systemA, 0);
+    world.addSystem(systemB, 10);
+    world.addSystem(systemC, 5);
+
+    world.update(16);
+
+    expect(order).toEqual(["B", "C", "A"]);
+  });
+
+  test("hasComponent throws for stale entity reference", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const world = new World(blueprints, { maxEntities: 5 });
+    const { Position } = world.components;
+
+    const entityId = world.addEntity();
+    world.addComponent(entityId, Position, { x: 10, y: 20 });
+    world.removeEntity(entityId);
+
+    expect(() => world.hasComponent(entityId, Position)).toThrow(
+      `Stale entity reference: EntityId ${entityId}`,
+    );
+  });
+
+  test("getComponent throws for stale entity reference", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const world = new World(blueprints, { maxEntities: 5 });
+    const { Position } = world.components;
+
+    const entityId = world.addEntity();
+    world.addComponent(entityId, Position, { x: 10, y: 20 });
+    world.removeEntity(entityId);
+
+    expect(() => world.getComponent(entityId, Position)).toThrow(
+      `Stale entity reference: EntityId ${entityId}`,
+    );
+  });
+
+  test("addComponent validates property types", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const world = new World(blueprints, { maxEntities: 5 });
+    const { Position } = world.components;
+
+    const entityId = world.addEntity();
+
+    expect(() => {
+      world.addComponent(entityId, Position, {
+        x: "not a number" as unknown as number,
+      });
+    }).toThrow(TypeError);
+  });
+
+  test("updateComponent validates property types", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const world = new World(blueprints, { maxEntities: 5 });
+    const { Position } = world.components;
+
+    const entityId = world.addEntity();
+    world.addComponent(entityId, Position, { x: 10, y: 20 });
+
+    expect(() => {
+      world.updateComponent(entityId, Position, {
+        x: "not a number" as unknown as number,
+      });
+    }).toThrow(TypeError);
   });
 });

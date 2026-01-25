@@ -237,6 +237,79 @@ describe("ComponentManager", () => {
     expect(component).toEqual({ x: 0, y: 0 });
   });
 
+  test("addComponent throws TypeError for wrong property type", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Position } = manager.components;
+
+    const entityId = entityManager.addEntity();
+
+    expect(() => {
+      manager.addComponent(entityId, Position, {
+        x: "not a number" as unknown as number,
+        y: 20,
+      });
+    }).toThrow(TypeError);
+    expect(() => {
+      manager.addComponent(entityId, Position, {
+        x: "not a number" as unknown as number,
+        y: 20,
+      });
+    }).toThrow("Position.x: expected number, got string");
+  });
+
+  test("updateComponent throws TypeError for wrong property type", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Position } = manager.components;
+
+    const entityId = entityManager.addEntity();
+    manager.addComponent(entityId, Position, { x: 10, y: 20 });
+
+    expect(() => {
+      manager.updateComponent(entityId, Position, {
+        x: "not a number" as unknown as number,
+      });
+    }).toThrow(TypeError);
+    expect(() => {
+      manager.updateComponent(entityId, Position, {
+        x: "not a number" as unknown as number,
+      });
+    }).toThrow("Position.x: expected number, got string");
+  });
+
+  test("hasComponent throws for invalid entity", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Position } = manager.components;
+
+    const entityId = entityManager.addEntity();
+    manager.addComponent(entityId, Position, { x: 10, y: 20 });
+    entityManager.removeEntity(entityId);
+
+    expect(() => manager.hasComponent(entityId, Position)).toThrow(
+      `Stale entity reference: EntityId ${entityId}`,
+    );
+  });
+
+  test("getComponent throws for invalid entity", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Position } = manager.components;
+
+    const entityId = entityManager.addEntity();
+    manager.addComponent(entityId, Position, { x: 10, y: 20 });
+    entityManager.removeEntity(entityId);
+
+    expect(() => manager.getComponent(entityId, Position)).toThrow(
+      `Stale entity reference: EntityId ${entityId}`,
+    );
+  });
+
   describe("Query Caching", () => {
     test("query returns cached result on second call with same components", () => {
       const blueprints = {

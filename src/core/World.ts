@@ -84,12 +84,16 @@ export class World<T extends ComponentBlueprint> {
     this.componentManager.removeComponent(entityId, component);
   }
 
-  addSystem(system: System): void {
-    this.systemManager.addSystem(system);
+  addSystem(system: System, priority = 0): void {
+    this.systemManager.addSystem(system, priority);
   }
 
   removeSystem(system: System): void {
     this.systemManager.removeSystem(system);
+  }
+
+  hasSystem(system: System): boolean {
+    return this.systemManager.hasSystem(system);
   }
 
   update(deltaTime: number): void {

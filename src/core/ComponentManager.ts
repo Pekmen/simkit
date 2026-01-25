@@ -70,6 +70,29 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
   }
 
+  private setComponentData<K extends keyof T>(
+    entityId: EntityId,
+    componentName: string,
+    componentData: Partial<T[K]> | undefined,
+  ): void {
+    const storage = this.componentStorages[componentName];
+    const defaults = this.componentBlueprints[componentName];
+
+    for (const prop in defaults) {
+      const value = componentData?.[prop as keyof T[K]] ?? defaults[prop];
+      const expectedType = typeof defaults[prop];
+      const actualType = typeof value;
+
+      if (actualType !== expectedType) {
+        throw new TypeError(
+          `${componentName}.${prop}: expected ${expectedType}, got ${actualType}`,
+        );
+      }
+
+      storage[prop][entityId] = value;
+    }
+  }
+
   addComponent<K extends keyof T>(
     entityId: EntityId,
     component: ComponentRef<Extract<K, string>>,
@@ -83,20 +106,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
       );
     }
 
-    const storage = this.componentStorages[component.name];
-    const defaultComponentData = this.componentBlueprints[component.name];
-
-    if (!componentData) {
-      for (const prop in defaultComponentData) {
-        storage[prop][entityId] = defaultComponentData[prop];
-      }
-    } else {
-      for (const prop in defaultComponentData) {
-        storage[prop][entityId] =
-          (componentData as Record<string, unknown>)[prop] ??
-          defaultComponentData[prop];
-      }
-    }
+    this.setComponentData(entityId, component.name, componentData);
 
     this.bitsets.add(entityId, component.bitPosition);
     const entityMask = this.bitsets.getBits(entityId);
@@ -116,20 +126,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
       );
     }
 
-    const storage = this.componentStorages[component.name];
-    const defaultComponentData = this.componentBlueprints[component.name];
-
-    if (!componentData) {
-      for (const prop in defaultComponentData) {
-        storage[prop][entityId] = defaultComponentData[prop];
-      }
-    } else {
-      for (const prop in defaultComponentData) {
-        storage[prop][entityId] =
-          (componentData as Record<string, unknown>)[prop] ??
-          defaultComponentData[prop];
-      }
-    }
+    this.setComponentData(entityId, component.name, componentData);
     // No bitset change needed - component already exists
     // No query cache invalidation needed - entity composition unchanged
   }
@@ -140,24 +137,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     for (const key in config) {
       const component = this.components[key];
-      const data = config[key];
-      const storage = this.componentStorages[key];
-      const defaults = this.componentBlueprints[key];
-
-      for (const prop in defaults) {
-        const value = data?.[prop] ?? defaults[prop];
-        const expectedType = typeof defaults[prop];
-        const actualType = typeof value;
-
-        if (actualType !== expectedType) {
-          throw new TypeError(
-            `${key}.${prop}: expected ${expectedType}, got ${actualType}`,
-          );
-        }
-
-        storage[prop][entityId] = value;
-      }
-
+      this.setComponentData(entityId, key, config[key]);
       mask |= 1 << component.bitPosition;
     }
 
@@ -193,9 +173,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
   }
 
   hasComponent(entityId: EntityId, component: ComponentRef): boolean {
-    if (!this.entityManager.isValid(entityId)) {
-      return false; // Invalid entity cannot have any component
-    }
+    this.validateEntity(entityId);
     return this.bitsets.has(entityId, component.bitPosition);
   }
 
@@ -214,7 +192,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
     entityId: EntityId,
     component: ComponentRef<Extract<K, string>>,
   ): T[K] | undefined {
-    if (!this.hasComponent(entityId, component)) {
+    this.validateEntity(entityId);
+
+    if (!this.bitsets.has(entityId, component.bitPosition)) {
       return undefined;
     }
 
