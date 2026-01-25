@@ -17,7 +17,7 @@ export class EntityManager {
     const entityId = (recycled ?? this.nextEntityId++) as EntityId;
 
     if (entityId >= this.maxEntities) {
-      throw new Error("Maximum number of entities reached");
+      throw new Error(`Maximum number of entities reached (${this.maxEntities})`);
     }
 
     this.entityToIndex[entityId] = this.activeEntities.length;

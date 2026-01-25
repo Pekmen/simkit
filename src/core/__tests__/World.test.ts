@@ -317,7 +317,7 @@ describe("World", () => {
     }).toThrow(TypeError);
   });
 
-  test("updateComponent validates property types", () => {
+  test("setComponent validates property types", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const world = new World(blueprints, { maxEntities: 5 });
     const { Position } = world.components;
@@ -326,7 +326,7 @@ describe("World", () => {
     world.addComponent(entityId, Position, { x: 10, y: 20 });
 
     expect(() => {
-      world.updateComponent(entityId, Position, {
+      world.setComponent(entityId, Position, {
         x: "not a number" as unknown as number,
       });
     }).toThrow(TypeError);

@@ -113,7 +113,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.queryCache.invalidateMatchingQueries(entityMask);
   }
 
-  updateComponent<K extends keyof T>(
+  setComponent<K extends keyof T>(
     entityId: EntityId,
     component: ComponentRef<Extract<K, string>>,
     componentData?: Partial<T[K]>,
@@ -127,8 +127,6 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
 
     this.setComponentData(entityId, component.name, componentData);
-    // No bitset change needed - component already exists
-    // No query cache invalidation needed - entity composition unchanged
   }
 
   addComponentsFromConfig(entityId: EntityId, config: SpawnConfig<T>): void {
@@ -149,7 +147,10 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
   }
 
-  removeComponent(entityId: EntityId, component: ComponentRef): void {
+  removeComponent<K extends keyof T>(
+    entityId: EntityId,
+    component: ComponentRef<Extract<K, string>>,
+  ): void {
     this.validateEntity(entityId);
 
     const hadComponent = this.bitsets.has(entityId, component.bitPosition);
@@ -172,7 +173,10 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.queryCache.invalidateMatchingQueries(entityMask);
   }
 
-  hasComponent(entityId: EntityId, component: ComponentRef): boolean {
+  hasComponent<K extends keyof T>(
+    entityId: EntityId,
+    component: ComponentRef<Extract<K, string>>,
+  ): boolean {
     this.validateEntity(entityId);
     return this.bitsets.has(entityId, component.bitPosition);
   }
@@ -232,6 +236,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
   query<K extends keyof T>(
     ...componentRefs: ComponentRef<Extract<K, string>>[]
   ): QueryResult<T, K> {
+    if (componentRefs.length === 0) {
+      throw new Error("query() requires at least one component");
+    }
     const mask = this.bitsets.createMask(componentRefs);
 
     const cached = this.queryCache.get(mask);

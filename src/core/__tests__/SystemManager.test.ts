@@ -31,17 +31,17 @@ describe("SystemManager", () => {
     expect(manager.systems).not.toContain(system);
   });
 
-  test("removeSystem does nothing if system not found", () => {
+  test("removeSystem throws if system not found", () => {
     const manager = new SystemManager();
     const system: System = {
       update: vi.fn(),
       destroy: vi.fn(),
     };
 
-    // Should not throw or call destroy
+    // Should throw when system not registered
     expect(() => {
       manager.removeSystem(system);
-    }).not.toThrow();
+    }).toThrow("System not registered");
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(system.destroy).not.toHaveBeenCalled();
   });

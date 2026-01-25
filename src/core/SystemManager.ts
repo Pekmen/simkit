@@ -25,11 +25,12 @@ export class SystemManager {
 
   removeSystem(system: System): void {
     const index = this.systems.indexOf(system);
-    if (index !== -1) {
-      system.destroy?.();
-      this.systems.splice(index, 1);
-      this.priorities.delete(system);
+    if (index === -1) {
+      throw new Error("System not registered");
     }
+    system.destroy?.();
+    this.systems.splice(index, 1);
+    this.priorities.delete(system);
   }
 
   hasSystem(system: System): boolean {

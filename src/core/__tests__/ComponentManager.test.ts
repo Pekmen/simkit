@@ -196,7 +196,7 @@ describe("ComponentManager", () => {
     }).toThrow(`Entity ${entityId} already has component Position`);
   });
 
-  test("updateComponent updates existing component data", () => {
+  test("setComponent updates existing component data", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
     const manager = new ComponentManager(blueprints, 5, entityManager);
@@ -204,13 +204,13 @@ describe("ComponentManager", () => {
 
     const entityId = entityManager.addEntity();
     manager.addComponent(entityId, Position, { x: 10, y: 20 });
-    manager.updateComponent(entityId, Position, { x: 30, y: 40 });
+    manager.setComponent(entityId, Position, { x: 30, y: 40 });
 
     const component = manager.getComponent(entityId, Position);
     expect(component).toEqual({ x: 30, y: 40 });
   });
 
-  test("updateComponent throws when component does not exist", () => {
+  test("setComponent throws when component does not exist", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
     const manager = new ComponentManager(blueprints, 5, entityManager);
@@ -219,11 +219,11 @@ describe("ComponentManager", () => {
     const entityId = entityManager.addEntity();
 
     expect(() => {
-      manager.updateComponent(entityId, Position, { x: 10, y: 20 });
+      manager.setComponent(entityId, Position, { x: 10, y: 20 });
     }).toThrow(`Entity ${entityId} does not have component Position`);
   });
 
-  test("updateComponent with no data resets to defaults", () => {
+  test("setComponent with no data resets to defaults", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
     const manager = new ComponentManager(blueprints, 5, entityManager);
@@ -231,7 +231,7 @@ describe("ComponentManager", () => {
 
     const entityId = entityManager.addEntity();
     manager.addComponent(entityId, Position, { x: 10, y: 20 });
-    manager.updateComponent(entityId, Position);
+    manager.setComponent(entityId, Position);
 
     const component = manager.getComponent(entityId, Position);
     expect(component).toEqual({ x: 0, y: 0 });
@@ -259,7 +259,7 @@ describe("ComponentManager", () => {
     }).toThrow("Position.x: expected number, got string");
   });
 
-  test("updateComponent throws TypeError for wrong property type", () => {
+  test("setComponent throws TypeError for wrong property type", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
     const manager = new ComponentManager(blueprints, 5, entityManager);
@@ -269,12 +269,12 @@ describe("ComponentManager", () => {
     manager.addComponent(entityId, Position, { x: 10, y: 20 });
 
     expect(() => {
-      manager.updateComponent(entityId, Position, {
+      manager.setComponent(entityId, Position, {
         x: "not a number" as unknown as number,
       });
     }).toThrow(TypeError);
     expect(() => {
-      manager.updateComponent(entityId, Position, {
+      manager.setComponent(entityId, Position, {
         x: "not a number" as unknown as number,
       });
     }).toThrow("Position.x: expected number, got string");

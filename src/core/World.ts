@@ -61,15 +61,18 @@ export class World<T extends ComponentBlueprint> {
     this.componentManager.addComponent(entityId, component, componentData);
   }
 
-  updateComponent<K extends keyof T>(
+  setComponent<K extends keyof T>(
     entityId: EntityId,
     component: ComponentRef<Extract<K, string>>,
     componentData?: Partial<T[K]>,
   ): void {
-    this.componentManager.updateComponent(entityId, component, componentData);
+    this.componentManager.setComponent(entityId, component, componentData);
   }
 
-  hasComponent(entityId: EntityId, component: ComponentRef): boolean {
+  hasComponent<K extends keyof T>(
+    entityId: EntityId,
+    component: ComponentRef<Extract<K, string>>,
+  ): boolean {
     return this.componentManager.hasComponent(entityId, component);
   }
 
@@ -80,7 +83,10 @@ export class World<T extends ComponentBlueprint> {
     return this.componentManager.getComponent(entityId, component);
   }
 
-  removeComponent(entityId: EntityId, component: ComponentRef): void {
+  removeComponent<K extends keyof T>(
+    entityId: EntityId,
+    component: ComponentRef<Extract<K, string>>,
+  ): void {
     this.componentManager.removeComponent(entityId, component);
   }
 
