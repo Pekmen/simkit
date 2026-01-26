@@ -1,16 +1,12 @@
 import type { System } from "./System";
 
-function getSystemName(system: System): string {
-  return system.constructor.name;
-}
-
 export class SystemManager {
   private systems: System[] = [];
   private priorities = new Map<System, number>();
 
   addSystem(system: System, priority = 0): void {
     if (this.systems.includes(system)) {
-      throw new Error(`addSystem: ${getSystemName(system)} already registered`);
+      throw new Error(`addSystem: ${system.constructor.name} already registered`);
     }
 
     system.init?.();
@@ -30,7 +26,7 @@ export class SystemManager {
   removeSystem(system: System): void {
     const index = this.systems.indexOf(system);
     if (index === -1) {
-      throw new Error(`removeSystem: ${getSystemName(system)} not registered`);
+      throw new Error(`removeSystem: ${system.constructor.name} not registered`);
     }
     system.destroy?.();
     this.systems.splice(index, 1);

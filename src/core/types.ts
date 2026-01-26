@@ -42,8 +42,3 @@ export interface WorldOptions {
 export type SpawnConfig<T extends ComponentBlueprint> = Partial<{
   [K in keyof T]: Partial<T[K]>;
 }>;
-
-export type ComponentData<
-  T extends ComponentBlueprint,
-  K extends keyof T,
-> = Partial<T[K]>;

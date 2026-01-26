@@ -81,10 +81,6 @@ export class World<T extends ComponentBlueprint> {
     this.componentManager.removeComponent(entityId, component);
   }
 
-  clearComponents(entityId: EntityId): void {
-    this.componentManager.removeAllComponents(entityId);
-  }
-
   addSystem(system: System, priority = 0): void {
     this.systemManager.addSystem(system, priority);
   }

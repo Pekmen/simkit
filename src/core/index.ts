@@ -13,5 +13,4 @@ export type {
   ComponentHandle,
   WorldOptions,
   SpawnConfig,
-  ComponentData,
 } from "./types.js";
