@@ -20,14 +20,14 @@ describe("ComponentManager", () => {
     expect(storages.Velocity.dy.length).toBe(10);
   });
 
-  test("addComponent stores the component data correctly", () => {
+  test("setComponent stores the component data correctly", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
     const manager = new ComponentManager(blueprints, 5, entityManager);
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
-    manager.addComponent(entityId, Position, { x: 10, y: 20 });
+    manager.setComponent(entityId, Position, { x: 10, y: 20 });
 
     // @ts-expect-error Accessing private property
     const storages = manager.componentStorages;
@@ -43,7 +43,7 @@ describe("ComponentManager", () => {
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
-    manager.addComponent(entityId, Position, { x: 10, y: 20 });
+    manager.setComponent(entityId, Position, { x: 10, y: 20 });
     manager.removeComponent(entityId, Position);
 
     // @ts-expect-error Accessing private property
@@ -65,8 +65,8 @@ describe("ComponentManager", () => {
     const { Position, Velocity } = manager.components;
 
     const entityId = entityManager.addEntity();
-    manager.addComponent(entityId, Position, { x: 10, y: 20 });
-    manager.addComponent(entityId, Velocity, { dx: 1, dy: 2 });
+    manager.setComponent(entityId, Position, { x: 10, y: 20 });
+    manager.setComponent(entityId, Velocity, { dx: 1, dy: 2 });
 
     manager.removeAllComponents(entityId);
 
@@ -87,7 +87,7 @@ describe("ComponentManager", () => {
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
-    manager.addComponent(entityId, Position, { x: 10, y: 20 });
+    manager.setComponent(entityId, Position, { x: 10, y: 20 });
 
     const component = manager.getComponent(entityId, Position);
 
@@ -103,7 +103,7 @@ describe("ComponentManager", () => {
     const entityId = entityManager.addEntity();
 
     expect(() => manager.getComponent(entityId, Position)).toThrow(
-      "Entity 0 does not have component Position",
+      "getComponent: Entity 0 does not have component Position",
     );
   });
 
@@ -114,11 +114,11 @@ describe("ComponentManager", () => {
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
-    manager.addComponent(entityId, Position, { x: 10, y: 20 });
+    manager.setComponent(entityId, Position, { x: 10, y: 20 });
     manager.removeComponent(entityId, Position);
 
     expect(() => manager.getComponent(entityId, Position)).toThrow(
-      "Entity 0 does not have component Position",
+      "getComponent: Entity 0 does not have component Position",
     );
   });
 
@@ -131,7 +131,7 @@ describe("ComponentManager", () => {
     const entityId = entityManager.addEntity();
     expect(manager.hasComponent(entityId, Position)).toBe(false);
 
-    manager.addComponent(entityId, Position, { x: 10, y: 20 });
+    manager.setComponent(entityId, Position, { x: 10, y: 20 });
     expect(manager.hasComponent(entityId, Position)).toBe(true);
 
     manager.removeComponent(entityId, Position);
@@ -173,8 +173,8 @@ describe("ComponentManager", () => {
     const { Position, Velocity } = manager.components;
 
     const entityId = entityManager.addEntity();
-    manager.addComponent(entityId, Position, { x: 10, y: 20 });
-    manager.addComponent(entityId, Velocity, { dx: 1, dy: 2 });
+    manager.setComponent(entityId, Position, { x: 10, y: 20 });
+    manager.setComponent(entityId, Velocity, { dx: 1, dy: 2 });
 
     manager.removeAllComponents(entityId);
 
@@ -182,18 +182,19 @@ describe("ComponentManager", () => {
     expect(manager.hasComponent(entityId, Velocity)).toBe(false);
   });
 
-  test("addComponent throws when component already exists", () => {
+  test("setComponent creates component when it does not exist", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
     const manager = new ComponentManager(blueprints, 5, entityManager);
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
-    manager.addComponent(entityId, Position, { x: 10, y: 20 });
+    expect(manager.hasComponent(entityId, Position)).toBe(false);
 
-    expect(() => {
-      manager.addComponent(entityId, Position, { x: 30, y: 40 });
-    }).toThrow(`Entity ${entityId} already has component Position`);
+    manager.setComponent(entityId, Position, { x: 10, y: 20 });
+
+    expect(manager.hasComponent(entityId, Position)).toBe(true);
+    expect(manager.getComponent(entityId, Position)).toEqual({ x: 10, y: 20 });
   });
 
   test("setComponent updates existing component data", () => {
@@ -203,14 +204,14 @@ describe("ComponentManager", () => {
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
-    manager.addComponent(entityId, Position, { x: 10, y: 20 });
+    manager.setComponent(entityId, Position, { x: 10, y: 20 });
     manager.setComponent(entityId, Position, { x: 30, y: 40 });
 
     const component = manager.getComponent(entityId, Position);
     expect(component).toEqual({ x: 30, y: 40 });
   });
 
-  test("setComponent throws when component does not exist", () => {
+  test("setComponent performs upsert (create or update)", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
     const manager = new ComponentManager(blueprints, 5, entityManager);
@@ -218,9 +219,13 @@ describe("ComponentManager", () => {
 
     const entityId = entityManager.addEntity();
 
-    expect(() => {
-      manager.setComponent(entityId, Position, { x: 10, y: 20 });
-    }).toThrow(`Entity ${entityId} does not have component Position`);
+    // Create
+    manager.setComponent(entityId, Position, { x: 10, y: 20 });
+    expect(manager.getComponent(entityId, Position)).toEqual({ x: 10, y: 20 });
+
+    // Update
+    manager.setComponent(entityId, Position, { x: 30, y: 40 });
+    expect(manager.getComponent(entityId, Position)).toEqual({ x: 30, y: 40 });
   });
 
   test("setComponent with no data resets to defaults", () => {
@@ -230,14 +235,14 @@ describe("ComponentManager", () => {
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
-    manager.addComponent(entityId, Position, { x: 10, y: 20 });
+    manager.setComponent(entityId, Position, { x: 10, y: 20 });
     manager.setComponent(entityId, Position);
 
     const component = manager.getComponent(entityId, Position);
     expect(component).toEqual({ x: 0, y: 0 });
   });
 
-  test("addComponent throws TypeError for wrong property type", () => {
+  test("setComponent throws TypeError for wrong property type on new component", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
     const manager = new ComponentManager(blueprints, 5, entityManager);
@@ -246,13 +251,13 @@ describe("ComponentManager", () => {
     const entityId = entityManager.addEntity();
 
     expect(() => {
-      manager.addComponent(entityId, Position, {
+      manager.setComponent(entityId, Position, {
         x: "not a number" as unknown as number,
         y: 20,
       });
     }).toThrow(TypeError);
     expect(() => {
-      manager.addComponent(entityId, Position, {
+      manager.setComponent(entityId, Position, {
         x: "not a number" as unknown as number,
         y: 20,
       });
@@ -266,7 +271,7 @@ describe("ComponentManager", () => {
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
-    manager.addComponent(entityId, Position, { x: 10, y: 20 });
+    manager.setComponent(entityId, Position, { x: 10, y: 20 });
 
     expect(() => {
       manager.setComponent(entityId, Position, {
@@ -287,7 +292,7 @@ describe("ComponentManager", () => {
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
-    manager.addComponent(entityId, Position, { x: 10, y: 20 });
+    manager.setComponent(entityId, Position, { x: 10, y: 20 });
     entityManager.removeEntity(entityId);
 
     expect(() => manager.hasComponent(entityId, Position)).toThrow(
@@ -302,7 +307,7 @@ describe("ComponentManager", () => {
     const { Position } = manager.components;
 
     const entityId = entityManager.addEntity();
-    manager.addComponent(entityId, Position, { x: 10, y: 20 });
+    manager.setComponent(entityId, Position, { x: 10, y: 20 });
     entityManager.removeEntity(entityId);
 
     expect(() => manager.getComponent(entityId, Position)).toThrow(
@@ -322,9 +327,9 @@ describe("ComponentManager", () => {
 
       const entity1 = entityManager.addEntity();
       const entity2 = entityManager.addEntity();
-      manager.addComponent(entity1, Position, { x: 10, y: 20 });
-      manager.addComponent(entity1, Velocity, { dx: 1, dy: 2 });
-      manager.addComponent(entity2, Position, { x: 30, y: 40 });
+      manager.setComponent(entity1, Position, { x: 10, y: 20 });
+      manager.setComponent(entity1, Velocity, { dx: 1, dy: 2 });
+      manager.setComponent(entity2, Position, { x: 30, y: 40 });
 
       const result1 = manager.query(Position, Velocity);
       const result2 = manager.query(Position, Velocity);
@@ -337,7 +342,7 @@ describe("ComponentManager", () => {
       expect(result1.Velocity).toBe(result2.Velocity);
     });
 
-    test("cache invalidates on addComponent", () => {
+    test("cache invalidates on setComponent", () => {
       const blueprints = {
         Position: { x: 0, y: 0 },
         Velocity: { dx: 0, dy: 0 },
@@ -348,15 +353,15 @@ describe("ComponentManager", () => {
 
       const entity1 = entityManager.addEntity();
       const entity2 = entityManager.addEntity();
-      manager.addComponent(entity1, Position, { x: 10, y: 20 });
-      manager.addComponent(entity1, Velocity, { dx: 1, dy: 2 });
+      manager.setComponent(entity1, Position, { x: 10, y: 20 });
+      manager.setComponent(entity1, Velocity, { dx: 1, dy: 2 });
 
       const result1 = manager.query(Position, Velocity);
       expect(result1.entities).toEqual([entity1]);
 
       // Add component to entity2 - should invalidate cache
-      manager.addComponent(entity2, Position, { x: 30, y: 40 });
-      manager.addComponent(entity2, Velocity, { dx: 3, dy: 4 });
+      manager.setComponent(entity2, Position, { x: 30, y: 40 });
+      manager.setComponent(entity2, Velocity, { dx: 3, dy: 4 });
 
       const result2 = manager.query(Position, Velocity);
 
@@ -376,10 +381,10 @@ describe("ComponentManager", () => {
 
       const entity1 = entityManager.addEntity();
       const entity2 = entityManager.addEntity();
-      manager.addComponent(entity1, Position, { x: 10, y: 20 });
-      manager.addComponent(entity1, Velocity, { dx: 1, dy: 2 });
-      manager.addComponent(entity2, Position, { x: 30, y: 40 });
-      manager.addComponent(entity2, Velocity, { dx: 3, dy: 4 });
+      manager.setComponent(entity1, Position, { x: 10, y: 20 });
+      manager.setComponent(entity1, Velocity, { dx: 1, dy: 2 });
+      manager.setComponent(entity2, Position, { x: 30, y: 40 });
+      manager.setComponent(entity2, Velocity, { dx: 3, dy: 4 });
 
       const result1 = manager.query(Position, Velocity);
       expect(result1.entities).toEqual([entity1, entity2]);
@@ -405,10 +410,10 @@ describe("ComponentManager", () => {
 
       const entity1 = entityManager.addEntity();
       const entity2 = entityManager.addEntity();
-      manager.addComponent(entity1, Position, { x: 10, y: 20 });
-      manager.addComponent(entity1, Velocity, { dx: 1, dy: 2 });
-      manager.addComponent(entity2, Position, { x: 30, y: 40 });
-      manager.addComponent(entity2, Velocity, { dx: 3, dy: 4 });
+      manager.setComponent(entity1, Position, { x: 10, y: 20 });
+      manager.setComponent(entity1, Velocity, { dx: 1, dy: 2 });
+      manager.setComponent(entity2, Position, { x: 30, y: 40 });
+      manager.setComponent(entity2, Velocity, { dx: 3, dy: 4 });
 
       const result1 = manager.query(Position, Velocity);
       expect(result1.entities).toEqual([entity1, entity2]);
@@ -435,10 +440,10 @@ describe("ComponentManager", () => {
 
       const entity1 = entityManager.addEntity();
       const entity2 = entityManager.addEntity();
-      manager.addComponent(entity1, Position, { x: 10, y: 20 });
-      manager.addComponent(entity1, Velocity, { dx: 1, dy: 2 });
-      manager.addComponent(entity2, Position, { x: 30, y: 40 });
-      manager.addComponent(entity2, Size, { width: 5, height: 5 });
+      manager.setComponent(entity1, Position, { x: 10, y: 20 });
+      manager.setComponent(entity1, Velocity, { dx: 1, dy: 2 });
+      manager.setComponent(entity2, Position, { x: 30, y: 40 });
+      manager.setComponent(entity2, Size, { width: 5, height: 5 });
 
       const result1 = manager.query(Position, Velocity);
       const result2 = manager.query(Position, Size);
@@ -467,8 +472,8 @@ describe("ComponentManager", () => {
       const { Position, Velocity } = manager.components;
 
       const entity = entityManager.addEntity();
-      manager.addComponent(entity, Position, { x: 10, y: 20 });
-      manager.addComponent(entity, Velocity, { dx: 1, dy: 2 });
+      manager.setComponent(entity, Position, { x: 10, y: 20 });
+      manager.setComponent(entity, Velocity, { dx: 1, dy: 2 });
 
       const result1 = manager.query(Position, Velocity);
       const result2 = manager.query(Position, Velocity);
@@ -494,12 +499,12 @@ describe("ComponentManager", () => {
 
       // Create entity 1 with Position and Velocity
       const entity1 = entityManager.addEntity();
-      manager.addComponent(entity1, Position, { x: 10, y: 20 });
-      manager.addComponent(entity1, Velocity, { dx: 1, dy: 2 });
+      manager.setComponent(entity1, Position, { x: 10, y: 20 });
+      manager.setComponent(entity1, Velocity, { dx: 1, dy: 2 });
 
       // Create entity 2 with Health
       const entity2 = entityManager.addEntity();
-      manager.addComponent(entity2, Health, { hp: 50 });
+      manager.setComponent(entity2, Health, { hp: 50 });
 
       // Cache two different queries
       const posVelResult1 = manager.query(Position, Velocity);
@@ -539,9 +544,9 @@ describe("ComponentManager", () => {
       const { A, B, C } = manager.components;
 
       const e1 = entityManager.addEntity();
-      manager.addComponent(e1, A, { value: 1 });
-      manager.addComponent(e1, B, { value: 2 });
-      manager.addComponent(e1, C, { value: 3 });
+      manager.setComponent(e1, A, { value: 1 });
+      manager.setComponent(e1, B, { value: 2 });
+      manager.setComponent(e1, C, { value: 3 });
 
       // Execute 3 queries with cache size 2
       manager.query(A); // Cache: [A]
@@ -560,9 +565,9 @@ describe("ComponentManager", () => {
       const { A, B, C } = manager.components;
 
       const e1 = entityManager.addEntity();
-      manager.addComponent(e1, A, { v: 1 });
-      manager.addComponent(e1, B, { v: 2 });
-      manager.addComponent(e1, C, { v: 3 });
+      manager.setComponent(e1, A, { v: 1 });
+      manager.setComponent(e1, B, { v: 2 });
+      manager.setComponent(e1, C, { v: 3 });
 
       const r1 = manager.query(A); // Cache: [A]
       const r2 = manager.query(B); // Cache: [A, B]
@@ -590,7 +595,7 @@ describe("ComponentManager", () => {
       const { A } = manager.components;
 
       const e1 = entityManager.addEntity();
-      manager.addComponent(e1, A, { value: 1 });
+      manager.setComponent(e1, A, { value: 1 });
 
       manager.query(A);
 

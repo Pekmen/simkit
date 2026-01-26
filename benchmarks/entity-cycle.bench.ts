@@ -14,7 +14,7 @@ describe("Entity Cycle", () => {
     // Setup: Create 1000 entities with component A
     for (let i = 0; i < 1000; i++) {
       const e = world.addEntity();
-      world.addComponent(e, A, { value: i });
+      world.setComponent(e, A, { value: i });
     }
 
     // Spawn B entities (one for each A entity)
@@ -22,7 +22,7 @@ describe("Entity Cycle", () => {
     const bEntityIds = [];
     for (const e of aEntities) {
       const newEntity = world.addEntity();
-      world.addComponent(newEntity, B, { value: aComp.value[e] ?? 0 });
+      world.setComponent(newEntity, B, { value: aComp.value[e] ?? 0 });
       bEntityIds.push(newEntity);
     }
 

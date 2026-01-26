@@ -17,11 +17,11 @@ describe("Packed Iteration (5 queries)", () => {
     // Create 1000 entities with all 5 components
     for (let i = 0; i < 1000; i++) {
       const entity = world.addEntity();
-      world.addComponent(entity, A, { value: 1 });
-      world.addComponent(entity, B, { value: 1 });
-      world.addComponent(entity, C, { value: 1 });
-      world.addComponent(entity, D, { value: 1 });
-      world.addComponent(entity, E, { value: 1 });
+      world.setComponent(entity, A, { value: 1 });
+      world.setComponent(entity, B, { value: 1 });
+      world.setComponent(entity, C, { value: 1 });
+      world.setComponent(entity, D, { value: 1 });
+      world.setComponent(entity, E, { value: 1 });
     }
 
     // Benchmark: 5 separate queries doubling values

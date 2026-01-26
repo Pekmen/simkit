@@ -8,9 +8,10 @@ export type {
   ComponentBlueprint,
   ComponentStorage,
   ComponentStorageMap,
-  ComponentStorageMapQuery,
+  DenseComponentStorageMap,
   QueryResult,
   ComponentHandle,
   WorldOptions,
   SpawnConfig,
+  ComponentData,
 } from "./types.js";

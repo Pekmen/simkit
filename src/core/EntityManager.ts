@@ -8,6 +8,9 @@ export class EntityManager {
   private readonly entityToIndex: Int32Array;
 
   constructor(maxEntities: number) {
+    if (maxEntities <= 0) {
+      throw new Error("maxEntities must be greater than 0");
+    }
     this.maxEntities = maxEntities;
     this.entityToIndex = new Int32Array(maxEntities).fill(-1);
   }

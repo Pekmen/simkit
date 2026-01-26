@@ -29,14 +29,14 @@ describe("World", () => {
     expect(e3).toBe(2);
   });
 
-  test("adding a component stores the data correctly", () => {
+  test("setting a component stores the data correctly", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const world = new World(blueprints, { maxEntities: 5 });
 
     const { Position } = world.components;
     const entityId = world.addEntity();
 
-    world.addComponent(entityId, Position, { x: 10, y: 20 });
+    world.setComponent(entityId, Position, { x: 10, y: 20 });
 
     // @ts-expect-error Accessing private storage for testing
     const storages = world.componentManager.componentStorages;
@@ -52,7 +52,7 @@ describe("World", () => {
     const { Position } = world.components;
     const entityId = world.addEntity();
 
-    world.addComponent(entityId, Position, { x: 10, y: 20 });
+    world.setComponent(entityId, Position, { x: 10, y: 20 });
     world.removeComponent(entityId, Position);
 
     // @ts-expect-error Accessing private storage for testing
@@ -73,8 +73,8 @@ describe("World", () => {
     const { Position, Velocity } = world.components;
 
     const entityId = world.addEntity();
-    world.addComponent(entityId, Position, { x: 10, y: 20 });
-    world.addComponent(entityId, Velocity, { dx: 1, dy: 2 });
+    world.setComponent(entityId, Position, { x: 10, y: 20 });
+    world.setComponent(entityId, Velocity, { dx: 1, dy: 2 });
 
     world.removeEntity(entityId);
 
@@ -121,7 +121,7 @@ describe("World", () => {
     const { Position } = world.components;
 
     const entityId = world.addEntity();
-    world.addComponent(entityId, Position, { x: 10, y: 20 });
+    world.setComponent(entityId, Position, { x: 10, y: 20 });
 
     const component = world.getComponent(entityId, Position);
 
@@ -136,7 +136,7 @@ describe("World", () => {
     const entityId = world.addEntity();
 
     expect(() => world.getComponent(entityId, Position)).toThrow(
-      "Entity 0 does not have component Position",
+      "getComponent: Entity 0 does not have component Position",
     );
   });
 
@@ -146,7 +146,7 @@ describe("World", () => {
     const { Position } = world.components;
 
     const entityId = world.addEntity();
-    world.addComponent(entityId, Position, { x: 15 }); // Only x, y should use default
+    world.setComponent(entityId, Position, { x: 15 }); // Only x, y should use default
 
     const component = world.getComponent(entityId, Position);
 
@@ -165,7 +165,7 @@ describe("World", () => {
     // Create and destroy entity at ID 0
     const e1 = world.addEntity();
     expect(e1).toBe(0);
-    world.addComponent(e1, Position, { x: 100, y: 200 });
+    world.setComponent(e1, Position, { x: 100, y: 200 });
     world.removeEntity(e1);
 
     // Recycle ID 0 - will have same value as e1
@@ -174,7 +174,7 @@ describe("World", () => {
     expect(e2).toBe(e1); // Same entity ID (no generation tracking)
 
     // Add component to recycled entity
-    world.addComponent(e2, Position, { x: 50, y: 75 });
+    world.setComponent(e2, Position, { x: 50, y: 75 });
 
     // Verify correct data is stored
     // @ts-expect-error Accessing private storage for testing
@@ -197,7 +197,7 @@ describe("World", () => {
 
     const { Position } = world.components;
     const e = world.addEntity();
-    world.addComponent(e, Position, { x: 1, y: 2 });
+    world.setComponent(e, Position, { x: 1, y: 2 });
 
     world.query(Position);
 
@@ -211,7 +211,7 @@ describe("World", () => {
 
     const { Position } = world.components;
     const e = world.addEntity();
-    world.addComponent(e, Position, { x: 1, y: 2 });
+    world.setComponent(e, Position, { x: 1, y: 2 });
 
     world.query(Position);
 
@@ -281,7 +281,7 @@ describe("World", () => {
     const { Position } = world.components;
 
     const entityId = world.addEntity();
-    world.addComponent(entityId, Position, { x: 10, y: 20 });
+    world.setComponent(entityId, Position, { x: 10, y: 20 });
     world.removeEntity(entityId);
 
     expect(() => world.hasComponent(entityId, Position)).toThrow(
@@ -295,7 +295,7 @@ describe("World", () => {
     const { Position } = world.components;
 
     const entityId = world.addEntity();
-    world.addComponent(entityId, Position, { x: 10, y: 20 });
+    world.setComponent(entityId, Position, { x: 10, y: 20 });
     world.removeEntity(entityId);
 
     expect(() => world.getComponent(entityId, Position)).toThrow(
@@ -303,7 +303,7 @@ describe("World", () => {
     );
   });
 
-  test("addComponent validates property types", () => {
+  test("setComponent validates property types on new component", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const world = new World(blueprints, { maxEntities: 5 });
     const { Position } = world.components;
@@ -311,7 +311,7 @@ describe("World", () => {
     const entityId = world.addEntity();
 
     expect(() => {
-      world.addComponent(entityId, Position, {
+      world.setComponent(entityId, Position, {
         x: "not a number" as unknown as number,
       });
     }).toThrow(TypeError);
@@ -323,7 +323,7 @@ describe("World", () => {
     const { Position } = world.components;
 
     const entityId = world.addEntity();
-    world.addComponent(entityId, Position, { x: 10, y: 20 });
+    world.setComponent(entityId, Position, { x: 10, y: 20 });
 
     expect(() => {
       world.setComponent(entityId, Position, {

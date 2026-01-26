@@ -17,34 +17,34 @@ describe("Simple Iteration", () => {
     // Group 1: 1000 entities with (A,B)
     for (let i = 0; i < 1000; i++) {
       const e = world.addEntity();
-      world.addComponent(e, A, { value: 1 });
-      world.addComponent(e, B, { value: 2 });
+      world.setComponent(e, A, { value: 1 });
+      world.setComponent(e, B, { value: 2 });
     }
 
     // Group 2: 1000 entities with (A,B,C)
     for (let i = 0; i < 1000; i++) {
       const e = world.addEntity();
-      world.addComponent(e, A, { value: 1 });
-      world.addComponent(e, B, { value: 2 });
-      world.addComponent(e, C, { value: 3 });
+      world.setComponent(e, A, { value: 1 });
+      world.setComponent(e, B, { value: 2 });
+      world.setComponent(e, C, { value: 3 });
     }
 
     // Group 3: 1000 entities with (A,B,C,D)
     for (let i = 0; i < 1000; i++) {
       const e = world.addEntity();
-      world.addComponent(e, A, { value: 1 });
-      world.addComponent(e, B, { value: 2 });
-      world.addComponent(e, C, { value: 3 });
-      world.addComponent(e, D, { value: 4 });
+      world.setComponent(e, A, { value: 1 });
+      world.setComponent(e, B, { value: 2 });
+      world.setComponent(e, C, { value: 3 });
+      world.setComponent(e, D, { value: 4 });
     }
 
     // Group 4: 1000 entities with (A,B,C,E)
     for (let i = 0; i < 1000; i++) {
       const e = world.addEntity();
-      world.addComponent(e, A, { value: 1 });
-      world.addComponent(e, B, { value: 2 });
-      world.addComponent(e, C, { value: 3 });
-      world.addComponent(e, E, { value: 5 });
+      world.setComponent(e, A, { value: 1 });
+      world.setComponent(e, B, { value: 2 });
+      world.setComponent(e, C, { value: 3 });
+      world.setComponent(e, E, { value: 5 });
     }
 
     // System 1: Swap A and B

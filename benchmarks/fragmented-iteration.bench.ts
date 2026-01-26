@@ -69,10 +69,10 @@ describe("Fragmented Iteration", () => {
     for (const letter of letters) {
       for (let i = 0; i < 100; i++) {
         const e = world.addEntity();
-        world.addComponent(e, components[letter as keyof typeof components], {
+        world.setComponent(e, components[letter as keyof typeof components], {
           value: i,
         });
-        world.addComponent(e, components.Data, { value: i });
+        world.setComponent(e, components.Data, { value: i });
       }
     }
 

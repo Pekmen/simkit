@@ -41,7 +41,7 @@ describe("SystemManager", () => {
     // Should throw when system not registered
     expect(() => {
       manager.removeSystem(system);
-    }).toThrow("System not registered");
+    }).toThrow("removeSystem: Object not registered");
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(system.destroy).not.toHaveBeenCalled();
   });
@@ -108,7 +108,7 @@ describe("SystemManager", () => {
     manager.addSystem(system);
     expect(() => {
       manager.addSystem(system);
-    }).toThrow("System already registered");
+    }).toThrow("addSystem: Object already registered");
   });
 
   test("hasSystem returns true for registered system", () => {

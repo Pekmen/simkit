@@ -16,12 +16,12 @@ describe("Query", () => {
     const e2 = world.addEntity();
     const e3 = world.addEntity();
 
-    world.addComponent(e1, Position, { x: 1, y: 2 });
-    world.addComponent(e1, Velocity, { dx: 3, dy: 4 });
+    world.setComponent(e1, Position, { x: 1, y: 2 });
+    world.setComponent(e1, Velocity, { dx: 3, dy: 4 });
 
-    world.addComponent(e2, Position, { x: 5, y: 6 });
+    world.setComponent(e2, Position, { x: 5, y: 6 });
 
-    world.addComponent(e3, Velocity, { dx: 7, dy: 8 });
+    world.setComponent(e3, Velocity, { dx: 7, dy: 8 });
 
     const { entities } = world.query(Position, Velocity);
 
@@ -43,8 +43,8 @@ describe("Query", () => {
     const { Position, Velocity } = world.components;
 
     const e1 = world.addEntity();
-    world.addComponent(e1, Position, { x: 10, y: 20 });
-    world.addComponent(e1, Velocity, { dx: 1, dy: 2 });
+    world.setComponent(e1, Position, { x: 10, y: 20 });
+    world.setComponent(e1, Velocity, { dx: 1, dy: 2 });
 
     const { Position: pos, Velocity: vel } = world.query(Position, Velocity);
 
@@ -69,9 +69,9 @@ describe("Query", () => {
     const e2 = world.addEntity();
     const e3 = world.addEntity();
 
-    world.addComponent(e1, Position, { x: 1, y: 2 });
-    world.addComponent(e2, Position, { x: 3, y: 4 });
-    world.addComponent(e3, Velocity, { dx: 5, dy: 6 });
+    world.setComponent(e1, Position, { x: 1, y: 2 });
+    world.setComponent(e2, Position, { x: 3, y: 4 });
+    world.setComponent(e3, Velocity, { dx: 5, dy: 6 });
 
     const { entities } = world.query(Position);
 
@@ -109,8 +109,8 @@ describe("Query", () => {
     const { Position, Velocity } = world.components;
 
     const e1 = world.addEntity();
-    world.addComponent(e1, Position, { x: 10, y: 20 });
-    world.addComponent(e1, Velocity, { dx: 1, dy: 2 });
+    world.setComponent(e1, Position, { x: 10, y: 20 });
+    world.setComponent(e1, Velocity, { dx: 1, dy: 2 });
 
     const { entities, Position: pos, Velocity: vel } = world.query(
       Position,
@@ -138,12 +138,12 @@ describe("Query", () => {
     const { Position, Velocity } = world.components;
 
     const e1 = world.addEntity();
-    world.addComponent(e1, Position, { x: 1, y: 2 });
+    world.setComponent(e1, Position, { x: 1, y: 2 });
 
     let { entities } = world.query(Position, Velocity);
     expect(entities).toHaveLength(0);
 
-    world.addComponent(e1, Velocity, { dx: 3, dy: 4 });
+    world.setComponent(e1, Velocity, { dx: 3, dy: 4 });
 
     ({ entities } = world.query(Position, Velocity));
     expect(entities).toHaveLength(1);
@@ -162,8 +162,8 @@ describe("Query", () => {
     const { Position, Velocity } = world.components;
 
     const e1 = world.addEntity();
-    world.addComponent(e1, Position, { x: 1, y: 2 });
-    world.addComponent(e1, Velocity, { dx: 3, dy: 4 });
+    world.setComponent(e1, Position, { x: 1, y: 2 });
+    world.setComponent(e1, Velocity, { dx: 3, dy: 4 });
 
     let { entities } = world.query(Position, Velocity);
     expect(entities).toHaveLength(1);
@@ -187,12 +187,12 @@ describe("Query", () => {
     const { Position, Velocity, Health } = world.components;
 
     const e1 = world.addEntity();
-    world.addComponent(e1, Position, { x: 1, y: 2 });
-    world.addComponent(e1, Velocity, { dx: 3, dy: 4 });
+    world.setComponent(e1, Position, { x: 1, y: 2 });
+    world.setComponent(e1, Velocity, { dx: 3, dy: 4 });
 
     const e2 = world.addEntity();
-    world.addComponent(e2, Position, { x: 5, y: 6 });
-    world.addComponent(e2, Health, { hp: 50 });
+    world.setComponent(e2, Position, { x: 5, y: 6 });
+    world.setComponent(e2, Health, { hp: 50 });
 
     const movingEntities = world.query(Position, Velocity);
     const livingEntities = world.query(Position, Health);
@@ -213,12 +213,12 @@ describe("Query", () => {
 
     // Create and remove entity to trigger recycling
     const e1 = world.addEntity();
-    world.addComponent(e1, Position, { x: 1, y: 1 });
+    world.setComponent(e1, Position, { x: 1, y: 1 });
     world.removeEntity(e1);
 
     // Recycled entity ID will be the same as e1
     const e2 = world.addEntity();
-    world.addComponent(e2, Position, { x: 2, y: 2 });
+    world.setComponent(e2, Position, { x: 2, y: 2 });
 
     const { entities, Position: pos } = world.query(Position);
 

@@ -36,10 +36,10 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     this.componentStorages = {};
     for (const componentName in blueprints) {
-      const schema = blueprints[componentName];
+      const blueprint = blueprints[componentName];
       const storage: ComponentStorage = {};
-      for (const propName in schema) {
-        const defaultValue = schema[propName];
+      for (const propName in blueprint) {
+        const defaultValue = blueprint[propName];
         const valueType = typeof defaultValue;
 
         if (valueType === "number") {
@@ -94,26 +94,6 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
   }
 
-  addComponent<K extends StringKey<T>>(
-    entityId: EntityId,
-    component: ComponentHandle<K>,
-    componentData?: Partial<T[K]>,
-  ): void {
-    this.validateEntity(entityId);
-
-    if (this.bitsets.has(entityId, component.bitPosition)) {
-      throw new Error(
-        `Entity ${entityId} already has component ${component.name}`,
-      );
-    }
-
-    this.setComponentData(entityId, component.name, componentData);
-
-    this.bitsets.add(entityId, component.bitPosition);
-    const entityMask = this.bitsets.getBits(entityId);
-    this.queryCache.invalidateMatchingQueries(entityMask);
-  }
-
   setComponent<K extends StringKey<T>>(
     entityId: EntityId,
     component: ComponentHandle<K>,
@@ -121,13 +101,15 @@ export class ComponentManager<T extends ComponentBlueprint> {
   ): void {
     this.validateEntity(entityId);
 
-    if (!this.bitsets.has(entityId, component.bitPosition)) {
-      throw new Error(
-        `Entity ${entityId} does not have component ${component.name}`,
-      );
-    }
+    const isNew = !this.bitsets.has(entityId, component.bitPosition);
 
     this.setComponentData(entityId, component.name, componentData);
+
+    if (isNew) {
+      this.bitsets.add(entityId, component.bitPosition);
+      const entityMask = this.bitsets.getBits(entityId);
+      this.queryCache.invalidateMatchingQueries(entityMask);
+    }
   }
 
   setComponentsFromConfig(entityId: EntityId, config: SpawnConfig<T>): void {
@@ -156,7 +138,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     if (!hadComponent) {
       throw new Error(
-        `Entity ${entityId} does not have component ${component.name}`,
+        `removeComponent: Entity ${entityId} does not have component ${component.name}`,
       );
     }
 
@@ -182,12 +164,12 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
   private clearStorageValue(
     array: unknown[] | Float64Array | Uint8Array,
-    index: number,
+    entityId: EntityId,
   ): void {
     if (array instanceof Float64Array || array instanceof Uint8Array) {
-      array[index] = 0;
+      array[entityId] = 0;
     } else {
-      array[index] = undefined;
+      array[entityId] = undefined;
     }
   }
 
@@ -199,7 +181,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     if (!this.bitsets.has(entityId, component.bitPosition)) {
       throw new Error(
-        `Entity ${entityId} does not have component ${component.name}`,
+        `getComponent: Entity ${entityId} does not have component ${component.name}`,
       );
     }
 

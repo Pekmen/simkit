@@ -19,7 +19,7 @@ export type ComponentStorageMap<T extends ComponentBlueprint> = {
   };
 };
 
-export type ComponentStorageMapQuery<T extends ComponentBlueprint> = {
+export type DenseComponentStorageMap<T extends ComponentBlueprint> = {
   [K in keyof T]: {
     [P in keyof T[K]]: T[K][P][];
   };
@@ -27,7 +27,7 @@ export type ComponentStorageMapQuery<T extends ComponentBlueprint> = {
 
 export type QueryResult<T extends ComponentBlueprint, K extends keyof T> = {
   entities: EntityId[];
-} & Pick<ComponentStorageMapQuery<T>, K>;
+} & Pick<DenseComponentStorageMap<T>, K>;
 
 export interface ComponentHandle<N extends string = string> {
   readonly name: N;
@@ -42,3 +42,8 @@ export interface WorldOptions {
 export type SpawnConfig<T extends ComponentBlueprint> = Partial<{
   [K in keyof T]: Partial<T[K]>;
 }>;
+
+export type ComponentData<
+  T extends ComponentBlueprint,
+  K extends keyof T,
+> = Partial<T[K]>;

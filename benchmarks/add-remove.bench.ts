@@ -15,13 +15,13 @@ describe("Add/Remove", () => {
     const entityIds = [];
     for (let i = 0; i < 1000; i++) {
       const e = world.addEntity();
-      world.addComponent(e, A, { value: i });
+      world.setComponent(e, A, { value: i });
       entityIds.push(e);
     }
 
     // Add component B to all A entities
     for (const e of entityIds) {
-      world.addComponent(e, B, { value: 0 });
+      world.setComponent(e, B, { value: 0 });
     }
 
     // Remove component B from all (A, B) entities

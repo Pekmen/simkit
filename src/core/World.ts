@@ -52,14 +52,6 @@ export class World<T extends ComponentBlueprint> {
     return this.entityManager.getEntityCount();
   }
 
-  addComponent<K extends StringKey<T>>(
-    entityId: EntityId,
-    component: ComponentHandle<K>,
-    componentData?: Partial<T[K]>,
-  ): void {
-    this.componentManager.addComponent(entityId, component, componentData);
-  }
-
   setComponent<K extends StringKey<T>>(
     entityId: EntityId,
     component: ComponentHandle<K>,
@@ -87,6 +79,10 @@ export class World<T extends ComponentBlueprint> {
     component: ComponentHandle<StringKey<T>>,
   ): void {
     this.componentManager.removeComponent(entityId, component);
+  }
+
+  clearComponents(entityId: EntityId): void {
+    this.componentManager.removeAllComponents(entityId);
   }
 
   addSystem(system: System, priority = 0): void {
