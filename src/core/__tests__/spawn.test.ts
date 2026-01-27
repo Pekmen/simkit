@@ -114,10 +114,11 @@ describe("spawn", () => {
       Velocity: { dx: 5, dy: 0 },
     });
 
-    const { entities, Position: pos, Velocity: vel } = world.query(
-      Position,
-      Velocity,
-    );
+    const {
+      entities,
+      Position: pos,
+      Velocity: vel,
+    } = world.query(Position, Velocity);
 
     expect(entities).toContain(entity);
     expect(pos.x[entity]).toBe(10);

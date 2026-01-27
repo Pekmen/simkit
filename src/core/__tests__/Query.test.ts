@@ -112,10 +112,11 @@ describe("Query", () => {
     world.setComponent(e1, Position, { x: 10, y: 20 });
     world.setComponent(e1, Velocity, { dx: 1, dy: 2 });
 
-    const { entities, Position: pos, Velocity: vel } = world.query(
-      Position,
-      Velocity,
-    );
+    const {
+      entities,
+      Position: pos,
+      Velocity: vel,
+    } = world.query(Position, Velocity);
 
     for (const e of entities) {
       pos.x[e] = pos.x[e] + vel.dx[e];
@@ -205,10 +206,7 @@ describe("Query", () => {
   });
 
   test("query results contain EntityId which can be used directly as index", () => {
-    const world = new World(
-      { Position: { x: 0, y: 0 } },
-      { maxEntities: 10 },
-    );
+    const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 10 });
     const { Position } = world.components;
 
     // Create and remove entity to trigger recycling

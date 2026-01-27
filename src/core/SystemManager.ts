@@ -6,14 +6,15 @@ export class SystemManager {
 
   addSystem(system: System, priority = 0): void {
     if (this.systems.includes(system)) {
-      throw new Error(`addSystem: ${system.constructor.name} already registered`);
+      throw new Error(
+        `addSystem: ${system.constructor.name} already registered`,
+      );
     }
 
     system.init?.();
 
-    // Insert at correct position based on priority (higher priority runs first)
     const insertIndex = this.systems.findIndex(
-      (s) => (this.priorities.get(s) ?? 0) < priority
+      (s) => (this.priorities.get(s) ?? 0) < priority,
     );
     if (insertIndex === -1) {
       this.systems.push(system);
@@ -26,7 +27,9 @@ export class SystemManager {
   removeSystem(system: System): void {
     const index = this.systems.indexOf(system);
     if (index === -1) {
-      throw new Error(`removeSystem: ${system.constructor.name} not registered`);
+      throw new Error(
+        `removeSystem: ${system.constructor.name} not registered`,
+      );
     }
     system.destroy?.();
     this.systems.splice(index, 1);

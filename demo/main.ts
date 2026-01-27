@@ -39,10 +39,11 @@ const physicsSystem = {
   update(deltaTime: number): void {
     const dt = deltaTime / 1000;
     const { Position, Velocity } = world.components;
-    const { entities, Position: pos, Velocity: vel } = world.query(
-      Position,
-      Velocity,
-    );
+    const {
+      entities,
+      Position: pos,
+      Velocity: vel,
+    } = world.query(Position, Velocity);
 
     for (const e of entities) {
       const x = pos.x[e];
@@ -72,11 +73,12 @@ const renderSystem = {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const { Position, Size, Color } = world.components;
-    const { entities, Position: pos, Size: size, Color: color } = world.query(
-      Position,
-      Size,
-      Color,
-    );
+    const {
+      entities,
+      Position: pos,
+      Size: size,
+      Color: color,
+    } = world.query(Position, Size, Color);
 
     for (const e of entities) {
       const x = pos.x[e];

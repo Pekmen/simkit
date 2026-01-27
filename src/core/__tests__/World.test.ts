@@ -331,4 +331,60 @@ describe("World", () => {
       });
     }).toThrow(TypeError);
   });
+
+  describe("destroy", () => {
+    test("calls destroy() on all systems", () => {
+      const world = new World({}, { maxEntities: 10 });
+      const destroyA = vi.fn();
+      const destroyB = vi.fn();
+
+      const systemA: System = { update: vi.fn(), destroy: destroyA };
+      const systemB: System = { update: vi.fn(), destroy: destroyB };
+
+      world.addSystem(systemA);
+      world.addSystem(systemB);
+
+      world.destroy();
+
+      expect(destroyA).toHaveBeenCalledTimes(1);
+      expect(destroyB).toHaveBeenCalledTimes(1);
+    });
+
+    test("removes all entities", () => {
+      const blueprints = { Position: { x: 0, y: 0 } };
+      const world = new World(blueprints, { maxEntities: 10 });
+      const { Position } = world.components;
+
+      const e1 = world.addEntity();
+      const e2 = world.addEntity();
+      const e3 = world.addEntity();
+
+      world.setComponent(e1, Position, { x: 1, y: 1 });
+      world.setComponent(e2, Position, { x: 2, y: 2 });
+      world.setComponent(e3, Position, { x: 3, y: 3 });
+
+      expect(world.getEntityCount()).toBe(3);
+
+      world.destroy();
+
+      expect(world.getEntityCount()).toBe(0);
+    });
+
+    test("unregisters all systems", () => {
+      const world = new World({}, { maxEntities: 10 });
+      const systemA: System = { update: vi.fn() };
+      const systemB: System = { update: vi.fn() };
+
+      world.addSystem(systemA);
+      world.addSystem(systemB);
+
+      expect(world.hasSystem(systemA)).toBe(true);
+      expect(world.hasSystem(systemB)).toBe(true);
+
+      world.destroy();
+
+      expect(world.hasSystem(systemA)).toBe(false);
+      expect(world.hasSystem(systemB)).toBe(false);
+    });
+  });
 });
