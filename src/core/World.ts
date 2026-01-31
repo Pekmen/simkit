@@ -124,7 +124,6 @@ export class World<T extends ComponentBlueprint> {
     ): void;
     destroy?(ctx: { state: S; world: World<T> }): void;
   }): System {
-    const state = (config.state ?? {}) as S;
     const handles = config.components;
     if (handles) {
       for (const handle of handles) {
@@ -136,24 +135,24 @@ export class World<T extends ComponentBlueprint> {
       }
     }
 
-    const initFn = config.init?.bind(config);
-    const destroyFn = config.destroy?.bind(config);
+    const ctx = { state: (config.state ?? {}) as S, world: this };
+    const emptyQuery = { entities: [] } as QueryResult<T, K>;
 
     const system: System = {
-      init: initFn
+      init: config.init
         ? (): void => {
-            initFn({ state, world: this });
+            config.init?.(ctx);
           }
         : undefined,
       update: (dt: number): void => {
-        const query = handles
-          ? this.query(...handles)
-          : ({ entities: [] } as QueryResult<T, K>);
-        config.update({ state, world: this, query }, dt);
+        config.update(
+          { ...ctx, query: handles ? this.query(...handles) : emptyQuery },
+          dt,
+        );
       },
-      destroy: destroyFn
+      destroy: config.destroy
         ? (): void => {
-            destroyFn({ state, world: this });
+            config.destroy?.(ctx);
           }
         : undefined,
     };
