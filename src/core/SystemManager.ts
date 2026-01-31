@@ -7,7 +7,7 @@ export class SystemManager {
   addSystem(system: System, priority = 0): void {
     if (this.systems.includes(system)) {
       throw new Error(
-        `addSystem: ${system.constructor.name} already registered`,
+        `addSystem: system already registered`,
       );
     }
 
@@ -28,7 +28,7 @@ export class SystemManager {
     const index = this.systems.indexOf(system);
     if (index === -1) {
       throw new Error(
-        `removeSystem: ${system.constructor.name} not registered`,
+        `removeSystem: system not registered`,
       );
     }
     system.destroy?.();

@@ -35,67 +35,46 @@ for (let i = 0; i < 1000; i++) {
   });
 }
 
-const physicsSystem = {
-  update(deltaTime: number): void {
-    const dt = deltaTime / 1000;
-    const { Position, Velocity } = world.components;
-    const {
-      entities,
-      Position: pos,
-      Velocity: vel,
-    } = world.query(Position, Velocity);
+const { Position, Velocity, Size, Color } = world.components;
 
-    for (const e of entities) {
-      const x = pos.x[e];
-      const y = pos.y[e];
-      const dx = vel.dx[e];
-      const dy = vel.dy[e];
-
-      const newX = x + dx * dt;
-      const newY = y + dy * dt;
-
-      pos.x[e] = newX;
-      pos.y[e] = newY;
-
+world.defineSystem({
+  components: [Position, Velocity],
+  update({ query }, dt) {
+    const dt_s = dt / 1000;
+    for (const e of query.entities) {
+      const newX = query.Position.x[e] + query.Velocity.dx[e] * dt_s;
+      const newY = query.Position.y[e] + query.Velocity.dy[e] * dt_s;
+      query.Position.x[e] = newX;
+      query.Position.y[e] = newY;
       if (newX < 10 || newX > canvas.width - 10) {
-        vel.dx[e] = -dx;
+        query.Velocity.dx[e] = -query.Velocity.dx[e];
       }
       if (newY < 10 || newY > canvas.height - 10) {
-        vel.dy[e] = -dy;
+        query.Velocity.dy[e] = -query.Velocity.dy[e];
       }
     }
   },
-};
+});
 
-const renderSystem = {
-  update(): void {
+world.defineSystem({
+  components: [Position, Size, Color],
+  update({ query }) {
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    const { Position, Size, Color } = world.components;
-    const {
-      entities,
-      Position: pos,
-      Size: size,
-      Color: color,
-    } = world.query(Position, Size, Color);
-
-    for (const e of entities) {
-      const x = pos.x[e];
-      const y = pos.y[e];
-      const radius = size.val[e];
-      const colorVal = color.val[e];
-
+    for (const e of query.entities) {
       ctx.beginPath();
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.fillStyle = colorVal;
+      ctx.arc(
+        query.Position.x[e],
+        query.Position.y[e],
+        query.Size.val[e],
+        0,
+        Math.PI * 2,
+      );
+      ctx.fillStyle = query.Color.val[e];
       ctx.fill();
     }
   },
-};
-
-world.addSystem(physicsSystem);
-world.addSystem(renderSystem);
+});
 
 let last = performance.now();
 

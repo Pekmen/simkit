@@ -110,6 +110,58 @@ export class World<T extends ComponentBlueprint> {
     return this.componentManager.query(...components);
   }
 
+  defineSystem<
+    K extends StringKey<T> = never,
+    S = Record<string, never>,
+  >(config: {
+    components?: ComponentHandle<K>[];
+    state?: S;
+    priority?: number;
+    init?(ctx: { state: S; world: World<T> }): void;
+    update(
+      ctx: { state: S; world: World<T>; query: QueryResult<T, K> },
+      dt: number,
+    ): void;
+    destroy?(ctx: { state: S; world: World<T> }): void;
+  }): System {
+    const state = (config.state ?? {}) as S;
+    const handles = config.components;
+    if (handles) {
+      for (const handle of handles) {
+        if (this.components[handle.name as StringKey<T>] !== handle) {
+          throw new Error(
+            `defineSystem: component handle "${handle.name}" does not belong to this world`,
+          );
+        }
+      }
+    }
+
+    const initFn = config.init?.bind(config);
+    const destroyFn = config.destroy?.bind(config);
+
+    const system: System = {
+      init: initFn
+        ? (): void => {
+            initFn({ state, world: this });
+          }
+        : undefined,
+      update: (dt: number): void => {
+        const query = handles
+          ? this.query(...handles)
+          : ({ entities: [] } as QueryResult<T, K>);
+        config.update({ state, world: this, query }, dt);
+      },
+      destroy: destroyFn
+        ? (): void => {
+            destroyFn({ state, world: this });
+          }
+        : undefined,
+    };
+
+    this.addSystem(system, config.priority ?? 0);
+    return system;
+  }
+
   spawn(config: SpawnConfig<T>): EntityId {
     const entityId = this.entityManager.addEntity();
     this.componentManager.setComponentsFromConfig(entityId, config);

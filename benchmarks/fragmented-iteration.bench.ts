@@ -78,19 +78,27 @@ describe("Fragmented Iteration", () => {
         }
       }
 
-      // Query Data component and double all values
-      const { entities: dataEntities, Data: dataComp } = world.query(
-        components.Data,
-      );
-      for (const e of dataEntities) {
-        dataComp.value[e] = (dataComp.value[e] ?? 0) * 2;
-      }
+      // System 1: Double all Data values
+      world.defineSystem({
+        components: [components.Data],
+        update({ query: { entities, Data: data } }) {
+          for (const e of entities) {
+            data.value[e] = (data.value[e] ?? 0) * 2;
+          }
+        },
+      });
 
-      // Query Z component and double all values
-      const { entities: zEntities, Z: zComp } = world.query(components.Z);
-      for (const e of zEntities) {
-        zComp.value[e] = (zComp.value[e] ?? 0) * 2;
-      }
+      // System 2: Double all Z values
+      world.defineSystem({
+        components: [components.Z],
+        update({ query: { entities, Z: z } }) {
+          for (const e of entities) {
+            z.value[e] = (z.value[e] ?? 0) * 2;
+          }
+        },
+      });
+
+      world.update(0);
     },
   );
 });

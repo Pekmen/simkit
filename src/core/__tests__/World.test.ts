@@ -332,6 +332,214 @@ describe("World", () => {
     }).toThrow(TypeError);
   });
 
+  describe("defineSystem", () => {
+    test("registers and runs update with correct dt", () => {
+      const blueprints = {
+        Position: { x: 0, y: 0 },
+        Velocity: { dx: 0, dy: 0 },
+      };
+      const world = new World(blueprints, { maxEntities: 10 });
+      const { Position, Velocity } = world.components;
+
+      const receivedDts: number[] = [];
+      const sys = world.defineSystem({
+        components: [Position, Velocity],
+        update({ query }, dt) {
+          receivedDts.push(dt);
+          void query;
+        },
+      });
+
+      expect(world.hasSystem(sys)).toBe(true);
+
+      world.update(16);
+      world.update(32);
+
+      expect(receivedDts).toEqual([16, 32]);
+    });
+
+    test("query result is fresh each frame", () => {
+      const blueprints = { Position: { x: 0, y: 0 } };
+      const world = new World(blueprints, { maxEntities: 10 });
+      const { Position } = world.components;
+
+      const entityCounts: number[] = [];
+      world.defineSystem({
+        components: [Position],
+        update({ query }) {
+          entityCounts.push(query.entities.length);
+        },
+      });
+
+      world.update(1);
+      expect(entityCounts).toEqual([0]);
+
+      const e = world.addEntity();
+      world.setComponent(e, Position, { x: 1, y: 2 });
+      world.update(1);
+
+      expect(entityCounts).toEqual([0, 1]);
+    });
+
+    test("state persists across frames", () => {
+      const world = new World(
+        { Position: { x: 0, y: 0 } },
+        { maxEntities: 10 },
+      );
+      const { Position } = world.components;
+
+      let externalCount = 0;
+      world.defineSystem({
+        state: { count: 0 },
+        components: [Position],
+        update({ state }) {
+          state.count++;
+          externalCount = state.count;
+        },
+      });
+
+      world.update(1);
+      world.update(1);
+      world.update(1);
+
+      expect(externalCount).toBe(3);
+    });
+
+    test("init is called on define", () => {
+      const world = new World({}, { maxEntities: 10 });
+
+      let initCalled = false;
+      world.defineSystem({
+        init() {
+          initCalled = true;
+        },
+        update() {
+          // no-op
+        },
+      });
+
+      expect(initCalled).toBe(true);
+    });
+
+    test("destroy is called on removeSystem", () => {
+      const world = new World({}, { maxEntities: 10 });
+
+      let destroyCalled = false;
+      const sys = world.defineSystem({
+        destroy() {
+          destroyCalled = true;
+        },
+        update() {
+          // no-op
+        },
+      });
+
+      expect(destroyCalled).toBe(false);
+
+      world.removeSystem(sys);
+
+      expect(destroyCalled).toBe(true);
+    });
+
+    test("priority controls execution order", () => {
+      const world = new World({}, { maxEntities: 10 });
+      const order: string[] = [];
+
+      world.defineSystem({
+        priority: 0,
+        update() {
+          order.push("low");
+        },
+      });
+      world.defineSystem({
+        priority: 10,
+        update() {
+          order.push("high");
+        },
+      });
+      world.defineSystem({
+        priority: 5,
+        update() {
+          order.push("mid");
+        },
+      });
+
+      world.update(1);
+
+      expect(order).toEqual(["high", "mid", "low"]);
+    });
+
+    test("system without components receives state and world", () => {
+      const blueprints = { Position: { x: 0, y: 0 } };
+      const world = new World(blueprints, { maxEntities: 10 });
+
+      let receivedWorld: unknown = null;
+      let receivedEmptyEntities = false;
+      world.defineSystem({
+        state: { tag: "no-query" },
+        update({ state, world: w, query }) {
+          receivedWorld = w;
+          receivedEmptyEntities = query.entities.length === 0;
+          void state;
+        },
+      });
+
+      world.update(1);
+
+      expect(receivedWorld).toBe(world);
+      expect(receivedEmptyEntities).toBe(true);
+    });
+
+    test("rejects component handles from a different world", () => {
+      const blueprints = { Position: { x: 0, y: 0 } };
+      const world1 = new World(blueprints, { maxEntities: 10 });
+      const world2 = new World(blueprints, { maxEntities: 10 });
+
+      expect(() => {
+        world2.defineSystem({
+          components: [world1.components.Position],
+          update() {
+            // no-op
+          },
+        });
+      }).toThrow(
+        'defineSystem: component handle "Position" does not belong to this world',
+      );
+    });
+
+    test("init and destroy receive state and world", () => {
+      const world = new World({}, { maxEntities: 10 });
+
+      let initState: unknown = null;
+      let initWorld: unknown = null;
+      let destroyState: unknown = null;
+      let destroyWorld: unknown = null;
+
+      const sys = world.defineSystem({
+        state: { value: 42 },
+        init({ state, world: w }) {
+          initState = state;
+          initWorld = w;
+        },
+        update() {
+          // no-op
+        },
+        destroy({ state, world: w }) {
+          destroyState = state;
+          destroyWorld = w;
+        },
+      });
+
+      expect(initState).toEqual({ value: 42 });
+      expect(initWorld).toBe(world);
+
+      world.removeSystem(sys);
+
+      expect(destroyState).toEqual({ value: 42 });
+      expect(destroyWorld).toBe(world);
+    });
+  });
+
   describe("destroy", () => {
     test("calls destroy() on all systems", () => {
       const world = new World({}, { maxEntities: 10 });

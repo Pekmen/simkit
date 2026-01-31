@@ -48,27 +48,41 @@ describe("Simple Iteration", () => {
     }
 
     // System 1: Swap A and B
-    const { entities: abEntities, A: aComp, B: bComp } = world.query(A, B);
-    for (const e of abEntities) {
-      const temp = aComp.value[e];
-      aComp.value[e] = bComp.value[e];
-      bComp.value[e] = temp;
-    }
+    world.defineSystem({
+      components: [A, B],
+      update({ query: { entities, A: a, B: b } }) {
+        for (const e of entities) {
+          const temp = a.value[e];
+          a.value[e] = b.value[e];
+          b.value[e] = temp;
+        }
+      },
+    });
 
     // System 2: Swap C and D
-    const { entities: cdEntities, C: cComp, D: dComp } = world.query(C, D);
-    for (const e of cdEntities) {
-      const temp = cComp.value[e];
-      cComp.value[e] = dComp.value[e];
-      dComp.value[e] = temp;
-    }
+    world.defineSystem({
+      components: [C, D],
+      update({ query: { entities, C: c, D: d } }) {
+        for (const e of entities) {
+          const temp = c.value[e];
+          c.value[e] = d.value[e];
+          d.value[e] = temp;
+        }
+      },
+    });
 
     // System 3: Swap C and E
-    const { entities: ceEntities, C: cComp2, E: eComp } = world.query(C, E);
-    for (const e of ceEntities) {
-      const temp = cComp2.value[e];
-      cComp2.value[e] = eComp.value[e];
-      eComp.value[e] = temp;
-    }
+    world.defineSystem({
+      components: [C, E],
+      update({ query: { entities, C: c, E: eComp } }) {
+        for (const e of entities) {
+          const temp = c.value[e];
+          c.value[e] = eComp.value[e];
+          eComp.value[e] = temp;
+        }
+      },
+    });
+
+    world.update(0);
   });
 });

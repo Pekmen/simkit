@@ -24,30 +24,52 @@ describe("Packed Iteration (5 queries)", () => {
       world.setComponent(entity, E, { value: 1 });
     }
 
-    // Benchmark: 5 separate queries doubling values
-    const { entities: aEntities, A: aComp } = world.query(A);
-    for (const e of aEntities) {
-      aComp.value[e] = (aComp.value[e] ?? 0) * 2;
-    }
+    // Benchmark: 5 systems doubling values
+    world.defineSystem({
+      components: [A],
+      update({ query: { entities, A: a } }) {
+        for (const e of entities) {
+          a.value[e] = (a.value[e] ?? 0) * 2;
+        }
+      },
+    });
 
-    const { entities: bEntities, B: bComp } = world.query(B);
-    for (const e of bEntities) {
-      bComp.value[e] = (bComp.value[e] ?? 0) * 2;
-    }
+    world.defineSystem({
+      components: [B],
+      update({ query: { entities, B: b } }) {
+        for (const e of entities) {
+          b.value[e] = (b.value[e] ?? 0) * 2;
+        }
+      },
+    });
 
-    const { entities: cEntities, C: cComp } = world.query(C);
-    for (const e of cEntities) {
-      cComp.value[e] = (cComp.value[e] ?? 0) * 2;
-    }
+    world.defineSystem({
+      components: [C],
+      update({ query: { entities, C: c } }) {
+        for (const e of entities) {
+          c.value[e] = (c.value[e] ?? 0) * 2;
+        }
+      },
+    });
 
-    const { entities: dEntities, D: dComp } = world.query(D);
-    for (const e of dEntities) {
-      dComp.value[e] = (dComp.value[e] ?? 0) * 2;
-    }
+    world.defineSystem({
+      components: [D],
+      update({ query: { entities, D: d } }) {
+        for (const e of entities) {
+          d.value[e] = (d.value[e] ?? 0) * 2;
+        }
+      },
+    });
 
-    const { entities: eEntities, E: eComp } = world.query(E);
-    for (const e of eEntities) {
-      eComp.value[e] = (eComp.value[e] ?? 0) * 2;
-    }
+    world.defineSystem({
+      components: [E],
+      update({ query: { entities, E: eComp } }) {
+        for (const e of entities) {
+          eComp.value[e] = (eComp.value[e] ?? 0) * 2;
+        }
+      },
+    });
+
+    world.update(0);
   });
 });
