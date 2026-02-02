@@ -18,8 +18,8 @@ const blueprints = {
 };
 
 const world = new World(blueprints);
+const { Position, Velocity, Size, Color } = world.components;
 
-// Using the object-based spawn API for cleaner entity creation
 for (let i = 0; i < 1000; i++) {
   world.spawn({
     Position: {
@@ -30,12 +30,10 @@ for (let i = 0; i < 1000; i++) {
       dx: (Math.random() - 0.5) * 200,
       dy: (Math.random() - 0.5) * 200,
     },
-    Size: {},
-    Color: {},
+    Size,
+    Color,
   });
 }
-
-const { Position, Velocity, Size, Color } = world.components;
 
 world.defineSystem({
   components: [Position, Velocity],

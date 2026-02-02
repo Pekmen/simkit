@@ -168,6 +168,49 @@ describe("spawn", () => {
     expect(world.hasComponent(entity, Position)).toBe(false);
   });
 
+  test("spawn with component handle shorthand uses defaults", () => {
+    const world = new World(
+      {
+        Position: { x: 100, y: 200 },
+        Velocity: { dx: 10, dy: 20 },
+      },
+      { maxEntities: 10 },
+    );
+
+    const { Position, Velocity } = world.components;
+
+    const entity = world.spawn({
+      Position,
+      Velocity,
+    });
+
+    expect(world.getComponent(entity, Position)).toEqual({ x: 100, y: 200 });
+    expect(world.getComponent(entity, Velocity)).toEqual({ dx: 10, dy: 20 });
+  });
+
+  test("spawn with mixed handles and data objects", () => {
+    const world = new World(
+      {
+        Position: { x: 0, y: 0 },
+        Velocity: { dx: 10, dy: 20 },
+        Health: { hp: 100 },
+      },
+      { maxEntities: 10 },
+    );
+
+    const { Position, Velocity, Health } = world.components;
+
+    const entity = world.spawn({
+      Position: { x: 42, y: 99 },
+      Velocity,
+      Health,
+    });
+
+    expect(world.getComponent(entity, Position)).toEqual({ x: 42, y: 99 });
+    expect(world.getComponent(entity, Velocity)).toEqual({ dx: 10, dy: 20 });
+    expect(world.getComponent(entity, Health)).toEqual({ hp: 100 });
+  });
+
   test("spawn invalidates query cache correctly", () => {
     const world = new World(
       {

@@ -118,7 +118,12 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     for (const key in config) {
       const component = this.components[key];
-      this.setComponentData(entityId, key, config[key]);
+      const data = config[key];
+      this.setComponentData(
+        entityId,
+        key,
+        data === component ? undefined : (data as Partial<T[typeof key]>),
+      );
       mask |= 1 << component.bitPosition;
     }
 
