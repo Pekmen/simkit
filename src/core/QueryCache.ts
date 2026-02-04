@@ -42,7 +42,7 @@ export class QueryCache {
     }
 
     for (const mask of this.cache.keys()) {
-      if ((mask & componentBits) === mask) {
+      if ((mask & componentBits) !== 0) {
         this.cache.delete(mask);
       }
     }

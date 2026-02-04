@@ -588,6 +588,34 @@ describe("ComponentManager", () => {
       expect(r2.entities).not.toBe(r6.entities); // New object
     });
 
+    test("adding unrelated component does not invalidate cached query", () => {
+      const blueprints = {
+        A: { value: 0 },
+        B: { value: 0 },
+      };
+      const entityManager = new EntityManager(10);
+      const manager = new ComponentManager(blueprints, 10, entityManager);
+      const { A, B } = manager.components;
+
+      // Entity1 has A and B, Entity2 has only A
+      const entity1 = entityManager.addEntity();
+      const entity2 = entityManager.addEntity();
+      manager.setComponent(entity1, A, { value: 1 });
+      manager.setComponent(entity1, B, { value: 2 });
+      manager.setComponent(entity2, A, { value: 3 });
+
+      // Cache query(A) — both entities match
+      const result1 = manager.query(A);
+      expect(result1.entities).toEqual([entity1, entity2]);
+
+      // Add B to entity2 — should NOT invalidate query(A)
+      manager.setComponent(entity2, B, { value: 4 });
+
+      const result2 = manager.query(A);
+      // Same cached object since adding B doesn't affect a query for A
+      expect(result1).toBe(result2);
+    });
+
     test("query cache can be disabled with size 0", () => {
       const blueprints = { A: { value: 0 } };
       const entityManager = new EntityManager(100);
