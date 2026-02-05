@@ -98,9 +98,12 @@ export class World<T extends ComponentBlueprint> {
   }
 
   destroy(): void {
-    this.systemManager.destroyAll();
-    for (const entityId of [...this.entityManager.activeEntities]) {
-      this.removeEntity(entityId);
+    try {
+      this.systemManager.destroyAll();
+    } finally {
+      for (const entityId of [...this.entityManager.activeEntities]) {
+        this.removeEntity(entityId);
+      }
     }
   }
 

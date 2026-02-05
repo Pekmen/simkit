@@ -31,9 +31,12 @@ export class SystemManager {
         `removeSystem: system not registered`,
       );
     }
-    system.destroy?.();
-    this.systems.splice(index, 1);
-    this.priorities.delete(system);
+    try {
+      system.destroy?.();
+    } finally {
+      this.systems.splice(index, 1);
+      this.priorities.delete(system);
+    }
   }
 
   hasSystem(system: System): boolean {
@@ -49,10 +52,18 @@ export class SystemManager {
   }
 
   destroyAll(): void {
+    const errors: unknown[] = [];
     for (const system of [...this.systems]) {
-      system.destroy?.();
+      try {
+        system.destroy?.();
+      } catch (error) {
+        errors.push(error);
+      }
     }
     this.systems = [];
     this.priorities.clear();
+    if (errors.length > 0) {
+      throw new AggregateError(errors, "destroyAll: one or more systems threw");
+    }
   }
 }

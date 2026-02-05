@@ -171,6 +171,99 @@ describe("SystemManager", () => {
     expect(systemB.update).not.toHaveBeenCalled();
   });
 
+  test("destroyAll calls all systems' destroy even when one throws", () => {
+    const manager = new SystemManager();
+    const error = new Error("boom");
+    const systemA: System = {
+      update: vi.fn(),
+      destroy: () => {
+        throw error;
+      },
+    };
+    const systemB: System = {
+      update: vi.fn(),
+      destroy: vi.fn(),
+    };
+
+    manager.addSystem(systemA);
+    manager.addSystem(systemB);
+
+    expect(() => {
+      manager.destroyAll();
+    }).toThrow(AggregateError);
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(systemB.destroy).toHaveBeenCalled();
+  });
+
+  test("destroyAll clears internal state even when destroy throws", () => {
+    const manager = new SystemManager();
+    const systemA: System = {
+      update: vi.fn(),
+      destroy: () => {
+        throw new Error("boom");
+      },
+    };
+
+    manager.addSystem(systemA);
+
+    expect(() => {
+      manager.destroyAll();
+    }).toThrow(AggregateError);
+    // @ts-expect-error accessing private for test
+    expect(manager.systems).toHaveLength(0);
+    // @ts-expect-error accessing private for test
+    expect(manager.priorities.size).toBe(0);
+  });
+
+  test("destroyAll throws AggregateError with all collected errors", () => {
+    const manager = new SystemManager();
+    const errorA = new Error("A failed");
+    const errorB = new Error("B failed");
+    const systemA: System = {
+      update: vi.fn(),
+      destroy: () => {
+        throw errorA;
+      },
+    };
+    const systemB: System = {
+      update: vi.fn(),
+      destroy: () => {
+        throw errorB;
+      },
+    };
+
+    manager.addSystem(systemA);
+    manager.addSystem(systemB);
+
+    try {
+      manager.destroyAll();
+      expect.unreachable("should have thrown");
+    } catch (e) {
+      expect(e).toBeInstanceOf(AggregateError);
+      expect((e as AggregateError).errors).toEqual([errorA, errorB]);
+    }
+  });
+
+  test("removeSystem cleans up internal state even when destroy throws", () => {
+    const manager = new SystemManager();
+    const system: System = {
+      update: vi.fn(),
+      destroy: () => {
+        throw new Error("boom");
+      },
+    };
+
+    manager.addSystem(system);
+
+    expect(() => {
+      manager.removeSystem(system);
+    }).toThrow("boom");
+    // @ts-expect-error accessing private for test
+    expect(manager.systems).not.toContain(system);
+    // @ts-expect-error accessing private for test
+    expect(manager.priorities.has(system)).toBe(false);
+  });
+
   test("addSystem during updateAll is safe", () => {
     const manager = new SystemManager();
     const systemB: System = { update: vi.fn() };

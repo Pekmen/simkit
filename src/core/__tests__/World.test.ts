@@ -578,6 +578,34 @@ describe("World", () => {
       expect(world.getEntityCount()).toBe(0);
     });
 
+    test("removes entities even when a system's destroy throws", () => {
+      const blueprints = { Position: { x: 0, y: 0 } };
+      const world = new World(blueprints, { maxEntities: 10 });
+      const { Position } = world.components;
+
+      const system: System = {
+        update: vi.fn(),
+        destroy: () => {
+          throw new Error("boom");
+        },
+      };
+
+      world.addSystem(system);
+
+      const e1 = world.addEntity();
+      const e2 = world.addEntity();
+      world.setComponent(e1, Position, { x: 1, y: 1 });
+      world.setComponent(e2, Position, { x: 2, y: 2 });
+
+      expect(world.getEntityCount()).toBe(2);
+
+      expect(() => {
+        world.destroy();
+      }).toThrow();
+
+      expect(world.getEntityCount()).toBe(0);
+    });
+
     test("unregisters all systems", () => {
       const world = new World({}, { maxEntities: 10 });
       const systemA: System = { update: vi.fn() };
