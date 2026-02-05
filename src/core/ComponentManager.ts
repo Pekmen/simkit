@@ -107,7 +107,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     if (isNew) {
       this.bitsets.add(entityId, component.bitPosition);
-      this.queryCache.invalidateMatchingQueries(1 << component.bitPosition);
+      this.queryCache.invalidateMatchingQueries(
+        this.bitsets.toBitmask(component.bitPosition),
+      );
     }
   }
 
@@ -123,7 +125,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
         key,
         data === component ? undefined : (data as Partial<T[typeof key]>),
       );
-      mask |= 1 << component.bitPosition;
+      mask |= this.bitsets.toBitmask(component.bitPosition);
     }
 
     if (mask !== 0) {
@@ -153,7 +155,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     this.bitsets.remove(entityId, component.bitPosition);
 
-    this.queryCache.invalidateMatchingQueries(1 << component.bitPosition);
+    this.queryCache.invalidateMatchingQueries(
+      this.bitsets.toBitmask(component.bitPosition),
+    );
   }
 
   hasComponent(
@@ -202,7 +206,10 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.queryCache.invalidateMatchingQueries(entityBits);
 
     for (const key in this.components) {
-      if ((entityBits & (1 << this.components[key].bitPosition)) !== 0) {
+      if (
+        (entityBits & this.bitsets.toBitmask(this.components[key].bitPosition)) !==
+        0
+      ) {
         const storage = this.componentStorages[key];
         for (const prop in storage) {
           this.clearStorageValue(storage[prop], entityId);

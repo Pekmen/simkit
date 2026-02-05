@@ -31,6 +31,10 @@ export class BitsetManager {
     return (this.entityBits[entityId] & (1 << bitPosition)) !== 0;
   }
 
+  toBitmask(bitPosition: number): number {
+    return 1 << bitPosition;
+  }
+
   createMask(refs: Iterable<{ bitPosition: number }>): number {
     let mask = 0;
     for (const ref of refs) {
