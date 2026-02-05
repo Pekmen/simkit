@@ -52,6 +52,10 @@ export class World<T extends ComponentBlueprint> {
     return this.entityManager.getEntityCount();
   }
 
+  getActiveEntities(): readonly EntityId[] {
+    return this.entityManager.activeEntities;
+  }
+
   setComponent<K extends StringKey<T>>(
     entityId: EntityId,
     component: ComponentHandle<K>,

@@ -115,6 +115,23 @@ describe("World", () => {
     expect(world.getEntityCount()).toBe(2);
   });
 
+  test("getActiveEntities returns live entity IDs", () => {
+    const world = new World({}, { maxEntities: 10 });
+
+    expect(world.getActiveEntities()).toEqual([]);
+
+    const e1 = world.addEntity();
+    const e2 = world.addEntity();
+    const e3 = world.addEntity();
+    expect(world.getActiveEntities()).toEqual([e1, e2, e3]);
+
+    world.removeEntity(e2);
+    expect(world.getActiveEntities()).toEqual([e1, e3]);
+
+    const e4 = world.addEntity(); // Reuses e2's ID
+    expect(world.getActiveEntities()).toEqual([e1, e3, e4]);
+  });
+
   test("getComponent returns component data as object", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const world = new World(blueprints, { maxEntities: 5 });
