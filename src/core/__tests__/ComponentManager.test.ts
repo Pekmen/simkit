@@ -242,6 +242,20 @@ describe("ComponentManager", () => {
     expect(component).toEqual({ x: 0, y: 0 });
   });
 
+  test("setComponent with partial data on existing component preserves unspecified fields", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Position } = manager.components;
+
+    const entityId = entityManager.addEntity();
+    manager.setComponent(entityId, Position, { x: 10, y: 20 });
+    manager.setComponent(entityId, Position, { x: 50 });
+
+    const component = manager.getComponent(entityId, Position);
+    expect(component).toEqual({ x: 50, y: 20 });
+  });
+
   test("setComponent throws TypeError for wrong property type on new component", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);

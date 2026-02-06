@@ -170,6 +170,19 @@ describe("World", () => {
     expect(component).toEqual({ x: 15, y: 0 });
   });
 
+  test("setComponent with partial data preserves existing fields", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const world = new World(blueprints, { maxEntities: 5 });
+    const { Position } = world.components;
+
+    const entityId = world.addEntity();
+    world.setComponent(entityId, Position, { x: 10, y: 20 });
+    world.setComponent(entityId, Position, { x: 50 });
+
+    const component = world.getComponent(entityId, Position);
+    expect(component).toEqual({ x: 50, y: 20 });
+  });
+
   test("component storage works correctly after entity recycling", () => {
     const blueprints = {
       Position: { x: 0, y: 0 },

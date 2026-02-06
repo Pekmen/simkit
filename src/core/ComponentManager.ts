@@ -75,22 +75,26 @@ export class ComponentManager<T extends ComponentBlueprint> {
     entityId: EntityId,
     componentName: string,
     componentData: Partial<T[K]> | undefined,
+    isNew: boolean,
   ): void {
     const storage = this.componentStorages[componentName];
     const defaults = this.componentBlueprints[componentName];
 
     for (const prop in defaults) {
-      const value = componentData?.[prop as keyof T[K]] ?? defaults[prop];
-      const expectedType = typeof defaults[prop];
-      const actualType = typeof value;
+      const provided = componentData?.[prop as keyof T[K]];
 
-      if (actualType !== expectedType) {
-        throw new TypeError(
-          `${componentName}.${prop}: expected ${expectedType}, got ${actualType}`,
-        );
+      if (provided !== undefined) {
+        const expectedType = typeof defaults[prop];
+        const actualType = typeof provided;
+        if (actualType !== expectedType) {
+          throw new TypeError(
+            `${componentName}.${prop}: expected ${expectedType}, got ${actualType}`,
+          );
+        }
+        storage[prop][entityId] = provided;
+      } else if (isNew || componentData === undefined) {
+        storage[prop][entityId] = defaults[prop];
       }
-
-      storage[prop][entityId] = value;
     }
   }
 
@@ -103,7 +107,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     const isNew = !this.bitsets.has(entityId, component.bitPosition);
 
-    this.setComponentData(entityId, component.name, componentData);
+    this.setComponentData(entityId, component.name, componentData, isNew);
 
     if (isNew) {
       this.bitsets.add(entityId, component.bitPosition);
@@ -124,6 +128,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
         entityId,
         key,
         data === component ? undefined : (data as Partial<T[typeof key]>),
+        true,
       );
       mask |= this.bitsets.toBitmask(component.bitPosition);
     }
@@ -207,7 +212,8 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     for (const key in this.components) {
       if (
-        (entityBits & this.bitsets.toBitmask(this.components[key].bitPosition)) !==
+        (entityBits &
+          this.bitsets.toBitmask(this.components[key].bitPosition)) !==
         0
       ) {
         const storage = this.componentStorages[key];
