@@ -142,8 +142,8 @@ export class World<T extends ComponentBlueprint> {
       }
     }
 
-    const ctx = { state: (config.state ?? {}) as S, world: this };
     const emptyQuery = { entities: [] } as QueryResult<T, K>;
+    const ctx = { state: (config.state ?? {}) as S, world: this, query: emptyQuery };
 
     const system: System = {
       init: config.init
@@ -152,10 +152,8 @@ export class World<T extends ComponentBlueprint> {
           }
         : undefined,
       update: (dt: number): void => {
-        config.update(
-          { ...ctx, query: handles ? this.query(...handles) : emptyQuery },
-          dt,
-        );
+        ctx.query = handles ? this.query(...handles) : emptyQuery;
+        config.update(ctx, dt);
       },
       destroy: config.destroy
         ? (): void => {
