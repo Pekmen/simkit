@@ -54,7 +54,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
         if (valueType === "number") {
           storage[propName] = new Float64Array(this.maxEntities);
         } else if (valueType === "boolean") {
-          storage[propName] = new Uint8Array(this.maxEntities);
+          storage[propName] = new Array(this.maxEntities).fill(false);
         } else {
           storage[propName] = new Array(this.maxEntities).fill(undefined);
         }
@@ -183,10 +183,10 @@ export class ComponentManager<T extends ComponentBlueprint> {
   }
 
   private clearStorageValue(
-    array: unknown[] | Float64Array | Uint8Array,
+    array: unknown[] | Float64Array,
     entityId: EntityId,
   ): void {
-    if (array instanceof Float64Array || array instanceof Uint8Array) {
+    if (array instanceof Float64Array) {
       array[entityId] = 0;
     } else {
       array[entityId] = undefined;

@@ -8,10 +8,7 @@ export type ComponentBlueprint = Record<
   Record<string, ValidComponentProp>
 >;
 
-export type ComponentStorage = Record<
-  string,
-  unknown[] | Float64Array | Uint8Array
->;
+export type ComponentStorage = Record<string, unknown[] | Float64Array>;
 
 export type ComponentStorageMap<T extends ComponentBlueprint> = {
   [K in keyof T]: {

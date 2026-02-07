@@ -337,6 +337,39 @@ describe("ComponentManager", () => {
     );
   });
 
+  test("getComponent returns real booleans, not 0/1", () => {
+    const blueprints = { Flags: { active: false, visible: true } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Flags } = manager.components;
+
+    const entityId = entityManager.addEntity();
+    manager.setComponent(entityId, Flags, { active: true, visible: false });
+
+    const component = manager.getComponent(entityId, Flags);
+
+    expect(component.active).toBe(true);
+    expect(component.visible).toBe(false);
+    expect(typeof component.active).toBe("boolean");
+    expect(typeof component.visible).toBe("boolean");
+  });
+
+  test("query results contain real booleans", () => {
+    const blueprints = { Flags: { active: false } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Flags } = manager.components;
+
+    const entityId = entityManager.addEntity();
+    manager.setComponent(entityId, Flags, { active: true });
+
+    const result = manager.query(Flags);
+    const value = result.Flags.active[entityId];
+
+    expect(value).toBe(true);
+    expect(typeof value).toBe("boolean");
+  });
+
   describe("Query Caching", () => {
     test("query returns cached result on second call with same components", () => {
       const blueprints = {
