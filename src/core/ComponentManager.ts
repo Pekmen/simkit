@@ -31,6 +31,15 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.componentBlueprints = blueprints;
     this.entityManager = entityManager;
 
+    const RESERVED_KEYS = ["entities"];
+    for (const componentName in blueprints) {
+      if (RESERVED_KEYS.includes(componentName)) {
+        throw new Error(
+          `Component name "${componentName}" is reserved and cannot be used`,
+        );
+      }
+    }
+
     const componentCount = Object.keys(blueprints).length;
     this.bitsets = new BitsetManager(componentCount, maxEntities);
 

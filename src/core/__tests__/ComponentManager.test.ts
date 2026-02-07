@@ -138,6 +138,14 @@ describe("ComponentManager", () => {
     expect(manager.hasComponent(entityId, Position)).toBe(false);
   });
 
+  test("throws error when component name is reserved", () => {
+    const blueprints = { entities: { id: 0 } };
+    const entityManager = new EntityManager(10);
+    expect(() => new ComponentManager(blueprints, 10, entityManager)).toThrow(
+      'Component name "entities" is reserved and cannot be used',
+    );
+  });
+
   test("throws error when more than 32 components", () => {
     const blueprints = {} as Record<string, Record<string, number>>;
     for (let i = 0; i < 33; i++) {
