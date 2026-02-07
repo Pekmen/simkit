@@ -264,6 +264,57 @@ describe("SystemManager", () => {
     expect(manager.priorities.has(system)).toBe(false);
   });
 
+  test("updateAll runs all systems even when one throws", () => {
+    const manager = new SystemManager();
+    const error = new Error("boom");
+    const systemA: System = { update: vi.fn() };
+    const systemB: System = {
+      update: () => {
+        throw error;
+      },
+    };
+    const systemC: System = { update: vi.fn() };
+
+    manager.addSystem(systemA);
+    manager.addSystem(systemB);
+    manager.addSystem(systemC);
+
+    expect(() => {
+      manager.updateAll(16);
+    }).toThrow(AggregateError);
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(systemA.update).toHaveBeenCalledWith(16);
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    expect(systemC.update).toHaveBeenCalledWith(16);
+  });
+
+  test("updateAll throws AggregateError with all collected errors", () => {
+    const manager = new SystemManager();
+    const errorA = new Error("A failed");
+    const errorB = new Error("B failed");
+    const systemA: System = {
+      update: () => {
+        throw errorA;
+      },
+    };
+    const systemB: System = {
+      update: () => {
+        throw errorB;
+      },
+    };
+
+    manager.addSystem(systemA);
+    manager.addSystem(systemB);
+
+    try {
+      manager.updateAll(16);
+      expect.unreachable("should have thrown");
+    } catch (e) {
+      expect(e).toBeInstanceOf(AggregateError);
+      expect((e as AggregateError).errors).toEqual([errorA, errorB]);
+    }
+  });
+
   test("addSystem during updateAll is safe", () => {
     const manager = new SystemManager();
     const systemB: System = { update: vi.fn() };

@@ -44,10 +44,18 @@ export class SystemManager {
   }
 
   updateAll(deltaTime: number): void {
+    const errors: unknown[] = [];
     for (const system of [...this.systems]) {
       if (this.systems.includes(system)) {
-        system.update(deltaTime);
+        try {
+          system.update(deltaTime);
+        } catch (error) {
+          errors.push(error);
+        }
       }
+    }
+    if (errors.length > 0) {
+      throw new AggregateError(errors, "updateAll: one or more systems threw");
     }
   }
 
