@@ -48,7 +48,7 @@ describe("Simple Iteration", () => {
     }
 
     // System 1: Swap A and B
-    world.defineSystem({
+    world.addSystem({
       components: [A, B],
       update({ query: { entities, A: a, B: b } }) {
         for (const e of entities) {
@@ -60,7 +60,7 @@ describe("Simple Iteration", () => {
     });
 
     // System 2: Swap C and D
-    world.defineSystem({
+    world.addSystem({
       components: [C, D],
       update({ query: { entities, C: c, D: d } }) {
         for (const e of entities) {
@@ -72,7 +72,7 @@ describe("Simple Iteration", () => {
     });
 
     // System 3: Swap C and E
-    world.defineSystem({
+    world.addSystem({
       components: [C, E],
       update({ query: { entities, C: c, E: eComp } }) {
         for (const e of entities) {

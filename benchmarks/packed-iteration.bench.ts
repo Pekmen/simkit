@@ -25,7 +25,7 @@ describe("Packed Iteration (5 queries)", () => {
     }
 
     // Benchmark: 5 systems doubling values
-    world.defineSystem({
+    world.addSystem({
       components: [A],
       update({ query: { entities, A: a } }) {
         for (const e of entities) {
@@ -34,7 +34,7 @@ describe("Packed Iteration (5 queries)", () => {
       },
     });
 
-    world.defineSystem({
+    world.addSystem({
       components: [B],
       update({ query: { entities, B: b } }) {
         for (const e of entities) {
@@ -43,7 +43,7 @@ describe("Packed Iteration (5 queries)", () => {
       },
     });
 
-    world.defineSystem({
+    world.addSystem({
       components: [C],
       update({ query: { entities, C: c } }) {
         for (const e of entities) {
@@ -52,7 +52,7 @@ describe("Packed Iteration (5 queries)", () => {
       },
     });
 
-    world.defineSystem({
+    world.addSystem({
       components: [D],
       update({ query: { entities, D: d } }) {
         for (const e of entities) {
@@ -61,7 +61,7 @@ describe("Packed Iteration (5 queries)", () => {
       },
     });
 
-    world.defineSystem({
+    world.addSystem({
       components: [E],
       update({ query: { entities, E: eComp } }) {
         for (const e of entities) {

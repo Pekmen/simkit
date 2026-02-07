@@ -85,10 +85,6 @@ export class World<T extends ComponentBlueprint> {
     this.componentManager.removeComponent(entityId, component);
   }
 
-  addSystem(system: System, priority = 0): void {
-    this.systemManager.addSystem(system, priority);
-  }
-
   removeSystem(system: System): void {
     this.systemManager.removeSystem(system);
   }
@@ -117,7 +113,7 @@ export class World<T extends ComponentBlueprint> {
     return this.componentManager.query(...components);
   }
 
-  defineSystem<
+  addSystem<
     K extends StringKey<T> = never,
     S = Record<string, never>,
   >(config: {
@@ -136,7 +132,7 @@ export class World<T extends ComponentBlueprint> {
       for (const handle of handles) {
         if (this.components[handle.name as StringKey<T>] !== handle) {
           throw new Error(
-            `defineSystem: component handle "${handle.name}" does not belong to this world`,
+            `addSystem: component handle "${handle.name}" does not belong to this world`,
           );
         }
       }
@@ -162,7 +158,7 @@ export class World<T extends ComponentBlueprint> {
         : undefined,
     };
 
-    this.addSystem(system, config.priority ?? 0);
+    this.systemManager.addSystem(system, config.priority ?? 0);
     return system;
   }
 

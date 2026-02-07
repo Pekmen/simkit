@@ -258,9 +258,9 @@ describe("World", () => {
 
   test("hasSystem returns true for registered system", () => {
     const world = new World({}, { maxEntities: 10 });
-    const system: System = { update: vi.fn() };
+    const updateFn = vi.fn();
 
-    world.addSystem(system);
+    const system = world.addSystem({ update: updateFn });
 
     expect(world.hasSystem(system)).toBe(true);
   });
@@ -272,11 +272,11 @@ describe("World", () => {
     expect(world.hasSystem(system)).toBe(false);
   });
 
+
   test("hasSystem returns false after system is removed", () => {
     const world = new World({}, { maxEntities: 10 });
-    const system: System = { update: vi.fn() };
 
-    world.addSystem(system);
+    const system = world.addSystem({ update: vi.fn() });
     world.removeSystem(system);
 
     expect(world.hasSystem(system)).toBe(false);
@@ -286,19 +286,18 @@ describe("World", () => {
     const world = new World({}, { maxEntities: 10 });
     const order: string[] = [];
 
-    const systemA: System = {
-      update: () => order.push("A"),
-    };
-    const systemB: System = {
-      update: () => order.push("B"),
-    };
-    const systemC: System = {
-      update: () => order.push("C"),
-    };
-
-    world.addSystem(systemA, 0);
-    world.addSystem(systemB, 10);
-    world.addSystem(systemC, 5);
+    world.addSystem({
+      priority: 0,
+      update() { order.push("A"); },
+    });
+    world.addSystem({
+      priority: 10,
+      update() { order.push("B"); },
+    });
+    world.addSystem({
+      priority: 5,
+      update() { order.push("C"); },
+    });
 
     world.update(16);
 
@@ -362,7 +361,7 @@ describe("World", () => {
     }).toThrow(TypeError);
   });
 
-  describe("defineSystem", () => {
+  describe("addSystem", () => {
     test("registers and runs update with correct dt", () => {
       const blueprints = {
         Position: { x: 0, y: 0 },
@@ -372,7 +371,7 @@ describe("World", () => {
       const { Position, Velocity } = world.components;
 
       const receivedDts: number[] = [];
-      const sys = world.defineSystem({
+      const sys = world.addSystem({
         components: [Position, Velocity],
         update({ query }, dt) {
           receivedDts.push(dt);
@@ -394,7 +393,7 @@ describe("World", () => {
       const { Position } = world.components;
 
       const entityCounts: number[] = [];
-      world.defineSystem({
+      world.addSystem({
         components: [Position],
         update({ query }) {
           entityCounts.push(query.entities.length);
@@ -419,7 +418,7 @@ describe("World", () => {
       const { Position } = world.components;
 
       let externalCount = 0;
-      world.defineSystem({
+      world.addSystem({
         state: { count: 0 },
         components: [Position],
         update({ state }) {
@@ -435,11 +434,11 @@ describe("World", () => {
       expect(externalCount).toBe(3);
     });
 
-    test("init is called on define", () => {
+    test("init is called on add", () => {
       const world = new World({}, { maxEntities: 10 });
 
       let initCalled = false;
-      world.defineSystem({
+      world.addSystem({
         init() {
           initCalled = true;
         },
@@ -455,7 +454,7 @@ describe("World", () => {
       const world = new World({}, { maxEntities: 10 });
 
       let destroyCalled = false;
-      const sys = world.defineSystem({
+      const sys = world.addSystem({
         destroy() {
           destroyCalled = true;
         },
@@ -475,19 +474,19 @@ describe("World", () => {
       const world = new World({}, { maxEntities: 10 });
       const order: string[] = [];
 
-      world.defineSystem({
+      world.addSystem({
         priority: 0,
         update() {
           order.push("low");
         },
       });
-      world.defineSystem({
+      world.addSystem({
         priority: 10,
         update() {
           order.push("high");
         },
       });
-      world.defineSystem({
+      world.addSystem({
         priority: 5,
         update() {
           order.push("mid");
@@ -505,7 +504,7 @@ describe("World", () => {
 
       let receivedWorld: unknown = null;
       let receivedEmptyEntities = false;
-      world.defineSystem({
+      world.addSystem({
         state: { tag: "no-query" },
         update({ state, world: w, query }) {
           receivedWorld = w;
@@ -526,14 +525,14 @@ describe("World", () => {
       const world2 = new World(blueprints, { maxEntities: 10 });
 
       expect(() => {
-        world2.defineSystem({
+        world2.addSystem({
           components: [world1.components.Position],
           update() {
             // no-op
           },
         });
       }).toThrow(
-        'defineSystem: component handle "Position" does not belong to this world',
+        'addSystem: component handle "Position" does not belong to this world',
       );
     });
 
@@ -545,7 +544,7 @@ describe("World", () => {
       let destroyState: unknown = null;
       let destroyWorld: unknown = null;
 
-      const sys = world.defineSystem({
+      const sys = world.addSystem({
         state: { value: 42 },
         init({ state, world: w }) {
           initState = state;
@@ -576,11 +575,14 @@ describe("World", () => {
       const destroyA = vi.fn();
       const destroyB = vi.fn();
 
-      const systemA: System = { update: vi.fn(), destroy: destroyA };
-      const systemB: System = { update: vi.fn(), destroy: destroyB };
-
-      world.addSystem(systemA);
-      world.addSystem(systemB);
+      world.addSystem({
+        update() { /* no-op */ },
+        destroy() { destroyA(); },
+      });
+      world.addSystem({
+        update() { /* no-op */ },
+        destroy() { destroyB(); },
+      });
 
       world.destroy();
 
@@ -613,14 +615,12 @@ describe("World", () => {
       const world = new World(blueprints, { maxEntities: 10 });
       const { Position } = world.components;
 
-      const system: System = {
-        update: vi.fn(),
-        destroy: () => {
+      world.addSystem({
+        update() { /* no-op */ },
+        destroy() {
           throw new Error("boom");
         },
-      };
-
-      world.addSystem(system);
+      });
 
       const e1 = world.addEntity();
       const e2 = world.addEntity();
@@ -638,11 +638,9 @@ describe("World", () => {
 
     test("unregisters all systems", () => {
       const world = new World({}, { maxEntities: 10 });
-      const systemA: System = { update: vi.fn() };
-      const systemB: System = { update: vi.fn() };
 
-      world.addSystem(systemA);
-      world.addSystem(systemB);
+      const systemA = world.addSystem({ update() { /* no-op */ } });
+      const systemB = world.addSystem({ update() { /* no-op */ } });
 
       expect(world.hasSystem(systemA)).toBe(true);
       expect(world.hasSystem(systemB)).toBe(true);

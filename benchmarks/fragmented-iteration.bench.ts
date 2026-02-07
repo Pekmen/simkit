@@ -79,7 +79,7 @@ describe("Fragmented Iteration", () => {
       }
 
       // System 1: Double all Data values
-      world.defineSystem({
+      world.addSystem({
         components: [components.Data],
         update({ query: { entities, Data: data } }) {
           for (const e of entities) {
@@ -89,7 +89,7 @@ describe("Fragmented Iteration", () => {
       });
 
       // System 2: Double all Z values
-      world.defineSystem({
+      world.addSystem({
         components: [components.Z],
         update({ query: { entities, Z: z } }) {
           for (const e of entities) {

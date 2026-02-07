@@ -35,7 +35,7 @@ for (let i = 0; i < 1000; i++) {
   });
 }
 
-world.defineSystem({
+world.addSystem({
   components: [Position, Velocity],
   update({ query }, dt) {
     const dt_s = dt / 1000;
@@ -54,7 +54,7 @@ world.defineSystem({
   },
 });
 
-world.defineSystem({
+world.addSystem({
   components: [Position, Size, Color],
   update({ query }) {
     if (!ctx) return;
