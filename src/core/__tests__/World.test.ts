@@ -519,6 +519,26 @@ describe("World", () => {
       expect(receivedEmptyEntities).toBe(true);
     });
 
+    test("empty components array does not crash on update", () => {
+      const world = new World(
+        { Position: { x: 0, y: 0 } },
+        { maxEntities: 10 },
+      );
+
+      let called = false;
+      world.addSystem({
+        components: [],
+        update({ query }) {
+          called = true;
+          expect(query.entities.length).toBe(0);
+        },
+      });
+
+      world.update(1);
+
+      expect(called).toBe(true);
+    });
+
     test("rejects component handles from a different world", () => {
       const blueprints = { Position: { x: 0, y: 0 } };
       const world1 = new World(blueprints, { maxEntities: 10 });

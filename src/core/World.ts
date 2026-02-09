@@ -128,7 +128,7 @@ export class World<T extends ComponentBlueprint> {
     destroy?(ctx: { state: S; world: World<T> }): void;
   }): System {
     const handles = config.components;
-    if (handles) {
+    if (handles && handles.length > 0) {
       for (const handle of handles) {
         if (this.components[handle.name as StringKey<T>] !== handle) {
           throw new Error(
@@ -148,7 +148,7 @@ export class World<T extends ComponentBlueprint> {
           }
         : undefined,
       update: (dt: number): void => {
-        ctx.query = handles ? this.query(...handles) : emptyQuery;
+        ctx.query = handles && handles.length > 0 ? this.query(...handles) : emptyQuery;
         config.update(ctx, dt);
       },
       destroy: config.destroy
