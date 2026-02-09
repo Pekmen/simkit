@@ -23,7 +23,7 @@ export type DenseComponentStorageMap<T extends ComponentBlueprint> = {
 };
 
 export type QueryResult<T extends ComponentBlueprint, K extends keyof T> = {
-  entities: EntityId[];
+  entities: readonly EntityId[];
 } & Pick<DenseComponentStorageMap<T>, K>;
 
 export interface ComponentHandle<N extends string = string> {

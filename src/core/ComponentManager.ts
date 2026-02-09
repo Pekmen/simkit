@@ -254,6 +254,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
         entities.push(entityId);
       }
     }
+    Object.freeze(entities);
 
     const result = this.buildQueryResult<K>(entities, componentHandles);
 

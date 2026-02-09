@@ -138,7 +138,7 @@ export class World<T extends ComponentBlueprint> {
       }
     }
 
-    const emptyQuery = { entities: [] } as QueryResult<T, K>;
+    const emptyQuery = { entities: Object.freeze([] as EntityId[]) } as QueryResult<T, K>;
     const ctx = { state: (config.state ?? {}) as S, world: this, query: emptyQuery };
 
     const system: System = {
