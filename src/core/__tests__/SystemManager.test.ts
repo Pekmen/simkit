@@ -111,6 +111,31 @@ describe("SystemManager", () => {
     }).toThrow("addSystem: system already registered");
   });
 
+  test("addSystem duplicate error includes name when system is named", () => {
+    const manager = new SystemManager();
+    const system: System = { name: "Foo", update: vi.fn() };
+    manager.addSystem(system);
+    expect(() => {
+      manager.addSystem(system);
+    }).toThrow(`addSystem: system "Foo" already registered`);
+  });
+
+  test("removeSystem not-found error includes name when system is named", () => {
+    const manager = new SystemManager();
+    const system: System = { name: "Foo", update: vi.fn() };
+    expect(() => {
+      manager.removeSystem(system);
+    }).toThrow(`removeSystem: system "Foo" not registered`);
+  });
+
+  test("unnamed system error messages have no name suffix", () => {
+    const manager = new SystemManager();
+    const system: System = { update: vi.fn() };
+    expect(() => {
+      manager.removeSystem(system);
+    }).toThrow("removeSystem: system not registered");
+  });
+
   test("hasSystem returns true for registered system", () => {
     const manager = new SystemManager();
     const system: System = { update: vi.fn() };

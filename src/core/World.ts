@@ -117,6 +117,7 @@ export class World<T extends ComponentBlueprint> {
     K extends StringKey<T> = never,
     S = Record<string, never>,
   >(config: {
+    name?: string;
     components?: ComponentHandle<K>[];
     state?: S;
     priority?: number;
@@ -142,6 +143,7 @@ export class World<T extends ComponentBlueprint> {
     const ctx = { state: (config.state ?? {}) as S, world: this, query: emptyQuery };
 
     const system: System = {
+      name: config.name,
       init: config.init
         ? (): void => {
             config.init?.(ctx);
