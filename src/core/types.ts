@@ -39,3 +39,5 @@ export interface WorldOptions {
 export type SpawnConfig<T extends ComponentBlueprint> = Partial<{
   [K in keyof T]: Partial<T[K]> | ComponentHandle<K & string>;
 }>;
+
+export const tag = Object.freeze({}) as Record<string, never>;

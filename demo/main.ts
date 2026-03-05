@@ -1,4 +1,4 @@
-import { World } from "../src/core";
+import { World, tag } from "../src/core";
 import type { EntityId } from "../src/core";
 
 const canvas = document.getElementById("demo-canvas") as HTMLCanvasElement;
@@ -24,8 +24,8 @@ const INITIAL_ZOMBIES = 3;
 const blueprints = {
   Position: { x: 0, y: 0 },
   Velocity: { dx: 0, dy: 0 },
-  isHuman: {} as Record<string, never>,
-  isZombie: {} as Record<string, never>,
+  isHuman: tag,
+  isZombie: tag,
 };
 
 const world = new World(blueprints);
