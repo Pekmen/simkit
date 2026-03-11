@@ -101,6 +101,7 @@ export class World<T extends ComponentBlueprint> {
     try {
       this.systemManager.destroyAll();
     } finally {
+      this.componentManager.clearQueryCache();
       for (const entityId of [...this.entityManager.activeEntities]) {
         this.removeEntity(entityId);
       }

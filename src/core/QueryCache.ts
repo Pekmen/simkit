@@ -36,6 +36,10 @@ export class QueryCache {
     this.cache.set(mask, value);
   }
 
+  clear(): void {
+    this.cache.clear();
+  }
+
   invalidateMatchingQueries(componentBits: number): void {
     if (!this.isEnabled || this.cache.size === 0 || componentBits === 0) {
       return;

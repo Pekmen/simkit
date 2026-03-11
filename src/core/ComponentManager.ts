@@ -235,6 +235,10 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.bitsets.clear(entityId);
   }
 
+  clearQueryCache(): void {
+    this.queryCache.clear();
+  }
+
   query<K extends StringKey<T>>(
     ...componentHandles: ComponentHandle<K>[]
   ): QueryResult<T, K> {
