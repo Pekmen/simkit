@@ -12,7 +12,7 @@ describe("SystemManager", () => {
     manager.addSystem(system);
 
     // @ts-expect-error accessing private for test
-    expect(manager.systems).toContain(system);
+    expect(manager.systems.has(system)).toBe(true);
   });
 
   test("removeSystem removes and destroys a system", () => {
@@ -235,9 +235,7 @@ describe("SystemManager", () => {
       manager.destroyAll();
     }).toThrow(AggregateError);
     // @ts-expect-error accessing private for test
-    expect(manager.systems).toHaveLength(0);
-    // @ts-expect-error accessing private for test
-    expect(manager.priorities.size).toBe(0);
+    expect(manager.systems.size).toBe(0);
   });
 
   test("destroyAll throws AggregateError with all collected errors", () => {
@@ -284,9 +282,7 @@ describe("SystemManager", () => {
       manager.removeSystem(system);
     }).toThrow("boom");
     // @ts-expect-error accessing private for test
-    expect(manager.systems).not.toContain(system);
-    // @ts-expect-error accessing private for test
-    expect(manager.priorities.has(system)).toBe(false);
+    expect(manager.systems.has(system)).toBe(false);
   });
 
   test("updateAll runs all systems even when one throws", () => {

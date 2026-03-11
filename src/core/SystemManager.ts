@@ -1,11 +1,10 @@
 import type { System } from "./System";
 
 export class SystemManager {
-  private systems: System[] = [];
-  private priorities = new Map<System, number>();
+  private systems = new Map<System, number>(); // key=system, value=priority; insertion order = execution order
 
   addSystem(system: System, priority = 0): void {
-    if (this.systems.includes(system)) {
+    if (this.systems.has(system)) {
       throw new Error(
         `addSystem: system${system.name ? ` "${system.name}"` : ""} already registered`,
       );
@@ -13,20 +12,18 @@ export class SystemManager {
 
     system.init?.();
 
-    const insertIndex = this.systems.findIndex(
-      (s) => (this.priorities.get(s) ?? 0) < priority,
-    );
+    const entries = [...this.systems.entries()];
+    const insertIndex = entries.findIndex(([, p]) => p < priority);
     if (insertIndex === -1) {
-      this.systems.push(system);
+      entries.push([system, priority]);
     } else {
-      this.systems.splice(insertIndex, 0, system);
+      entries.splice(insertIndex, 0, [system, priority]);
     }
-    this.priorities.set(system, priority);
+    this.systems = new Map(entries);
   }
 
   removeSystem(system: System): void {
-    const index = this.systems.indexOf(system);
-    if (index === -1) {
+    if (!this.systems.has(system)) {
       throw new Error(
         `removeSystem: system${system.name ? ` "${system.name}"` : ""} not registered`,
       );
@@ -34,19 +31,18 @@ export class SystemManager {
     try {
       system.destroy?.();
     } finally {
-      this.systems.splice(index, 1);
-      this.priorities.delete(system);
+      this.systems.delete(system);
     }
   }
 
   hasSystem(system: System): boolean {
-    return this.systems.includes(system);
+    return this.systems.has(system);
   }
 
   updateAll(deltaTime: number): void {
     const errors: unknown[] = [];
-    for (const system of [...this.systems]) {
-      if (this.systems.includes(system)) {
+    for (const system of [...this.systems.keys()]) {
+      if (this.systems.has(system)) {
         try {
           system.update(deltaTime);
         } catch (error) {
@@ -61,15 +57,14 @@ export class SystemManager {
 
   destroyAll(): void {
     const errors: unknown[] = [];
-    for (const system of [...this.systems]) {
+    for (const system of [...this.systems.keys()]) {
       try {
         system.destroy?.();
       } catch (error) {
         errors.push(error);
       }
     }
-    this.systems = [];
-    this.priorities.clear();
+    this.systems.clear();
     if (errors.length > 0) {
       throw new AggregateError(errors, "destroyAll: one or more systems threw");
     }
