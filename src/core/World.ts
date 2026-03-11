@@ -97,14 +97,18 @@ export class World<T extends ComponentBlueprint> {
     this.systemManager.updateAll(deltaTime);
   }
 
+  clear(): void {
+    this.componentManager.clearQueryCache();
+    for (const entityId of [...this.entityManager.activeEntities]) {
+      this.removeEntity(entityId);
+    }
+  }
+
   destroy(): void {
     try {
       this.systemManager.destroyAll();
     } finally {
-      this.componentManager.clearQueryCache();
-      for (const entityId of [...this.entityManager.activeEntities]) {
-        this.removeEntity(entityId);
-      }
+      this.clear();
     }
   }
 

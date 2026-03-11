@@ -589,6 +589,80 @@ describe("World", () => {
     });
   });
 
+  describe("clear", () => {
+    test("removes all entities", () => {
+      const world = new World({}, { maxEntities: 10 });
+      world.addEntity();
+      world.addEntity();
+      world.addEntity();
+
+      world.clear();
+
+      expect(world.getEntityCount()).toBe(0);
+    });
+
+    test("does not destroy systems", () => {
+      const world = new World({}, { maxEntities: 10 });
+      const updateFn = vi.fn();
+      const system = world.addSystem({ update: updateFn });
+
+      world.clear();
+
+      expect(world.hasSystem(system)).toBe(true);
+      world.update(1);
+      expect(updateFn).toHaveBeenCalledTimes(1);
+    });
+
+    test("new entities can be added and systems run normally after clear", () => {
+      const blueprints = { Position: { x: 0, y: 0 } };
+      const world = new World(blueprints, { maxEntities: 10 });
+      const { Position } = world.components;
+
+      const e1 = world.addEntity();
+      world.setComponent(e1, Position, { x: 1, y: 1 });
+      world.clear();
+
+      const e2 = world.addEntity();
+      world.setComponent(e2, Position, { x: 5, y: 6 });
+
+      const queryCounts: number[] = [];
+      world.addSystem({
+        components: [Position],
+        update({ query }) {
+          queryCounts.push(query.entities.length);
+        },
+      });
+
+      world.update(1);
+      expect(queryCounts).toEqual([1]);
+    });
+
+    test("safe on an already-empty world", () => {
+      const world = new World({}, { maxEntities: 10 });
+      expect(() => world.clear()).not.toThrow();
+      expect(world.getEntityCount()).toBe(0);
+    });
+
+    test("query cache is cleared", () => {
+      const blueprints = { Position: { x: 0, y: 0 } };
+      const world = new World(blueprints, { maxEntities: 10, queryCacheSize: 1 });
+      const { Position } = world.components;
+
+      const e = world.addEntity();
+      world.setComponent(e, Position, { x: 1, y: 2 });
+
+      // Prime the cache
+      const before = world.query(Position);
+      expect(before.entities.length).toBe(1);
+
+      world.clear();
+
+      // After clear, query should reflect empty world
+      const after = world.query(Position);
+      expect(after.entities.length).toBe(0);
+    });
+  });
+
   describe("destroy", () => {
     test("calls destroy() on all systems", () => {
       const world = new World({}, { maxEntities: 10 });
