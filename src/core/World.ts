@@ -53,7 +53,7 @@ export class World<T extends ComponentBlueprint> {
   }
 
   getActiveEntities(): readonly EntityId[] {
-    return this.entityManager.activeEntities;
+    return [...this.entityManager.activeEntities];
   }
 
   setComponent<K extends StringKey<T>>(
