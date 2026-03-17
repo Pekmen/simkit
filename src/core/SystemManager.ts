@@ -58,6 +58,7 @@ export class SystemManager {
   destroyAll(): void {
     const errors: unknown[] = [];
     for (const system of [...this.systems.keys()]) {
+      if (!this.systems.has(system)) continue;
       try {
         system.destroy?.();
       } catch (error) {
