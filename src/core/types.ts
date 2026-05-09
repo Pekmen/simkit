@@ -40,4 +40,12 @@ export type SpawnConfig<T extends ComponentBlueprint> = Partial<{
   [K in keyof T]: Partial<T[K]> | ComponentHandle<K & string>;
 }>;
 
+export interface QueryOptions<
+  T extends ComponentBlueprint,
+  K extends StringKey<T> = never,
+> {
+  with?: ComponentHandle<K>[];
+  without?: ComponentHandle<StringKey<T>>[];
+}
+
 export const tag = Object.freeze({}) as Record<string, never>;

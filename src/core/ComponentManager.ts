@@ -3,6 +3,7 @@ import type {
   ComponentBlueprint,
   ComponentStorage,
   QueryResult,
+  QueryOptions,
   ComponentHandle,
   SpawnConfig,
   StringKey,
@@ -239,31 +240,83 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.queryCache.clear();
   }
 
+  query<K extends StringKey<T>>(...components: ComponentHandle<K>[]): QueryResult<T, K>;
+  query<K extends StringKey<T> = never>(
+    options: QueryOptions<T, K>,
+  ): QueryResult<T, K>;
   query<K extends StringKey<T>>(
-    ...componentHandles: ComponentHandle<K>[]
+    first?: ComponentHandle<K> | QueryOptions<T, K>,
+    ...rest: ComponentHandle<K>[]
   ): QueryResult<T, K> {
-    if (componentHandles.length === 0) {
-      throw new Error("query() requires at least one component");
-    }
-    const mask = this.bitsets.createMask(componentHandles);
+    let withHandles: ComponentHandle<K>[];
+    let withoutHandles: ComponentHandle<StringKey<T>>[];
 
-    const cached = this.queryCache.get(mask);
+    if (first === undefined || "bitPosition" in first) {
+      withHandles = first !== undefined ? [first, ...rest] : [];
+      withoutHandles = [];
+    } else {
+      withHandles = first.with ?? [];
+      withoutHandles = first.without ?? [];
+    }
+
+    const { includeMask, excludeMask } = this.validateAndComputeMasks(
+      withHandles,
+      withoutHandles,
+    );
+    return this.fetchQuery(includeMask, excludeMask, withHandles);
+  }
+
+  createQueryFn<K extends StringKey<T>>(
+    withHandles: ComponentHandle<K>[],
+    withoutHandles: ComponentHandle<StringKey<T>>[],
+  ): () => QueryResult<T, K> {
+    const { includeMask, excludeMask } = this.validateAndComputeMasks(
+      withHandles,
+      withoutHandles,
+    );
+    return () => this.fetchQuery(includeMask, excludeMask, withHandles);
+  }
+
+  private validateAndComputeMasks(
+    withHandles: ComponentHandle<StringKey<T>>[],
+    withoutHandles: ComponentHandle<StringKey<T>>[],
+  ): { includeMask: number; excludeMask: number } {
+    if (withHandles.length === 0 && withoutHandles.length === 0) {
+      throw new Error(
+        'query() requires at least one component in "with" or "without"',
+      );
+    }
+    const includeMask = this.bitsets.createMask(withHandles);
+    const excludeMask = this.bitsets.createMask(withoutHandles);
+    if ((includeMask & excludeMask) !== 0) {
+      throw new Error(
+        "query(): a component cannot appear in both with and without",
+      );
+    }
+    return { includeMask, excludeMask };
+  }
+
+  private fetchQuery<K extends StringKey<T>>(
+    includeMask: number,
+    excludeMask: number,
+    withHandles: ComponentHandle<K>[],
+  ): QueryResult<T, K> {
+    const cached = this.queryCache.get(includeMask, excludeMask);
     if (cached) {
       return cached as QueryResult<T, K>;
     }
 
     const entities: EntityId[] = [];
     for (const entityId of this.entityManager.activeEntities) {
-      if (this.bitsets.matchesMask(entityId, mask)) {
+      const bits = this.bitsets.getBits(entityId);
+      if ((bits & includeMask) === includeMask && (bits & excludeMask) === 0) {
         entities.push(entityId);
       }
     }
     Object.freeze(entities);
 
-    const result = this.buildQueryResult<K>(entities, componentHandles);
-
-    this.queryCache.set(mask, result);
-
+    const result = this.buildQueryResult<K>(entities, withHandles);
+    this.queryCache.set(includeMask, excludeMask, result);
     return result;
   }
 

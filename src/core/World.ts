@@ -6,6 +6,7 @@ import type {
   EntityId,
   ComponentBlueprint,
   QueryResult,
+  QueryOptions,
   ComponentHandle,
   WorldOptions,
   SpawnConfig,
@@ -112,10 +113,33 @@ export class World<T extends ComponentBlueprint> {
     }
   }
 
+  query<K extends StringKey<T>>(...components: ComponentHandle<K>[]): QueryResult<T, K>;
+  query<K extends StringKey<T> = never>(
+    options: QueryOptions<T, K>,
+  ): QueryResult<T, K>;
   query<K extends StringKey<T>>(
-    ...components: ComponentHandle<K>[]
+    first?: ComponentHandle<K> | QueryOptions<T, K>,
+    ...rest: ComponentHandle<K>[]
   ): QueryResult<T, K> {
-    return this.componentManager.query(...components);
+    if (first === undefined || "bitPosition" in first) {
+      return first
+        ? this.componentManager.query(first, ...rest)
+        : this.componentManager.query();
+    }
+    return this.componentManager.query(first);
+  }
+
+  private validateHandles(
+    handles: ComponentHandle<StringKey<T>>[],
+    context: string,
+  ): void {
+    for (const handle of handles) {
+      if (this.components[handle.name] !== handle) {
+        throw new Error(
+          `${context}: component handle "${handle.name}" does not belong to this world`,
+        );
+      }
+    }
   }
 
   addSystem<
@@ -124,6 +148,7 @@ export class World<T extends ComponentBlueprint> {
   >(config: {
     name?: string;
     components?: ComponentHandle<K>[];
+    exclude?: ComponentHandle<StringKey<T>>[];
     state?: S;
     priority?: number;
     init?(ctx: { state: S; world: World<T> }): void;
@@ -134,18 +159,23 @@ export class World<T extends ComponentBlueprint> {
     destroy?(ctx: { state: S; world: World<T> }): void;
   }): System {
     const handles = config.components;
+    const excludeHandles = config.exclude;
+
     if (handles && handles.length > 0) {
-      for (const handle of handles) {
-        if (this.components[handle.name as StringKey<T>] !== handle) {
-          throw new Error(
-            `addSystem: component handle "${handle.name}" does not belong to this world`,
-          );
-        }
-      }
+      this.validateHandles(handles, "addSystem");
+    }
+    if (excludeHandles && excludeHandles.length > 0) {
+      this.validateHandles(excludeHandles, "addSystem");
     }
 
     const emptyQuery = { entities: Object.freeze([] as EntityId[]) } as QueryResult<T, K>;
     const ctx = { state: (config.state ?? {}) as S, world: this, query: emptyQuery };
+
+    const hasQuery =
+      (handles?.length ?? 0) > 0 || (excludeHandles?.length ?? 0) > 0;
+    const queryFn = hasQuery
+      ? this.componentManager.createQueryFn(handles ?? [], excludeHandles ?? [])
+      : null;
 
     const system: System = {
       name: config.name,
@@ -155,7 +185,7 @@ export class World<T extends ComponentBlueprint> {
           }
         : undefined,
       update: (dt: number): void => {
-        ctx.query = handles && handles.length > 0 ? this.query(...handles) : emptyQuery;
+        ctx.query = queryFn ? queryFn() : emptyQuery;
         config.update(ctx, dt);
       },
       destroy: config.destroy

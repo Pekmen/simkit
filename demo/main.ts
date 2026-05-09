@@ -62,17 +62,19 @@ function spawnZombie(): void {
 // SpawnSystem — seeds initial entities, periodically rescues survivors
 world.addSystem({
   name: "SpawnSystem",
+  components: [Position, isHuman],
+  exclude: [isZombie],
   state: { spawnTimer: 0 },
   priority: 40,
   init(_ctx): void {
     for (let i = 0; i < INITIAL_HUMANS; i++) spawnHuman();
     for (let i = 0; i < INITIAL_ZOMBIES; i++) spawnZombie();
   },
-  update({ state }, dt): void {
+  update({ state, query }, dt): void {
     state.spawnTimer += dt;
     if (state.spawnTimer >= RESPAWN_INTERVAL) {
       state.spawnTimer = 0;
-      if (world.query(Position, isHuman).entities.length < MAX_HUMANS) {
+      if (query.entities.length < MAX_HUMANS) {
         spawnHuman();
       }
     }
@@ -92,7 +94,7 @@ world.addSystem({
   components: [Position, Velocity, isZombie],
   priority: 30,
   update({ query, world: w }): void {
-    const humans = w.query(Position, isHuman);
+    const humans = w.query({ with: [Position], without: [isZombie] });
     if (humans.entities.length === 0) return;
 
     for (const zombie of query.entities) {
@@ -130,7 +132,7 @@ world.addSystem({
   components: [Position, Velocity, isHuman],
   priority: 20,
   update({ query, world: w }): void {
-    const zombies = w.query(Position, isZombie);
+    const zombies = w.query({ with: [Position], without: [isHuman] });
 
     for (const human of query.entities) {
       const hx = query.Position.x[human];
@@ -209,7 +211,7 @@ world.addSystem({
   components: [Position, isZombie],
   priority: 5,
   update({ query, world: w }): void {
-    const humans = w.query(Position, isHuman);
+    const humans = w.query({ with: [Position], without: [isZombie] });
     const toInfect: EntityId[] = [];
 
     for (const zombie of query.entities) {

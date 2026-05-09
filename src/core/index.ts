@@ -11,6 +11,7 @@ export type {
   ComponentStorageMap,
   DenseComponentStorageMap,
   QueryResult,
+  QueryOptions,
   ComponentHandle,
   WorldOptions,
   SpawnConfig,

@@ -205,6 +205,117 @@ describe("Query", () => {
     expect(livingEntities.entities).toContain(e2);
   });
 
+  describe("query exclusion (without)", () => {
+    const setup = (): {
+      world: World<{
+        Position: { x: number; y: number };
+        Velocity: { dx: number; dy: number };
+        Dead: Record<string, never>;
+      }>;
+      e1: ReturnType<typeof World.prototype.addEntity>;
+      e2: ReturnType<typeof World.prototype.addEntity>;
+      e3: ReturnType<typeof World.prototype.addEntity>;
+    } => {
+      const world = new World(
+        { Position: { x: 0, y: 0 }, Velocity: { dx: 0, dy: 0 }, Dead: {} },
+        { maxEntities: 10 },
+      );
+      const { Position, Velocity, Dead } = world.components;
+      const e1 = world.addEntity();
+      world.setComponent(e1, Position);
+      world.setComponent(e1, Velocity);
+
+      const e2 = world.addEntity();
+      world.setComponent(e2, Position);
+      world.setComponent(e2, Velocity);
+      world.setComponent(e2, Dead);
+
+      const e3 = world.addEntity();
+      world.setComponent(e3, Position);
+      return { world, e1, e2, e3 };
+    };
+
+    test("query({ with, without }) excludes entities with the excluded component", () => {
+      const { world, e1, e2 } = setup();
+      const { Position, Velocity, Dead } = world.components;
+      const { entities } = world.query({ with: [Position, Velocity], without: [Dead] });
+      expect(entities).toContain(e1);
+      expect(entities).not.toContain(e2);
+    });
+
+    test("query({ without }) with no with returns all entities lacking the component", () => {
+      const { world, e1, e2, e3 } = setup();
+      const { Dead } = world.components;
+      const { entities } = world.query({ without: [Dead] });
+      expect(entities).toContain(e1);
+      expect(entities).toContain(e3);
+      expect(entities).not.toContain(e2);
+    });
+
+    test("query({ with }) without exclusion behaves identically to rest-param form", () => {
+      const { world } = setup();
+      const { Position } = world.components;
+      const optionsResult = world.query({ with: [Position] });
+      const restResult = world.query(Position);
+      expect(optionsResult.entities).toEqual(restResult.entities);
+    });
+
+    test("throws when the same component appears in both with and without", () => {
+      const { world } = setup();
+      const { Position } = world.components;
+      expect(() => {
+        world.query({ with: [Position], without: [Position] });
+      }).toThrow("with and without");
+    });
+
+    test("throws when both with and without are empty", () => {
+      const { world } = setup();
+      expect(() => {
+        world.query({});
+      }).toThrow();
+    });
+
+    test("cache is invalidated when a component in without is added to an entity", () => {
+      const { world, e1 } = setup();
+      const { Position, Velocity, Dead } = world.components;
+      const before = world.query({ with: [Position, Velocity], without: [Dead] });
+      expect(before.entities).toContain(e1);
+
+      world.setComponent(e1, Dead);
+
+      const after = world.query({ with: [Position, Velocity], without: [Dead] });
+      expect(after.entities).not.toContain(e1);
+    });
+
+    test("cache is invalidated when a component in without is removed from an entity", () => {
+      const { world, e2 } = setup();
+      const { Position, Velocity, Dead } = world.components;
+      const before = world.query({ with: [Position, Velocity], without: [Dead] });
+      expect(before.entities).not.toContain(e2);
+
+      world.removeComponent(e2, Dead);
+
+      const after = world.query({ with: [Position, Velocity], without: [Dead] });
+      expect(after.entities).toContain(e2);
+    });
+
+    test("addSystem with exclude only receives entities lacking the excluded component", () => {
+      const { world, e1, e2 } = setup();
+      const { Position, Velocity, Dead } = world.components;
+      const seen: number[] = [];
+      world.addSystem({
+        components: [Position, Velocity],
+        exclude: [Dead],
+        update({ query }) {
+          for (const e of query.entities) seen.push(e);
+        },
+      });
+      world.update(1);
+      expect(seen).toContain(e1);
+      expect(seen).not.toContain(e2);
+    });
+  });
+
   test("query results contain EntityId which can be used directly as index", () => {
     const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 10 });
     const { Position } = world.components;

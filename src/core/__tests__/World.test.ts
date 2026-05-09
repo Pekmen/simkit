@@ -639,7 +639,7 @@ describe("World", () => {
 
     test("safe on an already-empty world", () => {
       const world = new World({}, { maxEntities: 10 });
-      expect(() => world.clear()).not.toThrow();
+      expect(() => { world.clear(); }).not.toThrow();
       expect(world.getEntityCount()).toBe(0);
     });
 

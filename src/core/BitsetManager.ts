@@ -43,10 +43,6 @@ export class BitsetManager {
     return mask;
   }
 
-  matchesMask(entityId: EntityId, mask: number): boolean {
-    return (this.entityBits[entityId] & mask) === mask;
-  }
-
   getBits(entityId: EntityId): number {
     return this.entityBits[entityId];
   }
