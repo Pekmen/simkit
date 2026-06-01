@@ -301,9 +301,17 @@ export class ComponentManager<T extends ComponentBlueprint> {
     excludeMask: number,
     withHandles: ComponentHandle<K>[],
   ): QueryResult<T, K> {
-    const cached = this.queryCache.get(includeMask, excludeMask);
-    if (cached) {
-      return cached as QueryResult<T, K>;
+    // Pure `without` queries (includeMask === 0) match on the *absence* of a
+    // component, so their membership depends on the entity population, not on
+    // any include bit. Mask-based invalidation can't observe spawn/addEntity/
+    // removeEntity for them, so they must not be cached — always recompute.
+    const cacheable = includeMask !== 0;
+
+    if (cacheable) {
+      const cached = this.queryCache.get(includeMask, excludeMask);
+      if (cached) {
+        return cached as QueryResult<T, K>;
+      }
     }
 
     const entities: EntityId[] = [];
@@ -316,7 +324,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
     Object.freeze(entities);
 
     const result = this.buildQueryResult<K>(entities, withHandles);
-    this.queryCache.set(includeMask, excludeMask, result);
+    if (cacheable) {
+      this.queryCache.set(includeMask, excludeMask, result);
+    }
     return result;
   }
 

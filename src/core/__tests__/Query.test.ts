@@ -299,6 +299,30 @@ describe("Query", () => {
       expect(after.entities).toContain(e2);
     });
 
+    test("pure without query reflects entities spawned after it was first run", () => {
+      const { world } = setup();
+      const { Dead } = world.components;
+      world.query({ without: [Dead] }); // prime
+      const e4 = world.spawn({ Position: { x: 1, y: 1 } });
+      expect(world.query({ without: [Dead] }).entities).toContain(e4);
+    });
+
+    test("pure without query reflects bare addEntity after it was first run", () => {
+      const { world } = setup();
+      const { Dead } = world.components;
+      world.query({ without: [Dead] }); // prime
+      const e4 = world.addEntity();
+      expect(world.query({ without: [Dead] }).entities).toContain(e4);
+    });
+
+    test("pure without query drops an entity removed after it was first run", () => {
+      const { world, e1 } = setup();
+      const { Dead } = world.components;
+      expect(world.query({ without: [Dead] }).entities).toContain(e1); // prime
+      world.removeEntity(e1);
+      expect(world.query({ without: [Dead] }).entities).not.toContain(e1);
+    });
+
     test("addSystem with exclude only receives entities lacking the excluded component", () => {
       const { world, e1, e2 } = setup();
       const { Position, Velocity, Dead } = world.components;
