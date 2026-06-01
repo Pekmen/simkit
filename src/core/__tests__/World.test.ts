@@ -183,6 +183,36 @@ describe("World", () => {
     expect(component).toEqual({ x: 50, y: 20 });
   });
 
+  test("setComponent on an existing component with no data is a no-op", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const world = new World(blueprints, { maxEntities: 5 });
+    const { Position } = world.components;
+
+    const entityId = world.addEntity();
+    world.setComponent(entityId, Position, { x: 10, y: 20 });
+    world.setComponent(entityId, Position);
+
+    expect(world.getComponent(entityId, Position)).toEqual({ x: 10, y: 20 });
+  });
+
+  test("setComponent(e, C) and setComponent(e, C, {}) behave identically", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const world = new World(blueprints, { maxEntities: 5 });
+    const { Position } = world.components;
+
+    const e1 = world.addEntity();
+    world.setComponent(e1, Position, { x: 10, y: 20 });
+    world.setComponent(e1, Position);
+
+    const e2 = world.addEntity();
+    world.setComponent(e2, Position, { x: 10, y: 20 });
+    world.setComponent(e2, Position, {});
+
+    expect(world.getComponent(e1, Position)).toEqual(
+      world.getComponent(e2, Position),
+    );
+  });
+
   test("component storage works correctly after entity recycling", () => {
     const blueprints = {
       Position: { x: 0, y: 0 },

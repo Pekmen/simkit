@@ -236,7 +236,7 @@ describe("ComponentManager", () => {
     expect(manager.getComponent(entityId, Position)).toEqual({ x: 30, y: 40 });
   });
 
-  test("setComponent with no data resets to defaults", () => {
+  test("setComponent with no data on an existing component is a no-op", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
     const manager = new ComponentManager(blueprints, 5, entityManager);
@@ -247,7 +247,7 @@ describe("ComponentManager", () => {
     manager.setComponent(entityId, Position);
 
     const component = manager.getComponent(entityId, Position);
-    expect(component).toEqual({ x: 0, y: 0 });
+    expect(component).toEqual({ x: 10, y: 20 });
   });
 
   test("setComponent with partial data on existing component preserves unspecified fields", () => {

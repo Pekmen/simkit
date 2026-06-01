@@ -102,7 +102,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
           );
         }
         storage[prop][entityId] = provided;
-      } else if (isNew || componentData === undefined) {
+      } else if (isNew) {
         storage[prop][entityId] = defaults[prop];
       }
     }
