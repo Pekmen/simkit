@@ -1,5 +1,11 @@
+interface CacheEntry {
+  include: number;
+  exclude: number;
+  value: unknown;
+}
+
 export class QueryCache {
-  private cache = new Map<number | string, unknown>();
+  private cache = new Map<number | string, CacheEntry>();
   private readonly maxCacheSize: number;
 
   constructor(maxCacheSize: number) {
@@ -24,12 +30,13 @@ export class QueryCache {
   get(include: number, exclude: number): unknown {
     if (!this.isEnabled) return undefined;
     const key = this.makeKey(include, exclude);
-    const cached = this.cache.get(key);
-    if (cached !== undefined) {
+    const entry = this.cache.get(key);
+    if (entry !== undefined) {
       this.cache.delete(key);
-      this.cache.set(key, cached);
+      this.cache.set(key, entry);
+      return entry.value;
     }
-    return cached;
+    return undefined;
   }
 
   set(include: number, exclude: number, value: unknown): void {
@@ -39,7 +46,7 @@ export class QueryCache {
     if (this.cache.size >= this.maxCacheSize) {
       this.evictOldestEntry();
     }
-    this.cache.set(this.makeKey(include, exclude), value);
+    this.cache.set(this.makeKey(include, exclude), { include, exclude, value });
   }
 
   clear(): void {
@@ -51,18 +58,11 @@ export class QueryCache {
       return;
     }
 
-    for (const key of this.cache.keys()) {
-      let include: number;
-      let exclude: number;
-      if (typeof key === "number") {
-        include = key;
-        exclude = 0;
-      } else {
-        const colon = key.indexOf(":");
-        include = parseInt(key.slice(0, colon), 10);
-        exclude = parseInt(key.slice(colon + 1), 10);
-      }
-      if ((include & componentBits) !== 0 || (exclude & componentBits) !== 0) {
+    for (const [key, entry] of this.cache) {
+      if (
+        (entry.include & componentBits) !== 0 ||
+        (entry.exclude & componentBits) !== 0
+      ) {
         this.cache.delete(key);
       }
     }
