@@ -1,5 +1,10 @@
 export type EntityId = number & { readonly __brand: "EntityId" };
 
+export interface EntityRef {
+  readonly index: EntityId;
+  readonly generation: number;
+}
+
 export type StringKey<T> = Extract<keyof T, string>;
 
 export type ValidComponentProp = number | string | boolean;
@@ -49,3 +54,11 @@ export interface QueryOptions<
 }
 
 export const tag = Object.freeze({}) as Record<string, never>;
+
+export function staleEntityError(entityId: EntityId): Error {
+  return new Error(
+    `Stale entity reference: EntityId ${entityId}. ` +
+      `To use an entity across frames, save world.ref(id) while it is alive ` +
+      `and restore it with world.resolve(ref).`,
+  );
+}

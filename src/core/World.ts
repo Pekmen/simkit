@@ -4,6 +4,7 @@ import { SystemManager } from "./SystemManager";
 import type { System } from "./System";
 import type {
   EntityId,
+  EntityRef,
   ComponentBlueprint,
   QueryResult,
   QueryOptions,
@@ -55,6 +56,18 @@ export class World<T extends ComponentBlueprint> {
 
   getActiveEntities(): readonly EntityId[] {
     return [...this.entityManager.activeEntities];
+  }
+
+  ref(entityId: EntityId): EntityRef {
+    return this.entityManager.ref(entityId);
+  }
+
+  resolve(ref: EntityRef): EntityId | undefined {
+    return this.entityManager.resolve(ref);
+  }
+
+  isAlive(ref: EntityRef): boolean {
+    return this.entityManager.isAlive(ref);
   }
 
   setComponent<K extends StringKey<T>>(

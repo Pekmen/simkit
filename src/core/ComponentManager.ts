@@ -1,3 +1,4 @@
+import { staleEntityError } from "./types";
 import type {
   EntityId,
   ComponentBlueprint,
@@ -77,7 +78,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
   private validateEntity(entityId: EntityId): void {
     if (!this.entityManager.isValid(entityId)) {
-      throw new Error(`Stale entity reference: EntityId ${entityId}`);
+      throw staleEntityError(entityId);
     }
   }
 
@@ -240,7 +241,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.queryCache.clear();
   }
 
-  query<K extends StringKey<T>>(...components: ComponentHandle<K>[]): QueryResult<T, K>;
+  query<K extends StringKey<T>>(
+    ...components: ComponentHandle<K>[]
+  ): QueryResult<T, K>;
   query<K extends StringKey<T> = never>(
     options: QueryOptions<T, K>,
   ): QueryResult<T, K>;
@@ -301,10 +304,6 @@ export class ComponentManager<T extends ComponentBlueprint> {
     excludeMask: number,
     withHandles: ComponentHandle<K>[],
   ): QueryResult<T, K> {
-    // Pure `without` queries (includeMask === 0) match on the *absence* of a
-    // component, so their membership depends on the entity population, not on
-    // any include bit. Mask-based invalidation can't observe spawn/addEntity/
-    // removeEntity for them, so they must not be cached — always recompute.
     const cacheable = includeMask !== 0;
 
     if (cacheable) {

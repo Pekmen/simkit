@@ -775,4 +775,43 @@ describe("World", () => {
       expect(world.hasSystem(systemB)).toBe(false);
     });
   });
+
+  describe("entity refs", () => {
+    test("ref/resolve round-trip while alive, undefined after removal", () => {
+      const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 10 });
+
+      const e = world.spawn({ Position: { x: 1, y: 2 } });
+      const ref = world.ref(e);
+
+      expect(world.resolve(ref)).toBe(e);
+      expect(world.isAlive(ref)).toBe(true);
+
+      world.removeEntity(e);
+
+      expect(world.resolve(ref)).toBeUndefined();
+      expect(world.isAlive(ref)).toBe(false);
+    });
+
+    test("clear() invalidates pre-clear refs", () => {
+      const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 10 });
+
+      const e = world.spawn({ Position: { x: 1, y: 2 } });
+      const ref = world.ref(e);
+
+      world.clear();
+
+      expect(world.resolve(ref)).toBeUndefined();
+    });
+
+    test("destroy() invalidates pre-destroy refs", () => {
+      const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 10 });
+
+      const e = world.spawn({ Position: { x: 1, y: 2 } });
+      const ref = world.ref(e);
+
+      world.destroy();
+
+      expect(world.resolve(ref)).toBeUndefined();
+    });
+  });
 });

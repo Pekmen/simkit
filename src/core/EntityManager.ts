@@ -1,4 +1,5 @@
-import type { EntityId } from "./types";
+import { staleEntityError } from "./types";
+import type { EntityId, EntityRef } from "./types";
 
 export class EntityManager {
   private nextEntityId = 0;
@@ -6,6 +7,7 @@ export class EntityManager {
   private freeEntityIds: EntityId[] = [];
   readonly activeEntities: EntityId[] = [];
   private readonly entityToIndex: Int32Array;
+  private readonly generations: Uint32Array;
 
   constructor(maxEntities: number) {
     if (maxEntities <= 0) {
@@ -13,6 +15,7 @@ export class EntityManager {
     }
     this.maxEntities = maxEntities;
     this.entityToIndex = new Int32Array(maxEntities).fill(-1);
+    this.generations = new Uint32Array(maxEntities).fill(1);
   }
 
   addEntity(): EntityId {
@@ -38,7 +41,7 @@ export class EntityManager {
   removeEntity(entityId: EntityId): void {
     const index = this.entityToIndex[entityId];
     if (index === -1) {
-      throw new Error(`Stale entity reference: EntityId ${entityId}`);
+      throw staleEntityError(entityId);
     }
 
     const lastEntity = this.activeEntities[this.activeEntities.length - 1];
@@ -47,6 +50,7 @@ export class EntityManager {
     this.activeEntities.pop();
 
     this.entityToIndex[entityId] = -1;
+    this.generations[entityId]++;
     this.freeEntityIds.push(entityId);
   }
 
@@ -55,6 +59,23 @@ export class EntityManager {
       entityId >= 0 &&
       entityId < this.maxEntities &&
       this.entityToIndex[entityId] !== -1
+    );
+  }
+
+  ref(entityId: EntityId): EntityRef {
+    if (!this.isValid(entityId)) {
+      throw staleEntityError(entityId);
+    }
+    return { index: entityId, generation: this.generations[entityId] };
+  }
+
+  resolve(ref: EntityRef): EntityId | undefined {
+    return this.isAlive(ref) ? ref.index : undefined;
+  }
+
+  isAlive(ref: EntityRef): boolean {
+    return (
+      this.isValid(ref.index) && this.generations[ref.index] === ref.generation
     );
   }
 
