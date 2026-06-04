@@ -15,12 +15,6 @@ export type ComponentBlueprint = Record<
 
 export type ComponentStorage = Record<string, unknown[] | Float64Array>;
 
-export type ComponentStorageMap<T extends ComponentBlueprint> = {
-  [K in keyof T]: {
-    [P in keyof T[K]]: (T[K][P] | undefined)[];
-  };
-};
-
 export type DenseComponentStorageMap<T extends ComponentBlueprint> = {
   [K in keyof T]: {
     [P in keyof T[K]]: T[K][P][];
