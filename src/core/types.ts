@@ -15,9 +15,17 @@ export type ComponentBlueprint = Record<
 
 export type ComponentStorage = Record<string, unknown[] | Float64Array>;
 
+// Numeric props are stored in a fixed-length Float64Array at runtime (see
+// ComponentManager); everything else is a plain Array. Reflecting that here keeps
+// the type honest: index get/set works on both, but length-mutating Array methods
+// (push/pop/splice/…) become a compile error instead of a runtime crash.
+export type ColumnFor<V extends ValidComponentProp> = V extends number
+  ? Float64Array
+  : V[];
+
 export type DenseComponentStorageMap<T extends ComponentBlueprint> = {
   [K in keyof T]: {
-    [P in keyof T[K]]: T[K][P][];
+    [P in keyof T[K]]: ColumnFor<T[K][P]>;
   };
 };
 

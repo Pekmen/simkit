@@ -19,6 +19,9 @@ declare function wantsRef(r: EntityRef): void;
 // @ts-expect-error - a ref is an object and cannot index a storage column
 void column[ref];
 
+// @ts-expect-error - numeric columns are a fixed-length Float64Array, not Array
+column.push(0);
+
 // @ts-expect-error - world APIs take a raw EntityId, not a ref (resolve first)
 world.setComponent(ref, Position, { x: 1 });
 
