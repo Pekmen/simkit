@@ -164,10 +164,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
       );
     }
 
-    const storage = this.componentStorages[component.name];
-    for (const prop in storage) {
-      this.clearStorageValue(storage[prop], entityId);
-    }
+    this.clearComponentStorage(component.name, entityId);
 
     this.bitsets.remove(entityId, component.bitPosition);
 
@@ -192,6 +189,16 @@ export class ComponentManager<T extends ComponentBlueprint> {
       array[entityId] = 0;
     } else {
       array[entityId] = undefined;
+    }
+  }
+
+  private clearComponentStorage(
+    componentName: string,
+    entityId: EntityId,
+  ): void {
+    const storage = this.componentStorages[componentName];
+    for (const prop in storage) {
+      this.clearStorageValue(storage[prop], entityId);
     }
   }
 
@@ -227,10 +234,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
           this.bitsets.toBitmask(this.components[key].bitPosition)) !==
         0
       ) {
-        const storage = this.componentStorages[key];
-        for (const prop in storage) {
-          this.clearStorageValue(storage[prop], entityId);
-        }
+        this.clearComponentStorage(key, entityId);
       }
     }
 

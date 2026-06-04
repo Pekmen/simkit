@@ -135,12 +135,7 @@ export class World<T extends ComponentBlueprint> {
     first?: ComponentHandle<K> | QueryOptions<T, K>,
     ...rest: ComponentHandle<K>[]
   ): QueryResult<T, K> {
-    if (first === undefined || "bitPosition" in first) {
-      return first
-        ? this.componentManager.query(first, ...rest)
-        : this.componentManager.query();
-    }
-    return this.componentManager.query(first);
+    return this.componentManager.query(first as ComponentHandle<K>, ...rest);
   }
 
   private validateHandles(
