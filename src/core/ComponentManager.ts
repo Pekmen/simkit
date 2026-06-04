@@ -8,6 +8,7 @@ import type {
   ComponentHandle,
   SpawnConfig,
   StringKey,
+  ValidComponentProp,
 } from "./types";
 import { BitsetManager } from "./BitsetManager";
 import { QueryCache } from "./QueryCache";
@@ -82,17 +83,17 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
   }
 
-  private setComponentData<K extends keyof T>(
+  private setComponentData(
     entityId: EntityId,
     componentName: string,
-    componentData: Partial<T[K]> | undefined,
+    componentData: Partial<Record<string, ValidComponentProp>> | undefined,
     isNew: boolean,
   ): void {
     const storage = this.componentStorages[componentName];
     const defaults = this.componentBlueprints[componentName];
 
     for (const prop in defaults) {
-      const provided = componentData?.[prop as keyof T[K]];
+      const provided = componentData?.[prop];
 
       if (provided !== undefined) {
         const expectedType = typeof defaults[prop];
@@ -138,7 +139,12 @@ export class ComponentManager<T extends ComponentBlueprint> {
       this.setComponentData(
         entityId,
         key,
-        data === component ? undefined : (data as Partial<T[typeof key]>),
+        // A handle value means "use defaults"; anything else is component data.
+        // The cast narrows out the ComponentHandle arm of the SpawnConfig union,
+        // which TS can't infer from the `=== component` runtime check.
+        data === component
+          ? undefined
+          : (data as Partial<Record<string, ValidComponentProp>>),
         true,
       );
       mask |= this.bitsets.toBitmask(component.bitPosition);

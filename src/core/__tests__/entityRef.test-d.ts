@@ -7,8 +7,11 @@
 import { World } from "../World";
 import type { EntityId, EntityRef } from "../types";
 
-const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 10 });
-const { Position } = world.components;
+const world = new World(
+  { Position: { x: 0, y: 0 }, Label: { text: "" } },
+  { maxEntities: 10 },
+);
+const { Position, Label } = world.components;
 
 const id: EntityId = world.spawn({ Position: { x: 0, y: 0 } });
 const ref: EntityRef = world.ref(id);
@@ -21,6 +24,14 @@ void column[ref];
 
 // @ts-expect-error - numeric columns are a fixed-length Float64Array, not Array
 column.push(0);
+
+// String/boolean columns are likewise fixed-length: indexed get/set works, but
+// length-mutating Array methods are not part of the type.
+const textColumn = world.query(Label).Label.text;
+const firstLabel: string = textColumn[id];
+textColumn[id] = firstLabel;
+// @ts-expect-error - non-numeric columns are a FixedColumn, not a mutable Array
+textColumn.push("x");
 
 // @ts-expect-error - world APIs take a raw EntityId, not a ref (resolve first)
 world.setComponent(ref, Position, { x: 1 });

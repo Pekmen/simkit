@@ -15,13 +15,21 @@ export type ComponentBlueprint = Record<
 
 export type ComponentStorage = Record<string, unknown[] | Float64Array>;
 
+// A non-numeric column is backed by a plain Array at runtime, but it is exposed as
+// a fixed-length, index-addressable view: indexed get/set works, while length-mutating
+// Array methods (push/pop/splice/…) are not part of the type. This mirrors the safety
+// Float64Array already gives numeric columns — mutating a column's length would corrupt
+// the dense struct-of-arrays layout, so it is a compile error rather than a runtime crash.
+export interface FixedColumn<V> {
+  [index: number]: V;
+  readonly length: number;
+}
+
 // Numeric props are stored in a fixed-length Float64Array at runtime (see
-// ComponentManager); everything else is a plain Array. Reflecting that here keeps
-// the type honest: index get/set works on both, but length-mutating Array methods
-// (push/pop/splice/…) become a compile error instead of a runtime crash.
+// ComponentManager); everything else is a plain Array surfaced as a FixedColumn.
 export type ColumnFor<V extends ValidComponentProp> = V extends number
   ? Float64Array
-  : V[];
+  : FixedColumn<V>;
 
 export type DenseComponentStorageMap<T extends ComponentBlueprint> = {
   [K in keyof T]: {
