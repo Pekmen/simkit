@@ -13,6 +13,7 @@ import type {
   SpawnConfig,
   StringKey,
 } from "./types";
+import { DEFAULT_QUERY_CACHE_SIZE } from "./types";
 
 export class World<T extends ComponentBlueprint> {
   private readonly options: WorldOptions;
@@ -25,7 +26,7 @@ export class World<T extends ComponentBlueprint> {
   constructor(blueprints: T, options?: Partial<WorldOptions>) {
     this.options = {
       maxEntities: 1000,
-      queryCacheSize: 64,
+      queryCacheSize: DEFAULT_QUERY_CACHE_SIZE,
       ...options,
     };
 

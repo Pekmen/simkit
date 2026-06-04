@@ -30,9 +30,11 @@ export interface ComponentHandle<N extends string = string> {
   readonly bitPosition: number;
 }
 
+export const DEFAULT_QUERY_CACHE_SIZE = 64;
+
 export interface WorldOptions {
   maxEntities: number;
-  queryCacheSize?: number;
+  queryCacheSize: number;
 }
 
 export type SpawnConfig<T extends ComponentBlueprint> = Partial<{

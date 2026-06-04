@@ -1,4 +1,4 @@
-import { staleEntityError } from "./types";
+import { staleEntityError, DEFAULT_QUERY_CACHE_SIZE } from "./types";
 import type {
   EntityId,
   ComponentBlueprint,
@@ -26,7 +26,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     blueprints: T,
     maxEntities: number,
     entityManager: EntityManager,
-    maxCacheSize = 64,
+    maxCacheSize = DEFAULT_QUERY_CACHE_SIZE,
   ) {
     this.maxEntities = maxEntities;
     this.queryCache = new QueryCache(maxCacheSize);
