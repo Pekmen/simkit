@@ -19,9 +19,9 @@ export class World<T extends ComponentBlueprint> {
   private readonly options: WorldOptions;
   readonly components: { [K in StringKey<T>]: ComponentHandle<K> };
 
-  private entityManager: EntityManager;
-  private systemManager: SystemManager;
-  private componentManager: ComponentManager<T>;
+  private readonly entityManager: EntityManager;
+  private readonly systemManager: SystemManager;
+  private readonly componentManager: ComponentManager<T>;
 
   constructor(blueprints: T, options?: Partial<WorldOptions>) {
     this.options = {

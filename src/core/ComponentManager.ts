@@ -14,6 +14,10 @@ import { BitsetManager } from "./BitsetManager";
 import { QueryCache } from "./QueryCache";
 import type { EntityManager } from "./EntityManager";
 
+// "entities" is the key the query result reserves for its EntityId list, so it
+// cannot double as a component name.
+const RESERVED_COMPONENT_NAMES = new Set(["entities"]);
+
 export class ComponentManager<T extends ComponentBlueprint> {
   private readonly componentBlueprints: T;
   private readonly componentStorages: Record<string, ComponentStorage>;
@@ -34,9 +38,8 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.componentBlueprints = blueprints;
     this.entityManager = entityManager;
 
-    const RESERVED_KEYS = ["entities"];
     for (const componentName in blueprints) {
-      if (RESERVED_KEYS.includes(componentName)) {
+      if (RESERVED_COMPONENT_NAMES.has(componentName)) {
         throw new Error(
           `Component name "${componentName}" is reserved and cannot be used`,
         );
@@ -228,6 +231,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     return componentData as T[K];
   }
+
   removeAllComponents(entityId: EntityId): void {
     this.validateEntity(entityId);
 
