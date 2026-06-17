@@ -1,50 +1,59 @@
 {
-  "timestamp": "2026-06-04T23:48:49.061Z",
+  "timestamp": "2026-06-16T22:37:06.309Z",
   "results": [
     {
       "name": "add and remove component B from 1000 entities",
-      "ops/sec": 15429.63,
-      "mean (ms)": 0.0648,
-      "p99 (ms)": 0.1349,
-      "rme": "±0.76%",
-      "samples": 7715,
+      "ops/sec": 15162.43,
+      "mean (ms)": 0.066,
+      "p99 (ms)": 0.147,
+      "rme": "±0.62%",
+      "samples": 7582,
       "rank": 1
     },
     {
       "name": "create and destroy 1000 entities per iteration",
-      "ops/sec": 9339.04,
-      "mean (ms)": 0.1071,
-      "p99 (ms)": 0.2372,
-      "rme": "±0.92%",
-      "samples": 4670,
+      "ops/sec": 9913.29,
+      "mean (ms)": 0.1009,
+      "p99 (ms)": 0.2019,
+      "rme": "±0.80%",
+      "samples": 4957,
       "rank": 2
     },
     {
       "name": "query and double 5 components across 1000 entities",
-      "ops/sec": 5710.21,
-      "mean (ms)": 0.1751,
-      "p99 (ms)": 0.4068,
-      "rme": "±1.08%",
-      "samples": 2856,
+      "ops/sec": 5276.57,
+      "mean (ms)": 0.1895,
+      "p99 (ms)": 0.3439,
+      "rme": "±0.91%",
+      "samples": 2639,
       "rank": 3
     },
     {
       "name": "iterate over fragmented dataset (26 component types, 2600 entities)",
-      "ops/sec": 4581.81,
-      "mean (ms)": 0.2183,
-      "p99 (ms)": 0.5361,
-      "rme": "±1.09%",
-      "samples": 2291,
+      "ops/sec": 4143.09,
+      "mean (ms)": 0.2414,
+      "p99 (ms)": 0.4486,
+      "rme": "±0.82%",
+      "samples": 2072,
       "rank": 4
     },
     {
       "name": "3 systems over 4 entity groups (4000 entities total)",
-      "ops/sec": 2530.29,
-      "mean (ms)": 0.3952,
-      "p99 (ms)": 0.7555,
-      "rme": "±1.04%",
+      "ops/sec": 2531.95,
+      "mean (ms)": 0.395,
+      "p99 (ms)": 0.5092,
+      "rme": "±0.49%",
       "samples": 1266,
       "rank": 5
+    },
+    {
+      "name": "move 1000 entities for 60 frames, churning 10% per frame",
+      "ops/sec": 478.18,
+      "mean (ms)": 2.0912,
+      "p99 (ms)": 2.9208,
+      "rme": "±0.92%",
+      "samples": 240,
+      "rank": 6
     }
   ]
 }

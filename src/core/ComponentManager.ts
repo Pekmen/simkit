@@ -26,6 +26,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
   private readonly entityManager: EntityManager;
   private readonly bitsets: BitsetManager;
   private readonly queryCache: QueryCache;
+  private readonly bitToComponentName: string[] = [];
 
   constructor(
     blueprints: T,
@@ -75,8 +76,10 @@ export class ComponentManager<T extends ComponentBlueprint> {
     for (const key in blueprints) {
       this.components[key] = {
         name: key,
-        bitPosition: bitPosition++,
+        bitPosition,
       };
+      this.bitToComponentName[bitPosition] = key;
+      bitPosition++;
     }
   }
 
@@ -235,17 +238,16 @@ export class ComponentManager<T extends ComponentBlueprint> {
   removeAllComponents(entityId: EntityId): void {
     this.validateEntity(entityId);
 
-    const entityBits = this.bitsets.getBits(entityId);
-    this.queryCache.invalidateMatchingQueries(entityBits);
+    let bits = this.bitsets.getBits(entityId);
+    this.queryCache.invalidateMatchingQueries(bits);
 
-    for (const key in this.components) {
-      if (
-        (entityBits &
-          this.bitsets.toBitmask(this.components[key].bitPosition)) !==
-        0
-      ) {
-        this.clearComponentStorage(key, entityId);
-      }
+    while (bits !== 0) {
+      const bitPosition = 31 - Math.clz32(bits & -bits);
+      this.clearComponentStorage(
+        this.bitToComponentName[bitPosition],
+        entityId,
+      );
+      bits &= bits - 1;
     }
 
     this.bitsets.clear(entityId);
