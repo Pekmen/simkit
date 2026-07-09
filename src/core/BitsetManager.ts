@@ -15,30 +15,26 @@ export class BitsetManager {
     this.entityBits = new Uint32Array(maxEntities);
   }
 
-  add(entityId: EntityId, bitPosition: number): void {
-    this.entityBits[entityId] |= 1 << bitPosition;
+  add(entityId: EntityId, bitMask: number): void {
+    this.entityBits[entityId] |= bitMask;
   }
 
-  remove(entityId: EntityId, bitPosition: number): void {
-    this.entityBits[entityId] &= ~(1 << bitPosition);
+  remove(entityId: EntityId, bitMask: number): void {
+    this.entityBits[entityId] &= ~bitMask;
   }
 
   clear(entityId: EntityId): void {
     this.entityBits[entityId] = 0;
   }
 
-  has(entityId: EntityId, bitPosition: number): boolean {
-    return (this.entityBits[entityId] & (1 << bitPosition)) !== 0;
+  has(entityId: EntityId, bitMask: number): boolean {
+    return (this.entityBits[entityId] & bitMask) !== 0;
   }
 
-  toBitmask(bitPosition: number): number {
-    return 1 << bitPosition;
-  }
-
-  createMask(refs: Iterable<{ bitPosition: number }>): number {
+  createMask(refs: Iterable<{ bitMask: number }>): number {
     let mask = 0;
     for (const ref of refs) {
-      mask |= 1 << ref.bitPosition;
+      mask |= ref.bitMask;
     }
     return mask;
   }

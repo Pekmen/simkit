@@ -44,6 +44,7 @@ export type QueryResult<T extends ComponentBlueprint, K extends keyof T> = {
 export interface ComponentHandle<N extends string = string> {
   readonly name: N;
   readonly bitPosition: number;
+  readonly bitMask: number;
 }
 
 export const DEFAULT_QUERY_CACHE_SIZE = 64;

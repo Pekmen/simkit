@@ -1,8 +1,8 @@
 import type { System } from "./System";
 
 export class SystemManager {
-  private readonly systems = new Map<System, number>(); // key=system, value=priority
-  private sortedSystems: System[] = []; // execution order (descending priority)
+  private readonly systems = new Set<System>();
+  private sortedSystems: System[] = [];
 
   addSystem(system: System, priority = 0): void {
     if (this.systems.has(system)) {
@@ -11,17 +11,18 @@ export class SystemManager {
       );
     }
 
+    system.priority = priority;
     system.init?.();
 
     const insertIndex = this.sortedSystems.findIndex(
-      (s) => (this.systems.get(s) ?? 0) < priority,
+      (s) => (s.priority ?? 0) < priority,
     );
     if (insertIndex === -1) {
       this.sortedSystems.push(system);
     } else {
       this.sortedSystems.splice(insertIndex, 0, system);
     }
-    this.systems.set(system, priority);
+    this.systems.add(system);
   }
 
   removeSystem(system: System): void {

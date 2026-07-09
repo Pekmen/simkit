@@ -127,7 +127,9 @@ export class World<T extends ComponentBlueprint> {
     }
   }
 
-  query<K extends StringKey<T>>(...components: ComponentHandle<K>[]): QueryResult<T, K>;
+  query<K extends StringKey<T>>(
+    ...components: ComponentHandle<K>[]
+  ): QueryResult<T, K>;
   query<K extends StringKey<T> = never>(
     options: QueryOptions<T, K>,
   ): QueryResult<T, K>;
@@ -135,7 +137,10 @@ export class World<T extends ComponentBlueprint> {
     first?: ComponentHandle<K> | QueryOptions<T, K>,
     ...rest: ComponentHandle<K>[]
   ): QueryResult<T, K> {
-    return this.componentManager.query(first as ComponentHandle<K>, ...rest);
+    if (first !== undefined && !("bitPosition" in first)) {
+      return this.componentManager.query(first);
+    }
+    return this.componentManager.query(...(first ? [first, ...rest] : []));
   }
 
   private validateHandles(
@@ -151,10 +156,7 @@ export class World<T extends ComponentBlueprint> {
     }
   }
 
-  addSystem<
-    K extends StringKey<T> = never,
-    S = Record<string, never>,
-  >(config: {
+  addSystem<K extends StringKey<T> = never, S = Record<string, never>>(config: {
     name?: string;
     components?: ComponentHandle<K>[];
     exclude?: ComponentHandle<StringKey<T>>[];
@@ -177,8 +179,14 @@ export class World<T extends ComponentBlueprint> {
       this.validateHandles(excludeHandles, "addSystem");
     }
 
-    const emptyQuery = { entities: Object.freeze([] as EntityId[]) } as QueryResult<T, K>;
-    const ctx = { state: (config.state ?? {}) as S, world: this, query: emptyQuery };
+    const emptyQuery = {
+      entities: Object.freeze([] as EntityId[]),
+    } as QueryResult<T, K>;
+    const ctx = {
+      state: (config.state ?? {}) as S,
+      world: this,
+      query: emptyQuery,
+    };
 
     const hasQuery =
       (handles?.length ?? 0) > 0 || (excludeHandles?.length ?? 0) > 0;

@@ -77,6 +77,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
       this.components[key] = {
         name: key,
         bitPosition,
+        bitMask: 1 << bitPosition,
       };
       this.bitToComponentName[bitPosition] = key;
       bitPosition++;
@@ -123,15 +124,13 @@ export class ComponentManager<T extends ComponentBlueprint> {
   ): void {
     this.validateEntity(entityId);
 
-    const isNew = !this.bitsets.has(entityId, component.bitPosition);
+    const isNew = !this.bitsets.has(entityId, component.bitMask);
 
     this.setComponentData(entityId, component.name, componentData, isNew);
 
     if (isNew) {
-      this.bitsets.add(entityId, component.bitPosition);
-      this.queryCache.invalidateMatchingQueries(
-        this.bitsets.toBitmask(component.bitPosition),
-      );
+      this.bitsets.add(entityId, component.bitMask);
+      this.queryCache.invalidateMatchingQueries(component.bitMask);
     }
   }
 
@@ -153,7 +152,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
           : (data as Partial<Record<string, ValidComponentProp>>),
         true,
       );
-      mask |= this.bitsets.toBitmask(component.bitPosition);
+      mask |= component.bitMask;
     }
 
     if (mask !== 0) {
@@ -168,7 +167,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
   ): void {
     this.validateEntity(entityId);
 
-    const hadComponent = this.bitsets.has(entityId, component.bitPosition);
+    const hadComponent = this.bitsets.has(entityId, component.bitMask);
 
     if (!hadComponent) {
       throw new Error(
@@ -178,11 +177,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     this.clearComponentStorage(component.name, entityId);
 
-    this.bitsets.remove(entityId, component.bitPosition);
+    this.bitsets.remove(entityId, component.bitMask);
 
-    this.queryCache.invalidateMatchingQueries(
-      this.bitsets.toBitmask(component.bitPosition),
-    );
+    this.queryCache.invalidateMatchingQueries(component.bitMask);
   }
 
   hasComponent(
@@ -190,7 +187,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     component: ComponentHandle<StringKey<T>>,
   ): boolean {
     this.validateEntity(entityId);
-    return this.bitsets.has(entityId, component.bitPosition);
+    return this.bitsets.has(entityId, component.bitMask);
   }
 
   private clearStorageValue(
@@ -220,7 +217,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
   ): T[K] {
     this.validateEntity(entityId);
 
-    if (!this.bitsets.has(entityId, component.bitPosition)) {
+    if (!this.bitsets.has(entityId, component.bitMask)) {
       throw new Error(
         `getComponent: Entity ${entityId} does not have component ${component.name}`,
       );
