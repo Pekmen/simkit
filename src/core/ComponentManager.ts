@@ -52,12 +52,15 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.bitsets = new BitsetManager(componentCount, maxEntities);
 
     this.componentStorages = {};
-    for (const componentName in blueprints) {
-      const blueprint = blueprints[componentName];
+    this.components = {} as {
+      [K in StringKey<T>]: ComponentHandle<K>;
+    };
+    let bitPosition = 0;
+    for (const key in blueprints) {
+      const blueprint = blueprints[key];
       const storage: ComponentStorage = {};
       for (const propName in blueprint) {
-        const defaultValue = blueprint[propName];
-        const valueType = typeof defaultValue;
+        const valueType = typeof blueprint[propName];
 
         if (valueType === "number") {
           storage[propName] = new Float64Array(this.maxEntities);
@@ -67,14 +70,8 @@ export class ComponentManager<T extends ComponentBlueprint> {
           storage[propName] = new Array(this.maxEntities).fill(undefined);
         }
       }
-      this.componentStorages[componentName] = storage;
-    }
+      this.componentStorages[key] = storage;
 
-    this.components = {} as {
-      [K in StringKey<T>]: ComponentHandle<K>;
-    };
-    let bitPosition = 0;
-    for (const key in blueprints) {
       // Frozen so the public `world.components` handles can't be mutated at
       // runtime (the TS type is already readonly).
       this.components[key] = Object.freeze({

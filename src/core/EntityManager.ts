@@ -19,20 +19,16 @@ export class EntityManager {
   }
 
   addEntity(): EntityId {
-    const recycled = this.freeEntityIds.pop();
-    if (recycled !== undefined) {
-      this.entityToIndex[recycled] = this.activeEntities.length;
-      this.activeEntities.push(recycled);
-      return recycled;
+    let entityId = this.freeEntityIds.pop();
+    if (entityId === undefined) {
+      if (this.nextEntityId >= this.maxEntities) {
+        throw new Error(
+          `Maximum number of entities reached (${this.maxEntities})`,
+        );
+      }
+      entityId = this.nextEntityId++ as EntityId;
     }
 
-    if (this.nextEntityId >= this.maxEntities) {
-      throw new Error(
-        `Maximum number of entities reached (${this.maxEntities})`,
-      );
-    }
-
-    const entityId = this.nextEntityId++ as EntityId;
     this.entityToIndex[entityId] = this.activeEntities.length;
     this.activeEntities.push(entityId);
     return entityId;
