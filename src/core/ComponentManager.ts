@@ -22,7 +22,6 @@ export class ComponentManager<T extends ComponentBlueprint> {
   private readonly componentBlueprints: T;
   private readonly componentStorages: Record<string, ComponentStorage>;
   readonly components: { [K in StringKey<T>]: ComponentHandle<K> };
-  private readonly maxEntities: number;
   private readonly entityManager: EntityManager;
   private readonly bitsets: BitsetManager;
   private readonly queryCache: QueryCache;
@@ -35,7 +34,6 @@ export class ComponentManager<T extends ComponentBlueprint> {
     entityManager: EntityManager,
     maxCacheSize = DEFAULT_QUERY_CACHE_SIZE,
   ) {
-    this.maxEntities = maxEntities;
     this.queryCache = new QueryCache(maxCacheSize);
     this.componentBlueprints = blueprints;
     this.entityManager = entityManager;
@@ -63,11 +61,11 @@ export class ComponentManager<T extends ComponentBlueprint> {
         const valueType = typeof blueprint[propName];
 
         if (valueType === "number") {
-          storage[propName] = new Float64Array(this.maxEntities);
+          storage[propName] = new Float64Array(maxEntities);
         } else if (valueType === "boolean") {
-          storage[propName] = new Array(this.maxEntities).fill(false);
+          storage[propName] = new Array(maxEntities).fill(false);
         } else {
-          storage[propName] = new Array(this.maxEntities).fill(undefined);
+          storage[propName] = new Array(maxEntities).fill(undefined);
         }
       }
       this.componentStorages[key] = storage;

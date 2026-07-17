@@ -16,7 +16,6 @@ import type {
 import { DEFAULT_QUERY_CACHE_SIZE } from "./types";
 
 export class World<T extends ComponentBlueprint> {
-  private readonly options: WorldOptions;
   readonly components: { [K in StringKey<T>]: ComponentHandle<K> };
 
   private readonly entityManager: EntityManager;
@@ -24,19 +23,19 @@ export class World<T extends ComponentBlueprint> {
   private readonly componentManager: ComponentManager<T>;
 
   constructor(blueprints: T, options?: Partial<WorldOptions>) {
-    this.options = {
+    const resolvedOptions: WorldOptions = {
       maxEntities: 1000,
       queryCacheSize: DEFAULT_QUERY_CACHE_SIZE,
       ...options,
     };
 
-    this.entityManager = new EntityManager(this.options.maxEntities);
+    this.entityManager = new EntityManager(resolvedOptions.maxEntities);
     this.systemManager = new SystemManager();
     this.componentManager = new ComponentManager(
       blueprints,
-      this.options.maxEntities,
+      resolvedOptions.maxEntities,
       this.entityManager,
-      this.options.queryCacheSize,
+      resolvedOptions.queryCacheSize,
     );
 
     this.components = this.componentManager.components;
