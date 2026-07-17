@@ -143,19 +143,6 @@ export class World<T extends ComponentBlueprint> {
     return this.componentManager.query(...(first ? [first, ...rest] : []));
   }
 
-  private validateHandles(
-    handles: ComponentHandle<StringKey<T>>[],
-    context: string,
-  ): void {
-    for (const handle of handles) {
-      if (this.components[handle.name] !== handle) {
-        throw new Error(
-          `${context}: component handle "${handle.name}" does not belong to this world`,
-        );
-      }
-    }
-  }
-
   addSystem<K extends StringKey<T> = never, S = Record<string, never>>(config: {
     name?: string;
     components?: ComponentHandle<K>[];
@@ -171,13 +158,6 @@ export class World<T extends ComponentBlueprint> {
   }): System {
     const handles = config.components;
     const excludeHandles = config.exclude;
-
-    if (handles && handles.length > 0) {
-      this.validateHandles(handles, "addSystem");
-    }
-    if (excludeHandles && excludeHandles.length > 0) {
-      this.validateHandles(excludeHandles, "addSystem");
-    }
 
     const emptyQuery = {
       entities: Object.freeze([] as EntityId[]),

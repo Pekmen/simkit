@@ -27,6 +27,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
   private readonly bitsets: BitsetManager;
   private readonly queryCache: QueryCache;
   private readonly bitToComponentName: string[] = [];
+  private readonly ownedHandles = new WeakSet<ComponentHandle>();
 
   constructor(
     blueprints: T,
@@ -81,6 +82,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
         bitPosition,
         bitMask: 1 << bitPosition,
       });
+      this.ownedHandles.add(this.components[key]);
       this.bitToComponentName[bitPosition] = key;
       bitPosition++;
     }
@@ -295,6 +297,20 @@ export class ComponentManager<T extends ComponentBlueprint> {
     return () => this.fetchQuery(includeMask, excludeMask, withHandles);
   }
 
+  private validateHandlesOwned(
+    handles: ComponentHandle<StringKey<T>>[],
+  ): void {
+    for (const handle of handles) {
+      // WeakSet.has(...) returns false for non-objects, so a forged non-object
+      // handle is rejected here too, not just cross-world ones.
+      if (!this.ownedHandles.has(handle)) {
+        throw new Error(
+          `component handle "${handle.name}" does not belong to this world`,
+        );
+      }
+    }
+  }
+
   private validateAndComputeMasks(
     withHandles: ComponentHandle<StringKey<T>>[],
     withoutHandles: ComponentHandle<StringKey<T>>[],
@@ -304,6 +320,8 @@ export class ComponentManager<T extends ComponentBlueprint> {
         'query() requires at least one component in "with" or "without"',
       );
     }
+    this.validateHandlesOwned(withHandles);
+    this.validateHandlesOwned(withoutHandles);
     const includeMask = this.bitsets.createMask(withHandles);
     const excludeMask = this.bitsets.createMask(withoutHandles);
     if ((includeMask & excludeMask) !== 0) {

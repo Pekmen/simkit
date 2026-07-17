@@ -582,7 +582,7 @@ describe("World", () => {
           },
         });
       }).toThrow(
-        'addSystem: component handle "Position" does not belong to this world',
+        'component handle "Position" does not belong to this world',
       );
     });
 
@@ -872,6 +872,23 @@ describe("World", () => {
         x: 7,
         y: 8,
       });
+    });
+
+    test("query rejects a foreign handle (positional, with, and without)", () => {
+      const blueprint = { Position: { x: 0, y: 0 }, Velocity: { dx: 0 } };
+      const worldA = new World(blueprint, { maxEntities: 10 });
+      const worldB = new World(blueprint, { maxEntities: 10 });
+      const foreign = worldB.components.Position;
+
+      expect(() => worldA.query(foreign)).toThrow(
+        "does not belong to this world",
+      );
+      expect(() => worldA.query({ with: [foreign] })).toThrow(
+        "does not belong to this world",
+      );
+      expect(() => worldA.query({ without: [foreign] })).toThrow(
+        "does not belong to this world",
+      );
     });
   });
 
