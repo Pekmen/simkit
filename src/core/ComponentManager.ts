@@ -29,6 +29,11 @@ export class ComponentManager<T extends ComponentBlueprint> {
   private readonly bitToComponentName: string[] = [];
   private readonly ownedHandles = new WeakSet<ComponentHandle>();
 
+  private readonly propMeta: Record<
+    string,
+    { names: string[]; types: string[] }
+  > = {};
+
   constructor(
     blueprints: T,
     maxEntities: number,
@@ -58,8 +63,12 @@ export class ComponentManager<T extends ComponentBlueprint> {
     for (const key in blueprints) {
       const blueprint = blueprints[key];
       const storage: ComponentStorage = {};
+      const names: string[] = [];
+      const types: string[] = [];
       for (const propName in blueprint) {
         const valueType = typeof blueprint[propName];
+        names.push(propName);
+        types.push(valueType);
 
         if (valueType === "number") {
           storage[propName] = new Float64Array(maxEntities);
@@ -70,6 +79,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
         }
       }
       this.componentStorages[key] = storage;
+      this.propMeta[key] = { names, types };
 
       // Frozen so the public `world.components` handles can't be mutated at
       // runtime (the TS type is already readonly).
@@ -98,16 +108,17 @@ export class ComponentManager<T extends ComponentBlueprint> {
   ): void {
     const storage = this.componentStorages[componentName];
     const defaults = this.componentBlueprints[componentName];
+    const { names, types } = this.propMeta[componentName];
 
-    for (const prop in defaults) {
+    for (let i = 0; i < names.length; i++) {
+      const prop = names[i];
       const provided = componentData?.[prop];
 
       if (provided !== undefined) {
-        const expectedType = typeof defaults[prop];
         const actualType = typeof provided;
-        if (actualType !== expectedType) {
+        if (actualType !== types[i]) {
           throw new TypeError(
-            `${componentName}.${prop}: expected ${expectedType}, got ${actualType}`,
+            `${componentName}.${prop}: expected ${types[i]}, got ${actualType}`,
           );
         }
         storage[prop][entityId] = provided;
@@ -135,7 +146,6 @@ export class ComponentManager<T extends ComponentBlueprint> {
   }
 
   setComponentsFromConfig(entityId: EntityId, config: SpawnConfig<T>): void {
-    this.validateEntity(entityId);
     let mask = 0;
 
     for (const key in config) {
@@ -290,9 +300,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     return () => this.fetchQuery(includeMask, excludeMask, withHandles);
   }
 
-  private validateHandlesOwned(
-    handles: ComponentHandle<StringKey<T>>[],
-  ): void {
+  private validateHandlesOwned(handles: ComponentHandle<StringKey<T>>[]): void {
     for (const handle of handles) {
       // WeakSet.has(...) returns false for non-objects, so a forged non-object
       // handle is rejected here too, not just cross-world ones.
