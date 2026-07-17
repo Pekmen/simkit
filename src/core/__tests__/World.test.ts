@@ -814,4 +814,126 @@ describe("World", () => {
       expect(world.resolve(ref)).toBeUndefined();
     });
   });
+
+  describe("removeEntity ordering", () => {
+    test("clears components and drops the entity from queries", () => {
+      const world = new World(
+        { Position: { x: 0, y: 0 }, Velocity: { dx: 0, dy: 0 } },
+        { maxEntities: 10 },
+      );
+      const { Position } = world.components;
+
+      const keep = world.spawn({ Position: { x: 1, y: 1 } });
+      const drop = world.spawn({
+        Position: { x: 2, y: 2 },
+        Velocity: { dx: 9, dy: 9 },
+      });
+
+      world.removeEntity(drop);
+
+      // Entity is invalid...
+      expect(world.isAlive(world.ref(keep))).toBe(true);
+      expect(() => world.getComponent(drop, Position)).toThrow(
+        "Stale entity reference",
+      );
+      // ...and no longer returned by a query.
+      const result = world.query(Position);
+      expect(result.entities).toEqual([keep]);
+
+      // Its former Velocity storage was cleared before the generation bump.
+      // @ts-expect-error accessing private storage for verification
+      const storages = world.componentManager.componentStorages;
+      expect(storages.Velocity.dx[drop]).toBe(0);
+    });
+  });
+
+  describe("handle ownership boundary", () => {
+    test("addSystem rejects a foreign handle but setComponent trusts it", () => {
+      const blueprint = { Position: { x: 0, y: 0 } };
+      const worldA = new World(blueprint, { maxEntities: 10 });
+      const worldB = new World(blueprint, { maxEntities: 10 });
+
+      // addSystem validates handle ownership.
+      expect(() => {
+        worldA.addSystem({
+          components: [worldB.components.Position],
+          update: vi.fn(),
+        });
+      }).toThrow("does not belong to this world");
+
+      // setComponent does NOT re-validate ownership: a foreign handle with the
+      // same name/bitMask is trusted and writes into worldA's storage.
+      const entity = worldA.addEntity();
+      expect(() => {
+        worldA.setComponent(entity, worldB.components.Position, { x: 7, y: 8 });
+      }).not.toThrow();
+      expect(worldA.hasComponent(entity, worldA.components.Position)).toBe(true);
+      expect(worldA.getComponent(entity, worldA.components.Position)).toEqual({
+        x: 7,
+        y: 8,
+      });
+    });
+  });
+
+  describe("getActiveEntities defensive copy", () => {
+    test("mutating the returned array does not affect the world", () => {
+      const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 10 });
+      const e1 = world.addEntity();
+      world.addEntity();
+
+      const active = world.getActiveEntities() as EntityId[];
+      active.length = 0; // mutate the copy
+
+      expect(world.getEntityCount()).toBe(2);
+      expect(world.getActiveEntities()).toContain(e1);
+    });
+  });
+
+  describe("queryCacheSize = 0 disables caching end-to-end", () => {
+    test("repeated identical queries return fresh arrays", () => {
+      const world = new World(
+        { Position: { x: 0, y: 0 } },
+        { maxEntities: 10, queryCacheSize: 0 },
+      );
+      const { Position } = world.components;
+
+      const e = world.addEntity();
+      world.setComponent(e, Position, { x: 1, y: 1 });
+
+      const first = world.query(Position);
+      const second = world.query(Position);
+      expect(first.entities).not.toBe(second.entities);
+    });
+  });
+
+  describe("addSystem context reuse", () => {
+    test("ctx identity is stable across frames while the query refreshes", () => {
+      const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 10 });
+      const { Position } = world.components;
+
+      world.spawn({ Position: { x: 1, y: 1 } });
+
+      const seenContexts: unknown[] = [];
+      const seenCounts: number[] = [];
+      world.addSystem({
+        components: [Position],
+        state: { frames: 0 },
+        update: (ctx) => {
+          ctx.state.frames++;
+          seenContexts.push(ctx);
+          seenCounts.push(ctx.query.entities.length);
+        },
+      });
+
+      world.update(1);
+      // Add a matching entity between frames; the refreshed query must see it.
+      world.spawn({ Position: { x: 2, y: 2 } });
+      world.update(1);
+
+      // Same ctx object reused each frame.
+      expect(seenContexts[0]).toBe(seenContexts[1]);
+      // Query is refreshed each frame.
+      expect(seenCounts).toEqual([1, 2]);
+    });
+  });
 });

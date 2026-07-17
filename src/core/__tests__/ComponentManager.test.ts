@@ -686,4 +686,181 @@ describe("ComponentManager", () => {
       expect(manager.queryCache.size).toBe(0);
     });
   });
+
+  describe("storage clearing semantics", () => {
+    test("boolean column clears to undefined on removeComponent, default restored on re-add", () => {
+      const blueprints = { Flags: { active: false } };
+      const entityManager = new EntityManager(5);
+      const manager = new ComponentManager(blueprints, 5, entityManager);
+      const { Flags } = manager.components;
+
+      const entityId = entityManager.addEntity();
+      manager.setComponent(entityId, Flags, { active: true });
+      manager.removeComponent(entityId, Flags);
+
+      // @ts-expect-error Accessing private property
+      const storages = manager.componentStorages;
+      // Boolean columns are plain Arrays, so clearing writes `undefined`
+      // (not the `false` blueprint default).
+      expect(storages.Flags.active[entityId]).toBeUndefined();
+
+      // Re-adding without data restores the blueprint default.
+      manager.setComponent(entityId, Flags);
+      expect(manager.getComponent(entityId, Flags)).toEqual({ active: false });
+    });
+
+    test("string column clears to undefined; numeric clears to 0", () => {
+      const blueprints = { Label: { text: "", weight: 0 } };
+      const entityManager = new EntityManager(5);
+      const manager = new ComponentManager(blueprints, 5, entityManager);
+      const { Label } = manager.components;
+
+      const entityId = entityManager.addEntity();
+      manager.setComponent(entityId, Label, { text: "hi", weight: 3 });
+      manager.removeComponent(entityId, Label);
+
+      // @ts-expect-error Accessing private property
+      const storages = manager.componentStorages;
+      expect(storages.Label.text[entityId]).toBeUndefined();
+      expect(storages.Label.weight[entityId]).toBe(0);
+    });
+
+    test("removeAllComponents clears non-adjacent component bits (Kernighan walk)", () => {
+      // Six declared components so bit positions 0, 2 and 5 are non-adjacent.
+      const blueprints = {
+        C0: { v: 0 },
+        C1: { v: 0 },
+        C2: { s: "" },
+        C3: { v: 0 },
+        C4: { v: 0 },
+        C5: { b: false },
+      };
+      const entityManager = new EntityManager(5);
+      const manager = new ComponentManager(blueprints, 5, entityManager);
+      const { C0, C2, C5 } = manager.components;
+
+      const entityId = entityManager.addEntity();
+      manager.setComponent(entityId, C0, { v: 10 });
+      manager.setComponent(entityId, C2, { s: "x" });
+      manager.setComponent(entityId, C5, { b: true });
+
+      manager.removeAllComponents(entityId);
+
+      // @ts-expect-error Accessing private property
+      const storages = manager.componentStorages;
+      expect(storages.C0.v[entityId]).toBe(0);
+      expect(storages.C2.s[entityId]).toBeUndefined();
+      expect(storages.C5.b[entityId]).toBeUndefined();
+      expect(manager.hasComponent(entityId, C0)).toBe(false);
+      expect(manager.hasComponent(entityId, C2)).toBe(false);
+      expect(manager.hasComponent(entityId, C5)).toBe(false);
+    });
+
+    test("removeAllComponents on an entity with no components does not throw", () => {
+      const blueprints = { Position: { x: 0, y: 0 } };
+      const entityManager = new EntityManager(5);
+      const manager = new ComponentManager(blueprints, 5, entityManager);
+
+      const entityId = entityManager.addEntity();
+      expect(() => {
+        manager.removeAllComponents(entityId);
+      }).not.toThrow();
+    });
+  });
+
+  describe("type validation across prop kinds", () => {
+    test("throws for wrong boolean and string prop types", () => {
+      const blueprints = { Data: { flag: false, label: "" } };
+      const entityManager = new EntityManager(5);
+      const manager = new ComponentManager(blueprints, 5, entityManager);
+      const { Data } = manager.components;
+
+      const entityId = entityManager.addEntity();
+
+      expect(() => {
+        manager.setComponent(entityId, Data, {
+          flag: 1 as unknown as boolean,
+        });
+      }).toThrow("Data.flag: expected boolean, got number");
+      expect(() => {
+        manager.setComponent(entityId, Data, {
+          label: true as unknown as string,
+        });
+      }).toThrow("Data.label: expected string, got boolean");
+    });
+
+    test("explicit undefined for a prop is treated as not provided", () => {
+      const blueprints = { Position: { x: 0, y: 0 } };
+      const entityManager = new EntityManager(5);
+      const manager = new ComponentManager(blueprints, 5, entityManager);
+      const { Position } = manager.components;
+
+      const entityId = entityManager.addEntity();
+      manager.setComponent(entityId, Position, { x: 10, y: 20 });
+      manager.setComponent(entityId, Position, { x: undefined, y: 99 });
+
+      // x keeps its previous value, y updates.
+      expect(manager.getComponent(entityId, Position)).toEqual({ x: 10, y: 99 });
+    });
+  });
+
+  describe("getComponent snapshot semantics", () => {
+    test("returned object is a copy, not a live view", () => {
+      const blueprints = { Position: { x: 0, y: 0 } };
+      const entityManager = new EntityManager(5);
+      const manager = new ComponentManager(blueprints, 5, entityManager);
+      const { Position } = manager.components;
+
+      const entityId = entityManager.addEntity();
+      manager.setComponent(entityId, Position, { x: 10, y: 20 });
+
+      const snapshot = manager.getComponent(entityId, Position);
+      // Mutating the snapshot must not touch storage.
+      snapshot.x = 999;
+      // @ts-expect-error Accessing private property
+      expect(manager.componentStorages.Position.x[entityId]).toBe(10);
+
+      // A later storage write is not reflected in the earlier snapshot.
+      manager.setComponent(entityId, Position, { x: 30 });
+      expect(snapshot.x).toBe(999);
+    });
+  });
+
+  describe("cache invalidation is structural-only", () => {
+    test("data-only update keeps the cached query; adding the queried component invalidates it", () => {
+      const blueprints = { Position: { x: 0, y: 0 } };
+      const entityManager = new EntityManager(10);
+      const manager = new ComponentManager(blueprints, 10, entityManager);
+      const { Position } = manager.components;
+
+      const e1 = entityManager.addEntity();
+      manager.setComponent(e1, Position, { x: 1, y: 1 });
+
+      const before = manager.query(Position);
+
+      // Data-only update to an existing component does not change membership,
+      // so the cached query survives.
+      manager.setComponent(e1, Position, { x: 5, y: 5 });
+      const afterUpdate = manager.query(Position);
+      expect(before.entities).toBe(afterUpdate.entities);
+
+      // Adding the queried component to a new entity is a structural change on
+      // Position's bit, so the query(Position) cache is invalidated.
+      const e2 = entityManager.addEntity();
+      manager.setComponent(e2, Position, { x: 2, y: 2 });
+      const afterAdd = manager.query(Position);
+      expect(afterAdd.entities).not.toBe(before.entities);
+      expect(afterAdd.entities).toEqual([e1, e2]);
+    });
+  });
+
+  describe("reserved name guard", () => {
+    test("a non-reserved name close to 'entities' is allowed", () => {
+      const blueprints = { entity: { id: 0 } };
+      const entityManager = new EntityManager(10);
+      expect(
+        () => new ComponentManager(blueprints, 10, entityManager),
+      ).not.toThrow();
+    });
+  });
 });

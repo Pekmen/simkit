@@ -74,11 +74,13 @@ export class ComponentManager<T extends ComponentBlueprint> {
     };
     let bitPosition = 0;
     for (const key in blueprints) {
-      this.components[key] = {
+      // Frozen so the public `world.components` handles can't be mutated at
+      // runtime (the TS type is already readonly).
+      this.components[key] = Object.freeze({
         name: key,
         bitPosition,
         bitMask: 1 << bitPosition,
-      };
+      });
       this.bitToComponentName[bitPosition] = key;
       bitPosition++;
     }

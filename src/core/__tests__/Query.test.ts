@@ -367,4 +367,81 @@ describe("Query", () => {
     expect(pos.x[entityInResult]).toBe(2);
     expect(pos.y[entityInResult]).toBe(2);
   });
+
+  describe("caching and mask edge cases", () => {
+    test("pure exclusion query (no with) is not cached", () => {
+      const world = new World(
+        { Position: { x: 0, y: 0 }, Dead: {} },
+        { maxEntities: 10 },
+      );
+      const { Position, Dead } = world.components;
+
+      const alive = world.addEntity();
+      world.setComponent(alive, Position, { x: 1, y: 1 });
+
+      const first = world.query({ without: [Dead] });
+      const second = world.query({ without: [Dead] });
+      // includeMask === 0 -> results are never cached, so a fresh array each call.
+      expect(first.entities).not.toBe(second.entities);
+
+      // A normal include query, by contrast, is cached (same array identity).
+      const inc1 = world.query(Position);
+      const inc2 = world.query(Position);
+      expect(inc1.entities).toBe(inc2.entities);
+    });
+
+    test("ALL-include semantics: superset matches, missing-one does not", () => {
+      const world = new World(
+        {
+          Position: { x: 0, y: 0 },
+          Velocity: { dx: 0, dy: 0 },
+          Health: { hp: 0 },
+        },
+        { maxEntities: 10 },
+      );
+      const { Position, Velocity, Health } = world.components;
+
+      const superset = world.addEntity();
+      world.setComponent(superset, Position, { x: 1, y: 1 });
+      world.setComponent(superset, Velocity, { dx: 1, dy: 1 });
+      world.setComponent(superset, Health, { hp: 5 });
+
+      const missingOne = world.addEntity();
+      world.setComponent(missingOne, Position, { x: 2, y: 2 });
+      world.setComponent(missingOne, Health, { hp: 5 });
+
+      const result = world.query(Position, Velocity);
+      expect(result.entities).toEqual([superset]);
+      expect(result.entities).not.toContain(missingOne);
+    });
+
+    test("writes through query columns are visible to a separate query", () => {
+      const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 10 });
+      const { Position } = world.components;
+
+      const entity = world.addEntity();
+      world.setComponent(entity, Position, { x: 1, y: 1 });
+
+      const write = world.query(Position);
+      write.Position.x[entity] = 42;
+
+      // Force a cache rebuild so the next query is a genuinely different result
+      // object, proving distinct results still share the live storage columns.
+      world.spawn({ Position: { x: 0, y: 0 } });
+      const read = world.query(Position);
+      expect(read).not.toBe(write);
+      expect(read.Position.x[entity]).toBe(42);
+    });
+
+    test("returned entities array is frozen", () => {
+      const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 10 });
+      const { Position } = world.components;
+
+      const entity = world.addEntity();
+      world.setComponent(entity, Position, { x: 1, y: 1 });
+
+      const result = world.query(Position);
+      expect(Object.isFrozen(result.entities)).toBe(true);
+    });
+  });
 });

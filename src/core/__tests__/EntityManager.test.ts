@@ -320,4 +320,41 @@ describe("EntityManager", () => {
       });
     });
   });
+
+  describe("constructor and generation baseline", () => {
+    test("throws when maxEntities <= 0", () => {
+      expect(() => new EntityManager(0)).toThrow(
+        "maxEntities must be greater than 0",
+      );
+      expect(() => new EntityManager(-5)).toThrow(
+        "maxEntities must be greater than 0",
+      );
+    });
+
+    test("generations start at 1 so a zero-generation ref never resolves", () => {
+      const manager = new EntityManager(5);
+      const id = manager.addEntity();
+
+      // A freshly created entity is alive with generation 1.
+      expect(manager.isAlive({ index: id, generation: 1 })).toBe(true);
+      // A default/zero-initialized ref must not alias it.
+      expect(manager.isAlive({ index: id, generation: 0 })).toBe(false);
+    });
+
+    test("a freed id can be recycled when at capacity", () => {
+      const manager = new EntityManager(2);
+      const a = manager.addEntity();
+      manager.addEntity();
+      // At capacity: allocating a new id throws.
+      expect(() => manager.addEntity()).toThrow(
+        "Maximum number of entities reached (2)",
+      );
+
+      // Free one and the slot is reusable without exceeding the cap.
+      manager.removeEntity(a);
+      const recycled = manager.addEntity();
+      expect(recycled).toBe(a);
+      expect(manager.getEntityCount()).toBe(2);
+    });
+  });
 });

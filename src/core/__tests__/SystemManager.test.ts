@@ -352,4 +352,62 @@ describe("SystemManager", () => {
     // eslint-disable-next-line @typescript-eslint/unbound-method
     expect(systemB.update).not.toHaveBeenCalled();
   });
+
+  describe("priority ordering with equal priorities", () => {
+    test("higher priority first; equal priorities keep insertion order", () => {
+      const manager = new SystemManager();
+      const order: string[] = [];
+      const make = (label: string): System => ({
+        update: (): void => {
+          order.push(label);
+        },
+      });
+
+      // Insert out of order across three priority tiers, with ties.
+      manager.addSystem(make("low"), 0);
+      manager.addSystem(make("high-1"), 10);
+      manager.addSystem(make("mid"), 5);
+      manager.addSystem(make("high-2"), 10); // tie with high-1, added later
+
+      manager.updateAll(16);
+
+      expect(order).toEqual(["high-1", "high-2", "mid", "low"]);
+    });
+  });
+
+  describe("AggregateError contents", () => {
+    test("updateAll collects every thrown error and still runs the rest", () => {
+      const manager = new SystemManager();
+      const errA = new Error("A failed");
+      const errB = new Error("B failed");
+      const ran = vi.fn();
+
+      manager.addSystem({
+        update: () => {
+          throw errA;
+        },
+      });
+      manager.addSystem({ update: ran });
+      manager.addSystem({
+        update: () => {
+          throw errB;
+        },
+      });
+
+      let caught: unknown;
+      try {
+        manager.updateAll(16);
+      } catch (e) {
+        caught = e;
+      }
+
+      expect(caught).toBeInstanceOf(AggregateError);
+      const agg = caught as AggregateError;
+      expect(agg.errors).toContain(errA);
+      expect(agg.errors).toContain(errB);
+      expect(agg.errors).toHaveLength(2);
+      // The healthy system between the two failures still ran.
+      expect(ran).toHaveBeenCalledTimes(1);
+    });
+  });
 });

@@ -43,10 +43,13 @@ export class QueryCache {
     if (!this.isEnabled) {
       return;
     }
-    if (this.cache.size >= this.maxCacheSize) {
+    const key = this.makeKey(include, exclude);
+    // Only evict when inserting a genuinely new key; updating an existing key
+    // does not grow the map, so it must not trigger an eviction.
+    if (!this.cache.has(key) && this.cache.size >= this.maxCacheSize) {
       this.evictOldestEntry();
     }
-    this.cache.set(this.makeKey(include, exclude), { include, exclude, value });
+    this.cache.set(key, { include, exclude, value });
   }
 
   clear(): void {
