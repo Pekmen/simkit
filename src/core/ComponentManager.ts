@@ -3,6 +3,7 @@ import type {
   EntityId,
   ComponentBlueprint,
   ComponentStorage,
+  StorageColumn,
   QueryResult,
   QueryOptions,
   ComponentHandle,
@@ -189,10 +190,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     return this.bitsets.has(entityId, component.bitMask);
   }
 
-  private clearStorageValue(
-    array: unknown[] | Float64Array,
-    entityId: EntityId,
-  ): void {
+  private clearStorageValue(array: StorageColumn, entityId: EntityId): void {
     if (array instanceof Float64Array) {
       array[entityId] = 0;
     } else {

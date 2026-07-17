@@ -8,6 +8,7 @@ export type {
   ValidComponentProp,
   ComponentBlueprint,
   ComponentStorage,
+  StorageColumn,
   FixedColumn,
   DenseComponentStorageMap,
   QueryResult,

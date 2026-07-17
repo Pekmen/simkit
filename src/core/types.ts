@@ -13,7 +13,8 @@ export type ComponentBlueprint = Record<
   Record<string, ValidComponentProp>
 >;
 
-export type ComponentStorage = Record<string, unknown[] | Float64Array>;
+export type StorageColumn = (ValidComponentProp | undefined)[] | Float64Array;
+export type ComponentStorage = Record<string, StorageColumn>;
 
 // A non-numeric column is backed by a plain Array at runtime, but it is exposed as
 // a fixed-length, index-addressable view: indexed get/set works, while length-mutating
