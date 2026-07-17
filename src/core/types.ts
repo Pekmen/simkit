@@ -54,6 +54,14 @@ export interface WorldOptions {
   queryCacheSize: number;
 }
 
+export interface System {
+  name?: string;
+  priority?: number;
+  init?(): void;
+  update(deltaTime: number): void;
+  destroy?(): void;
+}
+
 export type SpawnConfig<T extends ComponentBlueprint> = Partial<{
   [K in keyof T]: Partial<T[K]> | ComponentHandle<K & string>;
 }>;

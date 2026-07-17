@@ -1,4 +1,4 @@
-import type { System } from "./System";
+import type { System } from "./types";
 
 export class SystemManager {
   private readonly systems = new Set<System>();

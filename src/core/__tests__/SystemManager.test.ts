@@ -1,4 +1,4 @@
-import type { System } from "../System";
+import type { System } from "../types";
 import { SystemManager } from "../SystemManager";
 
 describe("SystemManager", () => {

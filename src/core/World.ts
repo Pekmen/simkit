@@ -1,7 +1,6 @@
 import { ComponentManager } from "./ComponentManager";
 import { EntityManager } from "./EntityManager";
 import { SystemManager } from "./SystemManager";
-import type { System } from "./System";
 import type {
   EntityId,
   EntityRef,
@@ -12,6 +11,7 @@ import type {
   WorldOptions,
   SpawnConfig,
   StringKey,
+  System,
 } from "./types";
 import { DEFAULT_QUERY_CACHE_SIZE } from "./types";
 

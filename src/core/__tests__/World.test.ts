@@ -1,6 +1,5 @@
 import { World } from "../World";
-import type { EntityId } from "../types";
-import type { System } from "../System";
+import type { EntityId, System } from "../types";
 
 describe("World", () => {
   test("initializing world sets up component manager and handles", () => {
