@@ -13,6 +13,7 @@ import type {
 } from "./types";
 import { BitsetManager } from "./BitsetManager";
 import { QueryCache } from "./QueryCache";
+import type { CacheEntry } from "./QueryCache";
 import type { EntityManager } from "./EntityManager";
 
 // "entities" is the key the query result reserves for its EntityId list, so it
@@ -40,7 +41,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     entityManager: EntityManager,
     maxCacheSize = DEFAULT_QUERY_CACHE_SIZE,
   ) {
-    this.queryCache = new QueryCache(maxCacheSize);
+    this.queryCache = new QueryCache(maxCacheSize, maxEntities);
     this.componentBlueprints = blueprints;
     this.entityManager = entityManager;
 
@@ -128,6 +129,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
   }
 
+  // Merge semantics on an existing component: props absent from componentData
+  // keep their current values; blueprint defaults only apply when the entity
+  // gains the component.
   setComponent<K extends StringKey<T>>(
     entityId: EntityId,
     component: ComponentHandle<K>,
@@ -135,13 +139,18 @@ export class ComponentManager<T extends ComponentBlueprint> {
   ): void {
     this.validateEntity(entityId);
 
-    const isNew = !this.bitsets.has(entityId, component.bitMask);
+    const oldBits = this.bitsets.getBits(entityId);
+    const isNew = (oldBits & component.bitMask) === 0;
 
     this.setComponentData(entityId, component.name, componentData, isNew);
 
     if (isNew) {
       this.bitsets.add(entityId, component.bitMask);
-      this.queryCache.invalidateMatchingQueries(component.bitMask);
+      this.queryCache.onMembershipChanged(
+        entityId,
+        oldBits,
+        oldBits | component.bitMask,
+      );
     }
   }
 
@@ -166,8 +175,10 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
 
     if (mask !== 0) {
-      this.bitsets.setComponentMask(entityId, mask);
-      this.queryCache.invalidateMatchingQueries(mask);
+      const oldBits = this.bitsets.getBits(entityId);
+      const newBits = oldBits | mask;
+      this.bitsets.setComponentMask(entityId, newBits);
+      this.queryCache.onMembershipChanged(entityId, oldBits, newBits);
     }
   }
 
@@ -177,9 +188,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
   ): void {
     this.validateEntity(entityId);
 
-    const hadComponent = this.bitsets.has(entityId, component.bitMask);
+    const oldBits = this.bitsets.getBits(entityId);
 
-    if (!hadComponent) {
+    if ((oldBits & component.bitMask) === 0) {
       throw new Error(
         `removeComponent: Entity ${entityId} does not have component ${component.name}`,
       );
@@ -189,7 +200,11 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     this.bitsets.remove(entityId, component.bitMask);
 
-    this.queryCache.invalidateMatchingQueries(component.bitMask);
+    this.queryCache.onMembershipChanged(
+      entityId,
+      oldBits,
+      oldBits & ~component.bitMask,
+    );
   }
 
   hasComponent(
@@ -242,8 +257,8 @@ export class ComponentManager<T extends ComponentBlueprint> {
   removeAllComponents(entityId: EntityId): void {
     this.validateEntity(entityId);
 
-    let bits = this.bitsets.getBits(entityId);
-    this.queryCache.invalidateMatchingQueries(bits);
+    const oldBits = this.bitsets.getBits(entityId);
+    let bits = oldBits;
 
     while (bits !== 0) {
       const bitPosition = 31 - Math.clz32(bits & -bits);
@@ -255,9 +270,22 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
 
     this.bitsets.clear(entityId);
+    this.queryCache.onMembershipChanged(entityId, oldBits, 0);
   }
 
-  clearQueryCache(): void {
+  clearAll(): void {
+    for (const componentName in this.componentStorages) {
+      const storage = this.componentStorages[componentName];
+      for (const prop in storage) {
+        const column = storage[prop];
+        if (column instanceof Float64Array) {
+          column.fill(0);
+        } else {
+          column.fill(undefined);
+        }
+      }
+    }
+    this.bitsets.clearAll();
     this.queryCache.clear();
   }
 
@@ -270,6 +298,13 @@ export class ComponentManager<T extends ComponentBlueprint> {
   query<K extends StringKey<T>>(
     first?: ComponentHandle<K> | QueryOptions<T, K>,
     ...rest: ComponentHandle<K>[]
+  ): QueryResult<T, K> {
+    return this.runQuery(first, rest);
+  }
+
+  runQuery<K extends StringKey<T>>(
+    first: ComponentHandle<K> | QueryOptions<T, K> | undefined,
+    rest: ComponentHandle<K>[],
   ): QueryResult<T, K> {
     let withHandles: ComponentHandle<K>[];
     let withoutHandles: ComponentHandle<StringKey<T>>[];
@@ -340,36 +375,53 @@ export class ComponentManager<T extends ComponentBlueprint> {
   ): QueryResult<T, K> {
     const cacheable = includeMask !== 0;
 
+    let entry: CacheEntry | undefined;
     if (cacheable) {
-      const cached = this.queryCache.get(includeMask, excludeMask);
-      if (cached) {
-        return cached as QueryResult<T, K>;
+      entry = this.queryCache.getEntry(includeMask, excludeMask);
+      if (entry !== undefined && !entry.dirty) {
+        return entry.result as QueryResult<T, K>;
       }
     }
 
-    const entities: EntityId[] = [];
-    for (const entityId of this.entityManager.activeEntities) {
-      const bits = this.bitsets.getBits(entityId);
-      if ((bits & includeMask) === includeMask && (bits & excludeMask) === 0) {
-        entities.push(entityId);
+    let list: EntityId[];
+    if (entry !== undefined) {
+      list = entry.list;
+    } else {
+      list = [];
+      for (const entityId of this.entityManager.activeEntities) {
+        const bits = this.bitsets.getBits(entityId);
+        if (
+          (bits & includeMask) === includeMask &&
+          (bits & excludeMask) === 0
+        ) {
+          list.push(entityId);
+        }
+      }
+      if (cacheable) {
+        entry = this.queryCache.createEntry(includeMask, excludeMask, list);
       }
     }
-    Object.freeze(entities);
+
+    const entities =
+      entry !== undefined
+        ? Object.freeze([...entry.list])
+        : Object.freeze(list);
 
     const result = this.buildQueryResult<K>(entities, withHandles);
-    if (cacheable) {
-      this.queryCache.set(includeMask, excludeMask, result);
+    if (entry !== undefined) {
+      entry.result = result;
+      entry.dirty = false;
     }
     return result;
   }
 
   private buildQueryResult<K extends StringKey<T>>(
-    entities: EntityId[],
+    entities: readonly EntityId[],
     componentHandles: ComponentHandle<K>[],
   ): QueryResult<T, K> {
     const result = {
       entities,
-    } as { entities: EntityId[] } & Record<string, ComponentStorage>;
+    } as { entities: readonly EntityId[] } & Record<string, ComponentStorage>;
 
     for (const handle of componentHandles) {
       result[handle.name] = this.componentStorages[handle.name];

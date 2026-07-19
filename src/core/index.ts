@@ -17,4 +17,7 @@ export type {
   WorldOptions,
   SpawnConfig,
   System,
+  SystemConfig,
+  SystemContext,
+  SystemUpdateContext,
 } from "./types.js";

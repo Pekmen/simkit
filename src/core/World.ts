@@ -12,6 +12,8 @@ import type {
   SpawnConfig,
   StringKey,
   System,
+  SystemConfig,
+  SystemUpdateContext,
 } from "./types";
 import { DEFAULT_QUERY_CACHE_SIZE } from "./types";
 
@@ -112,10 +114,8 @@ export class World<T extends ComponentBlueprint> {
   }
 
   clear(): void {
-    this.componentManager.clearQueryCache();
-    for (const entityId of [...this.entityManager.activeEntities]) {
-      this.removeEntity(entityId);
-    }
+    this.componentManager.clearAll();
+    this.entityManager.clear();
   }
 
   destroy(): void {
@@ -136,62 +136,57 @@ export class World<T extends ComponentBlueprint> {
     first?: ComponentHandle<K> | QueryOptions<T, K>,
     ...rest: ComponentHandle<K>[]
   ): QueryResult<T, K> {
-    if (first !== undefined && !("bitPosition" in first)) {
-      return this.componentManager.query(first);
-    }
-    return this.componentManager.query(...(first ? [first, ...rest] : []));
+    return this.componentManager.runQuery(first, rest);
   }
 
-  addSystem<K extends StringKey<T> = never, S = Record<string, never>>(config: {
-    name?: string;
-    components?: ComponentHandle<K>[];
-    exclude?: ComponentHandle<StringKey<T>>[];
-    state?: S;
-    priority?: number;
-    init?(ctx: { state: S; world: World<T> }): void;
-    update(
-      ctx: { state: S; world: World<T>; query: QueryResult<T, K> },
-      dt: number,
-    ): void;
-    destroy?(ctx: { state: S; world: World<T> }): void;
-  }): System {
-    const handles = config.components;
-    const excludeHandles = config.exclude;
+  addSystem<K extends StringKey<T> = never, S = Record<string, never>>(
+    config: SystemConfig<T, K, S>,
+  ): System {
+    const {
+      name,
+      components,
+      exclude,
+      state,
+      priority,
+      init,
+      update,
+      destroy,
+    } = config;
 
     const emptyQuery = {
       entities: Object.freeze([] as EntityId[]),
     } as QueryResult<T, K>;
-    const ctx = {
-      state: (config.state ?? {}) as S,
+    const ctx: SystemUpdateContext<T, K, S> = {
+      state: (state ?? {}) as S,
       world: this,
       query: emptyQuery,
     };
 
     const hasQuery =
-      (handles?.length ?? 0) > 0 || (excludeHandles?.length ?? 0) > 0;
+      (components?.length ?? 0) > 0 || (exclude?.length ?? 0) > 0;
     const queryFn = hasQuery
-      ? this.componentManager.createQueryFn(handles ?? [], excludeHandles ?? [])
+      ? this.componentManager.createQueryFn(components ?? [], exclude ?? [])
       : null;
 
     const system: System = {
-      name: config.name,
-      init: config.init
+      name,
+      init: init
         ? (): void => {
-            config.init?.(ctx);
+            init(ctx);
           }
         : undefined,
       update: (dt: number): void => {
         ctx.query = queryFn ? queryFn() : emptyQuery;
-        config.update(ctx, dt);
+        update(ctx, dt);
       },
-      destroy: config.destroy
+      destroy: destroy
         ? (): void => {
-            config.destroy?.(ctx);
+            destroy(ctx);
           }
         : undefined,
     };
 
-    this.systemManager.addSystem(system, config.priority ?? 0);
+    this.systemManager.addSystem(system, priority ?? 0);
     return system;
   }
 

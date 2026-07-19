@@ -3,11 +3,11 @@ import { World } from "../src/core/World.js";
 import type { EntityId } from "../src/core/types.js";
 
 // Models a real game loop: a stable population that spawns and despawns a slice
-// of entities every frame. Because every spawn/despawn calls
-// invalidateMatchingQueries, the movement system's query cache is dropped each
-// frame, so fetchQuery does a full activeEntities scan every frame. This is the
-// scenario the other benchmarks never exercise (they query once over a static
-// set) and the one that stresses the cache-miss path.
+// of entities every frame. Every spawn/despawn flips membership in the movement
+// system's cached query, so each frame the cache patches its entity list per
+// change and re-snapshots on the next update(). This is the scenario the other
+// benchmarks never exercise (they query once over a static set) and the one
+// that stresses the membership-update path.
 describe("Dynamic Churn", () => {
   const FRAMES = 60;
   const POPULATION = 1000;

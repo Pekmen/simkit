@@ -1,3 +1,5 @@
+import type { World } from "./World";
+
 export type EntityId = number & { readonly __brand: "EntityId" };
 
 export interface EntityRef {
@@ -57,10 +59,37 @@ export interface WorldOptions {
 
 export interface System {
   name?: string;
-  priority?: number;
   init?(): void;
   update(deltaTime: number): void;
   destroy?(): void;
+}
+
+export interface SystemContext<T extends ComponentBlueprint, S> {
+  state: S;
+  world: World<T>;
+}
+
+export interface SystemUpdateContext<
+  T extends ComponentBlueprint,
+  K extends StringKey<T>,
+  S,
+> extends SystemContext<T, S> {
+  query: QueryResult<T, K>;
+}
+
+export interface SystemConfig<
+  T extends ComponentBlueprint,
+  K extends StringKey<T> = never,
+  S = Record<string, never>,
+> {
+  name?: string;
+  components?: ComponentHandle<K>[];
+  exclude?: ComponentHandle<StringKey<T>>[];
+  state?: S;
+  priority?: number;
+  init?: (ctx: SystemContext<T, S>) => void;
+  update: (ctx: SystemUpdateContext<T, K, S>, dt: number) => void;
+  destroy?: (ctx: SystemContext<T, S>) => void;
 }
 
 export type SpawnConfig<T extends ComponentBlueprint> = Partial<{

@@ -78,4 +78,13 @@ export class EntityManager {
   getEntityCount(): number {
     return this.activeEntities.length;
   }
+
+  clear(): void {
+    for (const entityId of this.activeEntities) {
+      this.entityToIndex[entityId] = -1;
+      this.generations[entityId]++;
+      this.freeEntityIds.push(entityId);
+    }
+    this.activeEntities.length = 0;
+  }
 }

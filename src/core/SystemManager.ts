@@ -1,8 +1,13 @@
 import type { System } from "./types";
 
+interface SystemRecord {
+  system: System;
+  priority: number;
+}
+
 export class SystemManager {
   private readonly systems = new Set<System>();
-  private sortedSystems: System[] = [];
+  private sortedRecords: SystemRecord[] = [];
 
   addSystem(system: System, priority = 0): void {
     if (this.systems.has(system)) {
@@ -11,16 +16,16 @@ export class SystemManager {
       );
     }
 
-    system.priority = priority;
     system.init?.();
 
-    const insertIndex = this.sortedSystems.findIndex(
-      (s) => (s.priority ?? 0) < priority,
+    const insertIndex = this.sortedRecords.findIndex(
+      (record) => record.priority < priority,
     );
+    const record: SystemRecord = { system, priority };
     if (insertIndex === -1) {
-      this.sortedSystems.push(system);
+      this.sortedRecords.push(record);
     } else {
-      this.sortedSystems.splice(insertIndex, 0, system);
+      this.sortedRecords.splice(insertIndex, 0, record);
     }
     this.systems.add(system);
   }
@@ -35,8 +40,10 @@ export class SystemManager {
       system.destroy?.();
     } finally {
       this.systems.delete(system);
-      const idx = this.sortedSystems.indexOf(system);
-      if (idx !== -1) this.sortedSystems.splice(idx, 1);
+      const idx = this.sortedRecords.findIndex(
+        (record) => record.system === system,
+      );
+      if (idx !== -1) this.sortedRecords.splice(idx, 1);
     }
   }
 
@@ -46,7 +53,7 @@ export class SystemManager {
 
   updateAll(deltaTime: number): void {
     const errors: unknown[] = [];
-    for (const system of [...this.sortedSystems]) {
+    for (const { system } of [...this.sortedRecords]) {
       if (this.systems.has(system)) {
         try {
           system.update(deltaTime);
@@ -62,7 +69,7 @@ export class SystemManager {
 
   destroyAll(): void {
     const errors: unknown[] = [];
-    for (const system of [...this.sortedSystems]) {
+    for (const { system } of [...this.sortedRecords]) {
       if (!this.systems.has(system)) continue;
       try {
         system.destroy?.();
@@ -71,7 +78,7 @@ export class SystemManager {
       }
     }
     this.systems.clear();
-    this.sortedSystems = [];
+    this.sortedRecords = [];
     if (errors.length > 0) {
       throw new AggregateError(errors, "destroyAll: one or more systems threw");
     }

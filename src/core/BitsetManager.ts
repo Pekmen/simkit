@@ -46,4 +46,8 @@ export class BitsetManager {
   setComponentMask(entityId: EntityId, bits: number): void {
     this.entityBits[entityId] = bits;
   }
+
+  clearAll(): void {
+    this.entityBits.fill(0);
+  }
 }

@@ -1,172 +1,224 @@
 import { QueryCache } from "../QueryCache";
+import type { EntityId } from "../types";
+
+const id = (n: number): EntityId => n as EntityId;
+const ids = (...ns: number[]): EntityId[] => ns.map(id);
 
 // Direct unit tests for the LRU query cache. The include/exclude masks are just
-// numbers here; the cache does not care what they mean, only how they key and
-// invalidate entries.
+// numbers here; the cache does not care what they mean, only how they key
+// entries and update their entity lists on membership changes.
 describe("QueryCache", () => {
+  const MAX_ENTITIES = 16;
+
   describe("constructor / isEnabled", () => {
     test("throws for negative size", () => {
-      expect(() => new QueryCache(-1)).toThrow(
+      expect(() => new QueryCache(-1, MAX_ENTITIES)).toThrow(
         "queryCacheSize must be non-negative",
       );
     });
 
     test("size 0 is a disabled cache", () => {
-      const cache = new QueryCache(0);
+      const cache = new QueryCache(0, MAX_ENTITIES);
       expect(cache.isEnabled).toBe(false);
     });
 
     test("positive size is enabled", () => {
-      const cache = new QueryCache(4);
+      const cache = new QueryCache(4, MAX_ENTITIES);
       expect(cache.isEnabled).toBe(true);
     });
   });
 
   describe("disabled cache (size 0)", () => {
-    test("get always returns undefined and set is a no-op", () => {
-      const cache = new QueryCache(0);
-      cache.set(0b1, 0, "value");
-      expect(cache.get(0b1, 0)).toBeUndefined();
+    test("createEntry returns undefined and getEntry always misses", () => {
+      const cache = new QueryCache(0, MAX_ENTITIES);
+      expect(cache.createEntry(0b1, 0, ids(1))).toBeUndefined();
+      expect(cache.getEntry(0b1, 0)).toBeUndefined();
       expect(cache.size).toBe(0);
     });
 
-    test("invalidateMatchingQueries is a no-op", () => {
-      const cache = new QueryCache(0);
+    test("onMembershipChanged is a no-op", () => {
+      const cache = new QueryCache(0, MAX_ENTITIES);
       expect(() => {
-        cache.invalidateMatchingQueries(0b1);
+        cache.onMembershipChanged(id(1), 0, 0b1);
       }).not.toThrow();
       expect(cache.size).toBe(0);
     });
   });
 
-  describe("basic get / set", () => {
-    test("stores and retrieves a value", () => {
-      const cache = new QueryCache(4);
-      const value = { entities: [1, 2, 3] };
-      cache.set(0b1, 0, value);
-      expect(cache.get(0b1, 0)).toBe(value);
+  describe("createEntry / getEntry", () => {
+    test("stores and retrieves the same entry", () => {
+      const cache = new QueryCache(4, MAX_ENTITIES);
+      const entry = cache.createEntry(0b1, 0, ids(1, 2, 3));
+      expect(cache.getEntry(0b1, 0)).toBe(entry);
+      expect(entry?.list).toEqual(ids(1, 2, 3));
+    });
+
+    test("a new entry starts dirty with no snapshot", () => {
+      const cache = new QueryCache(4, MAX_ENTITIES);
+      const entry = cache.createEntry(0b1, 0, ids(1));
+      expect(entry?.dirty).toBe(true);
+      expect(entry?.result).toBeUndefined();
     });
 
     test("miss returns undefined", () => {
-      const cache = new QueryCache(4);
-      expect(cache.get(0b10, 0)).toBeUndefined();
+      const cache = new QueryCache(4, MAX_ENTITIES);
+      expect(cache.getEntry(0b10, 0)).toBeUndefined();
     });
   });
 
   describe("key scheme (include vs include:exclude)", () => {
     test("same include with and without an exclude are distinct entries", () => {
-      const cache = new QueryCache(4);
-      const includeOnly = "include-only";
-      const withExclude = "with-exclude";
+      const cache = new QueryCache(4, MAX_ENTITIES);
+      const includeOnly = cache.createEntry(0b101, 0, ids(1)); // numeric key
+      const withExclude = cache.createEntry(0b101, 0b10, ids(2)); // "5:2" string key
 
-      cache.set(0b101, 0, includeOnly); // numeric key
-      cache.set(0b101, 0b10, withExclude); // "5:2" string key
-
-      expect(cache.get(0b101, 0)).toBe(includeOnly);
-      expect(cache.get(0b101, 0b10)).toBe(withExclude);
+      expect(cache.getEntry(0b101, 0)).toBe(includeOnly);
+      expect(cache.getEntry(0b101, 0b10)).toBe(withExclude);
       expect(cache.size).toBe(2);
     });
 
     test("two different excludes on the same include do not collide", () => {
-      const cache = new QueryCache(4);
-      cache.set(0b1, 0b10, "exclude-2");
-      cache.set(0b1, 0b100, "exclude-4");
+      const cache = new QueryCache(4, MAX_ENTITIES);
+      const excludeTwo = cache.createEntry(0b1, 0b10, ids(1));
+      const excludeFour = cache.createEntry(0b1, 0b100, ids(2));
 
-      expect(cache.get(0b1, 0b10)).toBe("exclude-2");
-      expect(cache.get(0b1, 0b100)).toBe("exclude-4");
+      expect(cache.getEntry(0b1, 0b10)).toBe(excludeTwo);
+      expect(cache.getEntry(0b1, 0b100)).toBe(excludeFour);
     });
   });
 
   describe("LRU behavior", () => {
-    test("get refreshes recency so the touched entry survives eviction", () => {
-      const cache = new QueryCache(2);
-      cache.set(0b1, 0, "A");
-      cache.set(0b10, 0, "B");
+    test("getEntry refreshes recency so the touched entry survives eviction", () => {
+      const cache = new QueryCache(2, MAX_ENTITIES);
+      const entryA = cache.createEntry(0b1, 0, ids(1));
+      cache.createEntry(0b10, 0, ids(2));
 
       // Touch A -> A becomes most-recently-used.
-      expect(cache.get(0b1, 0)).toBe("A");
+      expect(cache.getEntry(0b1, 0)).toBe(entryA);
 
       // Inserting C evicts the LRU entry, which is now B (not A).
-      cache.set(0b100, 0, "C");
+      const entryC = cache.createEntry(0b100, 0, ids(3));
 
-      expect(cache.get(0b1, 0)).toBe("A");
-      expect(cache.get(0b100, 0)).toBe("C");
-      expect(cache.get(0b10, 0)).toBeUndefined();
+      expect(cache.getEntry(0b1, 0)).toBe(entryA);
+      expect(cache.getEntry(0b100, 0)).toBe(entryC);
+      expect(cache.getEntry(0b10, 0)).toBeUndefined();
       expect(cache.size).toBe(2);
     });
 
     test("eviction victim is the oldest insertion when nothing was touched", () => {
-      const cache = new QueryCache(2);
-      cache.set(0b1, 0, "A");
-      cache.set(0b10, 0, "B");
-      cache.set(0b100, 0, "C"); // evicts A (oldest)
+      const cache = new QueryCache(2, MAX_ENTITIES);
+      cache.createEntry(0b1, 0, ids(1));
+      cache.createEntry(0b10, 0, ids(2));
+      cache.createEntry(0b100, 0, ids(3)); // evicts the 0b1 entry (oldest)
 
-      expect(cache.get(0b1, 0)).toBeUndefined();
-      expect(cache.get(0b10, 0)).toBe("B");
-      expect(cache.get(0b100, 0)).toBe("C");
+      expect(cache.getEntry(0b1, 0)).toBeUndefined();
+      expect(cache.getEntry(0b10, 0)).toBeDefined();
+      expect(cache.getEntry(0b100, 0)).toBeDefined();
     });
 
-    test("updating an existing key does not evict", () => {
-      const cache = new QueryCache(2);
-      cache.set(0b1, 0, "A");
-      cache.set(0b10, 0, "B");
+    test("re-creating an existing key replaces it without evicting", () => {
+      const cache = new QueryCache(2, MAX_ENTITIES);
+      cache.createEntry(0b1, 0, ids(1));
+      const entryB = cache.createEntry(0b10, 0, ids(2));
 
-      // Re-setting A's key is an update, not a new key -> no eviction.
-      cache.set(0b1, 0, "A2");
+      // Re-creating the 0b1 key is an update, not a new key -> no eviction.
+      const replacement = cache.createEntry(0b1, 0, ids(9));
 
       expect(cache.size).toBe(2);
-      expect(cache.get(0b1, 0)).toBe("A2");
-      expect(cache.get(0b10, 0)).toBe("B");
+      expect(cache.getEntry(0b1, 0)).toBe(replacement);
+      expect(cache.getEntry(0b10, 0)).toBe(entryB);
     });
   });
 
-  describe("invalidateMatchingQueries", () => {
-    test("drops entries whose include mask overlaps the changed bits", () => {
-      const cache = new QueryCache(8);
-      cache.set(0b0011, 0, "has-bit-1"); // include touches bit 0/1
-      cache.set(0b1100, 0, "no-bit-1"); // include does not touch bit 0
+  describe("onMembershipChanged", () => {
+    test("adds the entity to entries it now matches and marks them dirty", () => {
+      const cache = new QueryCache(8, MAX_ENTITIES);
+      const entry = cache.createEntry(0b1, 0, ids(1));
+      if (!entry) throw new Error("cache unexpectedly disabled");
+      entry.dirty = false; // simulate a taken snapshot
 
-      cache.invalidateMatchingQueries(0b0001);
+      cache.onMembershipChanged(id(5), 0, 0b1);
 
-      expect(cache.get(0b0011, 0)).toBeUndefined();
-      expect(cache.get(0b1100, 0)).toBe("no-bit-1");
+      expect(entry.list).toEqual(ids(1, 5));
+      expect(entry.dirty).toBe(true);
     });
 
-    test("drops entries whose exclude mask overlaps the changed bits", () => {
-      const cache = new QueryCache(8);
-      // include-only bit 2, but excludes bit 0 -> keyed as "4:1"
-      cache.set(0b100, 0b001, "excludes-bit-0");
-      cache.set(0b100, 0b010, "excludes-bit-1");
+    test("removes the entity from entries it no longer matches (swap-remove)", () => {
+      const cache = new QueryCache(8, MAX_ENTITIES);
+      const entry = cache.createEntry(0b1, 0, ids(1, 2, 3));
+      if (!entry) throw new Error("cache unexpectedly disabled");
+      entry.dirty = false;
 
-      cache.invalidateMatchingQueries(0b001);
+      // Entity 1 loses bit 0 -> removed from the middle; 3 is swapped into its slot.
+      cache.onMembershipChanged(id(1), 0b1, 0);
 
-      expect(cache.get(0b100, 0b001)).toBeUndefined();
-      expect(cache.get(0b100, 0b010)).toBe("excludes-bit-1");
+      expect(entry.list).toEqual(ids(3, 2));
+      expect(entry.dirty).toBe(true);
+
+      // The swapped entity's slot bookkeeping must stay consistent: removing it
+      // next must not corrupt the list.
+      cache.onMembershipChanged(id(3), 0b1, 0);
+      expect(entry.list).toEqual(ids(2));
     });
 
-    test("componentBits === 0 is a no-op", () => {
-      const cache = new QueryCache(4);
-      cache.set(0b1, 0, "A");
-      cache.invalidateMatchingQueries(0);
-      expect(cache.get(0b1, 0)).toBe("A");
+    test("gaining an excluded bit removes the entity", () => {
+      const cache = new QueryCache(8, MAX_ENTITIES);
+      // include bit 2, exclude bit 0
+      const entry = cache.createEntry(0b100, 0b1, ids(1));
+      if (!entry) throw new Error("cache unexpectedly disabled");
+      entry.dirty = false;
+
+      cache.onMembershipChanged(id(1), 0b100, 0b101);
+
+      expect(entry.list).toEqual([]);
+      expect(entry.dirty).toBe(true);
+    });
+
+    test("entries whose match status did not flip stay clean", () => {
+      const cache = new QueryCache(8, MAX_ENTITIES);
+      const matching = cache.createEntry(0b1, 0, ids(1));
+      const unrelated = cache.createEntry(0b10, 0, ids(2));
+      if (!matching || !unrelated)
+        throw new Error("cache unexpectedly disabled");
+      matching.dirty = false;
+      unrelated.dirty = false;
+
+      // Entity 1 gains bit 2: it still matches 0b1 and still misses 0b10.
+      cache.onMembershipChanged(id(1), 0b1, 0b101);
+
+      expect(matching.list).toEqual(ids(1));
+      expect(matching.dirty).toBe(false);
+      expect(unrelated.list).toEqual(ids(2));
+      expect(unrelated.dirty).toBe(false);
+    });
+
+    test("oldBits === newBits is a no-op", () => {
+      const cache = new QueryCache(4, MAX_ENTITIES);
+      const entry = cache.createEntry(0b1, 0, ids(1));
+      if (!entry) throw new Error("cache unexpectedly disabled");
+      entry.dirty = false;
+
+      cache.onMembershipChanged(id(1), 0b1, 0b1);
+
+      expect(entry.dirty).toBe(false);
     });
 
     test("empty cache is a safe no-op", () => {
-      const cache = new QueryCache(4);
+      const cache = new QueryCache(4, MAX_ENTITIES);
       expect(() => {
-        cache.invalidateMatchingQueries(0b1);
+        cache.onMembershipChanged(id(1), 0, 0b1);
       }).not.toThrow();
     });
   });
 
   describe("clear", () => {
     test("empties the cache", () => {
-      const cache = new QueryCache(4);
-      cache.set(0b1, 0, "A");
-      cache.set(0b10, 0, "B");
+      const cache = new QueryCache(4, MAX_ENTITIES);
+      cache.createEntry(0b1, 0, ids(1));
+      cache.createEntry(0b10, 0, ids(2));
       cache.clear();
       expect(cache.size).toBe(0);
-      expect(cache.get(0b1, 0)).toBeUndefined();
+      expect(cache.getEntry(0b1, 0)).toBeUndefined();
     });
   });
 });
