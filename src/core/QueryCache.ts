@@ -1,4 +1,5 @@
 import type { EntityId } from "./types";
+import { matchesMask } from "./BitsetManager";
 
 export interface CacheEntry {
   readonly include: number;
@@ -102,10 +103,8 @@ export class QueryCache {
 
     for (const entry of this.cache.values()) {
       const { include, exclude } = entry;
-      const matchedOld =
-        (oldBits & include) === include && (oldBits & exclude) === 0;
-      const matchedNew =
-        (newBits & include) === include && (newBits & exclude) === 0;
+      const matchedOld = matchesMask(oldBits, include, exclude);
+      const matchedNew = matchesMask(newBits, include, exclude);
       if (matchedOld === matchedNew) continue;
 
       if (matchedNew) {

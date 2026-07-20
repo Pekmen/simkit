@@ -11,7 +11,7 @@ import type {
   StringKey,
   ValidComponentProp,
 } from "./types";
-import { BitsetManager } from "./BitsetManager";
+import { BitsetManager, matchesMask } from "./BitsetManager";
 import { QueryCache } from "./QueryCache";
 import type { CacheEntry } from "./QueryCache";
 import type { EntityManager } from "./EntityManager";
@@ -261,6 +261,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     let bits = oldBits;
 
     while (bits !== 0) {
+      // bits & -bits isolates the lowest set bit; clz32 turns it into a bit index.
       const bitPosition = 31 - Math.clz32(bits & -bits);
       this.clearComponentStorage(
         this.bitToComponentName[bitPosition],
@@ -287,19 +288,6 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
     this.bitsets.clearAll();
     this.queryCache.clear();
-  }
-
-  query<K extends StringKey<T>>(
-    ...components: ComponentHandle<K>[]
-  ): QueryResult<T, K>;
-  query<K extends StringKey<T> = never>(
-    options: QueryOptions<T, K>,
-  ): QueryResult<T, K>;
-  query<K extends StringKey<T>>(
-    first?: ComponentHandle<K> | QueryOptions<T, K>,
-    ...rest: ComponentHandle<K>[]
-  ): QueryResult<T, K> {
-    return this.runQuery(first, rest);
   }
 
   runQuery<K extends StringKey<T>>(
@@ -390,10 +378,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
       list = [];
       for (const entityId of this.entityManager.activeEntities) {
         const bits = this.bitsets.getBits(entityId);
-        if (
-          (bits & includeMask) === includeMask &&
-          (bits & excludeMask) === 0
-        ) {
+        if (matchesMask(bits, includeMask, excludeMask)) {
           list.push(entityId);
         }
       }

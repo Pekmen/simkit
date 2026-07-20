@@ -1,5 +1,21 @@
 import { ComponentManager } from "../ComponentManager";
 import { EntityManager } from "../EntityManager";
+import type {
+  ComponentBlueprint,
+  ComponentHandle,
+  QueryResult,
+  StringKey,
+} from "../types";
+
+// ComponentManager no longer exposes a public query() overload (that duplicated
+// World's public API and had no production callers) — this test helper reproduces
+// the old varargs call shape on top of the internal runQuery(first, rest) signature.
+function query<T extends ComponentBlueprint, K extends StringKey<T>>(
+  manager: ComponentManager<T>,
+  ...handles: ComponentHandle<K>[]
+): QueryResult<T, K> {
+  return manager.runQuery(handles[0], handles.slice(1));
+}
 
 describe("ComponentManager", () => {
   test("initializing creates component storages with correct length", () => {
@@ -363,7 +379,7 @@ describe("ComponentManager", () => {
     const entityId = entityManager.addEntity();
     manager.setComponent(entityId, Flags, { active: true });
 
-    const result = manager.query(Flags);
+    const result = query(manager, Flags);
     const value = result.Flags.active[entityId];
 
     expect(value).toBe(true);
@@ -386,8 +402,8 @@ describe("ComponentManager", () => {
       manager.setComponent(entity1, Velocity, { dx: 1, dy: 2 });
       manager.setComponent(entity2, Position, { x: 30, y: 40 });
 
-      const result1 = manager.query(Position, Velocity);
-      const result2 = manager.query(Position, Velocity);
+      const result1 = query(manager, Position, Velocity);
+      const result2 = query(manager, Position, Velocity);
 
       // Should return the same cached entities array
       expect(result1.entities).toBe(result2.entities);
@@ -411,14 +427,14 @@ describe("ComponentManager", () => {
       manager.setComponent(entity1, Position, { x: 10, y: 20 });
       manager.setComponent(entity1, Velocity, { dx: 1, dy: 2 });
 
-      const result1 = manager.query(Position, Velocity);
+      const result1 = query(manager, Position, Velocity);
       expect(result1.entities).toEqual([entity1]);
 
       // Add component to entity2 - should invalidate cache
       manager.setComponent(entity2, Position, { x: 30, y: 40 });
       manager.setComponent(entity2, Velocity, { dx: 3, dy: 4 });
 
-      const result2 = manager.query(Position, Velocity);
+      const result2 = query(manager, Position, Velocity);
 
       // Should not be the same object (cache was invalidated)
       expect(result1).not.toBe(result2);
@@ -441,13 +457,13 @@ describe("ComponentManager", () => {
       manager.setComponent(entity2, Position, { x: 30, y: 40 });
       manager.setComponent(entity2, Velocity, { dx: 3, dy: 4 });
 
-      const result1 = manager.query(Position, Velocity);
+      const result1 = query(manager, Position, Velocity);
       expect(result1.entities).toEqual([entity1, entity2]);
 
       // Remove component - should invalidate cache
       manager.removeComponent(entity2, Velocity);
 
-      const result2 = manager.query(Position, Velocity);
+      const result2 = query(manager, Position, Velocity);
 
       // Should not be the same object (cache was invalidated)
       expect(result1).not.toBe(result2);
@@ -470,13 +486,13 @@ describe("ComponentManager", () => {
       manager.setComponent(entity2, Position, { x: 30, y: 40 });
       manager.setComponent(entity2, Velocity, { dx: 3, dy: 4 });
 
-      const result1 = manager.query(Position, Velocity);
+      const result1 = query(manager, Position, Velocity);
       expect(result1.entities).toEqual([entity1, entity2]);
 
       // Remove all components from entity - should invalidate cache
       manager.removeAllComponents(entity2);
 
-      const result2 = manager.query(Position, Velocity);
+      const result2 = query(manager, Position, Velocity);
 
       // Should not be the same object (cache was invalidated)
       expect(result1).not.toBe(result2);
@@ -500,10 +516,10 @@ describe("ComponentManager", () => {
       manager.setComponent(entity2, Position, { x: 30, y: 40 });
       manager.setComponent(entity2, Size, { width: 5, height: 5 });
 
-      const result1 = manager.query(Position, Velocity);
-      const result2 = manager.query(Position, Size);
-      const result3 = manager.query(Position, Velocity); // Same as result1
-      const result4 = manager.query(Position, Size); // Same as result2
+      const result1 = query(manager, Position, Velocity);
+      const result2 = query(manager, Position, Size);
+      const result3 = query(manager, Position, Velocity); // Same as result1
+      const result4 = query(manager, Position, Size); // Same as result2
 
       // Different queries should have different results
       expect(result1.entities).toEqual([entity1]);
@@ -530,8 +546,8 @@ describe("ComponentManager", () => {
       manager.setComponent(entity, Position, { x: 10, y: 20 });
       manager.setComponent(entity, Velocity, { dx: 1, dy: 2 });
 
-      const result1 = manager.query(Position, Velocity);
-      const result2 = manager.query(Position, Velocity);
+      const result1 = query(manager, Position, Velocity);
+      const result2 = query(manager, Position, Velocity);
 
       // Storage arrays should be the same references (pointing to actual storage arrays)
       expect(result1.Position).toBe(result2.Position);
@@ -562,8 +578,8 @@ describe("ComponentManager", () => {
       manager.setComponent(entity2, Health, { hp: 50 });
 
       // Cache two different queries
-      const posVelResult1 = manager.query(Position, Velocity);
-      const healthResult1 = manager.query(Health);
+      const posVelResult1 = query(manager, Position, Velocity);
+      const healthResult1 = query(manager, Health);
 
       expect(posVelResult1.entities).toEqual([entity1]);
       expect(healthResult1.entities).toEqual([entity2]);
@@ -572,9 +588,9 @@ describe("ComponentManager", () => {
       manager.removeAllComponents(entity2);
 
       // Query for Position+Velocity again - should still be cached
-      const posVelResult2 = manager.query(Position, Velocity);
+      const posVelResult2 = query(manager, Position, Velocity);
       // Query for Health again - should be invalidated and rebuilt
-      const healthResult2 = manager.query(Health);
+      const healthResult2 = query(manager, Health);
 
       // Position+Velocity query should return the SAME cached object
       // because entity2's deletion didn't affect Position or Velocity components
@@ -604,9 +620,9 @@ describe("ComponentManager", () => {
       manager.setComponent(e1, C, { value: 3 });
 
       // Execute 3 queries with cache size 2
-      manager.query(A); // Cache: [A]
-      manager.query(B); // Cache: [A, B]
-      manager.query(C); // Cache: [B, C] (A evicted)
+      query(manager, A); // Cache: [A]
+      query(manager, B); // Cache: [A, B]
+      query(manager, C); // Cache: [B, C] (A evicted)
 
       // Accessing internal cache to verify
       // @ts-expect-error Accessing private for testing
@@ -624,22 +640,22 @@ describe("ComponentManager", () => {
       manager.setComponent(e1, B, { v: 2 });
       manager.setComponent(e1, C, { v: 3 });
 
-      const r1 = manager.query(A); // Cache: [A]
-      const r2 = manager.query(B); // Cache: [A, B]
+      const r1 = query(manager, A); // Cache: [A]
+      const r2 = query(manager, B); // Cache: [A, B]
 
       // Access A again to make it most recent
-      const r3 = manager.query(A); // Cache: [B, A] (A moved to end)
+      const r3 = query(manager, A); // Cache: [B, A] (A moved to end)
       expect(r1.entities).toBe(r3.entities); // Should be cached
 
       // Add C - should evict B (least recently used)
-      manager.query(C); // Cache: [A, C] (B evicted)
+      query(manager, C); // Cache: [A, C] (B evicted)
 
       // Verify A is still cached
-      const r5 = manager.query(A);
+      const r5 = query(manager, A);
       expect(r3.entities).toBe(r5.entities); // Same cached object
 
       // Verify B was evicted and rebuilt
-      const r6 = manager.query(B);
+      const r6 = query(manager, B);
       expect(r2.entities).not.toBe(r6.entities); // New object
     });
 
@@ -660,13 +676,13 @@ describe("ComponentManager", () => {
       manager.setComponent(entity2, A, { value: 3 });
 
       // Cache query(A) — both entities match
-      const result1 = manager.query(A);
+      const result1 = query(manager, A);
       expect(result1.entities).toEqual([entity1, entity2]);
 
       // Add B to entity2 — should NOT invalidate query(A)
       manager.setComponent(entity2, B, { value: 4 });
 
-      const result2 = manager.query(A);
+      const result2 = query(manager, A);
       // Same cached object since adding B doesn't affect a query for A
       expect(result1).toBe(result2);
     });
@@ -680,7 +696,7 @@ describe("ComponentManager", () => {
       const e1 = entityManager.addEntity();
       manager.setComponent(e1, A, { value: 1 });
 
-      manager.query(A);
+      query(manager, A);
 
       // @ts-expect-error Accessing private for testing
       expect(manager.queryCache.size).toBe(0);
@@ -800,7 +816,10 @@ describe("ComponentManager", () => {
       manager.setComponent(entityId, Position, { x: undefined, y: 99 });
 
       // x keeps its previous value, y updates.
-      expect(manager.getComponent(entityId, Position)).toEqual({ x: 10, y: 99 });
+      expect(manager.getComponent(entityId, Position)).toEqual({
+        x: 10,
+        y: 99,
+      });
     });
   });
 
@@ -836,19 +855,19 @@ describe("ComponentManager", () => {
       const e1 = entityManager.addEntity();
       manager.setComponent(e1, Position, { x: 1, y: 1 });
 
-      const before = manager.query(Position);
+      const before = query(manager, Position);
 
       // Data-only update to an existing component does not change membership,
       // so the cached query survives.
       manager.setComponent(e1, Position, { x: 5, y: 5 });
-      const afterUpdate = manager.query(Position);
+      const afterUpdate = query(manager, Position);
       expect(before.entities).toBe(afterUpdate.entities);
 
       // Adding the queried component to a new entity is a structural change on
       // Position's bit, so the query(Position) cache is invalidated.
       const e2 = entityManager.addEntity();
       manager.setComponent(e2, Position, { x: 2, y: 2 });
-      const afterAdd = manager.query(Position);
+      const afterAdd = query(manager, Position);
       expect(afterAdd.entities).not.toBe(before.entities);
       expect(afterAdd.entities).toEqual([e1, e2]);
     });

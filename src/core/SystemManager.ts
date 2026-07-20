@@ -52,35 +52,46 @@ export class SystemManager {
   }
 
   updateAll(deltaTime: number): void {
-    const errors: unknown[] = [];
-    for (const { system } of [...this.sortedRecords]) {
-      if (this.systems.has(system)) {
-        try {
-          system.update(deltaTime);
-        } catch (error) {
-          errors.push(error);
-        }
-      }
-    }
-    if (errors.length > 0) {
-      throw new AggregateError(errors, "updateAll: one or more systems threw");
-    }
+    this.runAll(
+      (system) => {
+        system.update(deltaTime);
+      },
+      "updateAll: one or more systems threw",
+    );
   }
 
   destroyAll(): void {
+    try {
+      this.runAll(
+        (system) => {
+          system.destroy?.();
+        },
+        "destroyAll: one or more systems threw",
+      );
+    } finally {
+      this.systems.clear();
+      this.sortedRecords = [];
+    }
+  }
+
+  // Runs `action` for every currently-registered system (snapshotting the
+  // order first, since `action` may itself remove systems), collecting
+  // thrown errors instead of letting one failing system stop the rest.
+  private runAll(
+    action: (system: System) => void,
+    aggregateMessage: string,
+  ): void {
     const errors: unknown[] = [];
     for (const { system } of [...this.sortedRecords]) {
       if (!this.systems.has(system)) continue;
       try {
-        system.destroy?.();
+        action(system);
       } catch (error) {
         errors.push(error);
       }
     }
-    this.systems.clear();
-    this.sortedRecords = [];
     if (errors.length > 0) {
-      throw new AggregateError(errors, "destroyAll: one or more systems threw");
+      throw new AggregateError(errors, aggregateMessage);
     }
   }
 }

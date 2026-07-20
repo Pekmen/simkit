@@ -35,11 +35,11 @@ export class EntityManager {
   }
 
   removeEntity(entityId: EntityId): void {
-    const index = this.entityToIndex[entityId];
-    if (index === -1) {
+    if (!this.isValid(entityId)) {
       throw staleEntityError(entityId);
     }
 
+    const index = this.entityToIndex[entityId];
     const lastEntity = this.activeEntities[this.activeEntities.length - 1];
     this.activeEntities[index] = lastEntity;
     this.entityToIndex[lastEntity] = index;
