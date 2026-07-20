@@ -192,6 +192,26 @@ describe("QueryCache", () => {
       expect(unrelated.dirty).toBe(false);
     });
 
+    test("disjoint entry's list/slot/dirty are left completely untouched by an unrelated membership change", () => {
+      const cache = new QueryCache(8, MAX_ENTITIES);
+      const matching = cache.createEntry(0b1, 0, ids(1));
+      const disjoint = cache.createEntry(0b10, 0, ids(2, 3));
+      if (!matching || !disjoint) throw new Error("cache unexpectedly disabled");
+      matching.dirty = false;
+      disjoint.dirty = false;
+      const listRef = disjoint.list;
+      const slotSnapshot = Array.from(disjoint.slot);
+
+      // Entity 1 gains bit 0b100, which neither entry's include/exclude mask
+      // has any bits in common with -> disjoint's fast-reject skip must leave
+      // it byte-for-byte identical, not just "still logically correct".
+      cache.onMembershipChanged(id(1), 0b1, 0b101);
+
+      expect(disjoint.list).toBe(listRef);
+      expect(Array.from(disjoint.slot)).toEqual(slotSnapshot);
+      expect(disjoint.dirty).toBe(false);
+    });
+
     test("oldBits === newBits is a no-op", () => {
       const cache = new QueryCache(4, MAX_ENTITIES);
       const entry = cache.createEntry(0b1, 0, ids(1));

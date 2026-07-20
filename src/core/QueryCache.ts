@@ -101,8 +101,15 @@ export class QueryCache {
       return;
     }
 
+    // A bit not in `changed` is identical between oldBits/newBits, so an
+    // entry whose include/exclude mask has no bits in `changed` cannot have
+    // flipped match status — skip it before paying for matchesMask.
+    const changed = oldBits ^ newBits;
+
     for (const entry of this.cache.values()) {
       const { include, exclude } = entry;
+      if ((changed & (include | exclude)) === 0) continue;
+
       const matchedOld = matchesMask(oldBits, include, exclude);
       const matchedNew = matchesMask(newBits, include, exclude);
       if (matchedOld === matchedNew) continue;
