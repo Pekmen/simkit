@@ -11,6 +11,7 @@
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
     "test": "vitest",
+    "coverage": "vitest run --coverage",
     "bench": "vitest bench --run --outputJson=benchmark-results.json && node benchmarks/benchmark-reporter.js",
     "bench:ui": "vitest bench --ui"
   },
@@ -26,6 +27,7 @@
     "@eslint/js": "^9.39.1",
     "@eslint/json": "^0.14.0",
     "@eslint/markdown": "^7.5.1",
+    "@vitest/coverage-v8": "^4.1.10",
     "@vitest/ui": "^4.0.8",
     "eslint": "^9.39.1",
     "globals": "^16.5.0",

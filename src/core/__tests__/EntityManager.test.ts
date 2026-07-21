@@ -20,7 +20,7 @@ describe("EntityManager", () => {
     manager.addEntity();
     manager.addEntity();
 
-    expect(() => manager.addEntity()).toThrowError(
+    expect(() => manager.addEntity()).toThrow(
       "Maximum number of entities reached",
     );
   });
