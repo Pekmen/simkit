@@ -17,6 +17,14 @@ describe("spawn", () => {
     expect(world.hasComponent(entityId, world.components.Position)).toBe(true);
   });
 
+  test("spawn throws a clear error for an unknown component key", () => {
+    const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 10 });
+
+    expect(() => world.spawn({ Velocity: { dx: 1, dy: 1 } } as never)).toThrow(
+      'spawn(): unknown component "Velocity"',
+    );
+  });
+
   test("spawn with single component", () => {
     const world = new World(
       {

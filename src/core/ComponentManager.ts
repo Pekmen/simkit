@@ -158,6 +158,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
     let mask = 0;
 
     for (const key in config) {
+      if (!Object.hasOwn(this.components, key)) {
+        throw new Error(`spawn(): unknown component "${key}"`);
+      }
       const component = this.components[key];
       const data = config[key];
       this.setComponentData(
