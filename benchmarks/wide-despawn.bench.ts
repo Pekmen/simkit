@@ -12,7 +12,7 @@ describe("Wide Despawn", () => {
 
   bench("despawn 1000 entities in a 30-type world (2 components each)", () => {
     const blueprints: Record<string, { value: number }> = {};
-    for (let i = 0; i < TYPES; i++) blueprints["C" + i] = { value: 0 };
+    for (let i = 0; i < TYPES; i++) blueprints[`C${i}`] = { value: 0 };
 
     const world = new World(blueprints, { maxEntities: ENTITIES + 1 });
     const handles = world.components as Record<string, { value: number }> &

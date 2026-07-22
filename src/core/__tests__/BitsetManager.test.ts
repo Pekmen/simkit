@@ -88,16 +88,16 @@ describe("BitsetManager", () => {
 
     test("ORs multiple bitMasks together", () => {
       const bits = new BitsetManager(4, 5);
-      expect(
-        bits.createMask([{ bitMask: 0b001 }, { bitMask: 0b100 }]),
-      ).toBe(0b101);
+      expect(bits.createMask([{ bitMask: 0b001 }, { bitMask: 0b100 }])).toBe(
+        0b101,
+      );
     });
 
     test("overlapping bitMasks dedupe via OR", () => {
       const bits = new BitsetManager(4, 5);
-      expect(
-        bits.createMask([{ bitMask: 0b110 }, { bitMask: 0b011 }]),
-      ).toBe(0b111);
+      expect(bits.createMask([{ bitMask: 0b110 }, { bitMask: 0b011 }])).toBe(
+        0b111,
+      );
     });
   });
 

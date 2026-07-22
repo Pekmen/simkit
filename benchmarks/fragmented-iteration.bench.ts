@@ -83,7 +83,7 @@ describe("Fragmented Iteration", () => {
         components: [components.Data],
         update({ query: { entities, Data: data } }) {
           for (const e of entities) {
-            data.value[e] = (data.value[e] ?? 0) * 2;
+            data.value[e] = data.value[e] * 2;
           }
         },
       });
@@ -93,7 +93,7 @@ describe("Fragmented Iteration", () => {
         components: [components.Z],
         update({ query: { entities, Z: z } }) {
           for (const e of entities) {
-            z.value[e] = (z.value[e] ?? 0) * 2;
+            z.value[e] = z.value[e] * 2;
           }
         },
       });

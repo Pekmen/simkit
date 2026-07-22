@@ -301,7 +301,6 @@ describe("World", () => {
     expect(world.hasSystem(system)).toBe(false);
   });
 
-
   test("hasSystem returns false after system is removed", () => {
     const world = new World({}, { maxEntities: 10 });
 
@@ -317,15 +316,21 @@ describe("World", () => {
 
     world.addSystem({
       priority: 0,
-      update() { order.push("A"); },
+      update() {
+        order.push("A");
+      },
     });
     world.addSystem({
       priority: 10,
-      update() { order.push("B"); },
+      update() {
+        order.push("B");
+      },
     });
     world.addSystem({
       priority: 5,
-      update() { order.push("C"); },
+      update() {
+        order.push("C");
+      },
     });
 
     world.update(16);
@@ -580,9 +585,7 @@ describe("World", () => {
             // no-op
           },
         });
-      }).toThrow(
-        'component handle "Position" does not belong to this world',
-      );
+      }).toThrow('component handle "Position" does not belong to this world');
     });
 
     test("init and destroy receive state and world", () => {
@@ -668,13 +671,18 @@ describe("World", () => {
 
     test("safe on an already-empty world", () => {
       const world = new World({}, { maxEntities: 10 });
-      expect(() => { world.clear(); }).not.toThrow();
+      expect(() => {
+        world.clear();
+      }).not.toThrow();
       expect(world.getEntityCount()).toBe(0);
     });
 
     test("query cache is cleared", () => {
       const blueprints = { Position: { x: 0, y: 0 } };
-      const world = new World(blueprints, { maxEntities: 10, queryCacheSize: 1 });
+      const world = new World(blueprints, {
+        maxEntities: 10,
+        queryCacheSize: 1,
+      });
       const { Position } = world.components;
 
       const e = world.addEntity();
@@ -699,12 +707,20 @@ describe("World", () => {
       const destroyB = vi.fn();
 
       world.addSystem({
-        update() { /* no-op */ },
-        destroy() { destroyA(); },
+        update() {
+          /* no-op */
+        },
+        destroy() {
+          destroyA();
+        },
       });
       world.addSystem({
-        update() { /* no-op */ },
-        destroy() { destroyB(); },
+        update() {
+          /* no-op */
+        },
+        destroy() {
+          destroyB();
+        },
       });
 
       world.destroy();
@@ -739,7 +755,9 @@ describe("World", () => {
       const { Position } = world.components;
 
       world.addSystem({
-        update() { /* no-op */ },
+        update() {
+          /* no-op */
+        },
         destroy() {
           throw new Error("boom");
         },
@@ -762,8 +780,16 @@ describe("World", () => {
     test("unregisters all systems", () => {
       const world = new World({}, { maxEntities: 10 });
 
-      const systemA = world.addSystem({ update() { /* no-op */ } });
-      const systemB = world.addSystem({ update() { /* no-op */ } });
+      const systemA = world.addSystem({
+        update() {
+          /* no-op */
+        },
+      });
+      const systemB = world.addSystem({
+        update() {
+          /* no-op */
+        },
+      });
 
       expect(world.hasSystem(systemA)).toBe(true);
       expect(world.hasSystem(systemB)).toBe(true);
@@ -777,7 +803,10 @@ describe("World", () => {
 
   describe("entity refs", () => {
     test("ref/resolve round-trip while alive, undefined after removal", () => {
-      const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 10 });
+      const world = new World(
+        { Position: { x: 0, y: 0 } },
+        { maxEntities: 10 },
+      );
 
       const e = world.spawn({ Position: { x: 1, y: 2 } });
       const ref = world.ref(e);
@@ -792,7 +821,10 @@ describe("World", () => {
     });
 
     test("clear() invalidates pre-clear refs", () => {
-      const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 10 });
+      const world = new World(
+        { Position: { x: 0, y: 0 } },
+        { maxEntities: 10 },
+      );
 
       const e = world.spawn({ Position: { x: 1, y: 2 } });
       const ref = world.ref(e);
@@ -803,7 +835,10 @@ describe("World", () => {
     });
 
     test("destroy() invalidates pre-destroy refs", () => {
-      const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 10 });
+      const world = new World(
+        { Position: { x: 0, y: 0 } },
+        { maxEntities: 10 },
+      );
 
       const e = world.spawn({ Position: { x: 1, y: 2 } });
       const ref = world.ref(e);
@@ -866,7 +901,9 @@ describe("World", () => {
       expect(() => {
         worldA.setComponent(entity, worldB.components.Position, { x: 7, y: 8 });
       }).not.toThrow();
-      expect(worldA.hasComponent(entity, worldA.components.Position)).toBe(true);
+      expect(worldA.hasComponent(entity, worldA.components.Position)).toBe(
+        true,
+      );
       expect(worldA.getComponent(entity, worldA.components.Position)).toEqual({
         x: 7,
         y: 8,
@@ -893,7 +930,10 @@ describe("World", () => {
 
   describe("getActiveEntities defensive copy", () => {
     test("mutating the returned array does not affect the world", () => {
-      const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 10 });
+      const world = new World(
+        { Position: { x: 0, y: 0 } },
+        { maxEntities: 10 },
+      );
       const e1 = world.addEntity();
       world.addEntity();
 
@@ -924,7 +964,10 @@ describe("World", () => {
 
   describe("addSystem context reuse", () => {
     test("ctx identity is stable across frames while the query refreshes", () => {
-      const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 10 });
+      const world = new World(
+        { Position: { x: 0, y: 0 } },
+        { maxEntities: 10 },
+      );
       const { Position } = world.components;
 
       world.spawn({ Position: { x: 1, y: 1 } });

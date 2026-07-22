@@ -52,22 +52,16 @@ export class SystemManager {
   }
 
   updateAll(deltaTime: number): void {
-    this.runAll(
-      (system) => {
-        system.update(deltaTime);
-      },
-      "updateAll: one or more systems threw",
-    );
+    this.runAll((system) => {
+      system.update(deltaTime);
+    }, "updateAll: one or more systems threw");
   }
 
   destroyAll(): void {
     try {
-      this.runAll(
-        (system) => {
-          system.destroy?.();
-        },
-        "destroyAll: one or more systems threw",
-      );
+      this.runAll((system) => {
+        system.destroy?.();
+      }, "destroyAll: one or more systems threw");
     } finally {
       this.systems.clear();
       this.sortedRecords = [];

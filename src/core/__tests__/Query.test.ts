@@ -238,7 +238,10 @@ describe("Query", () => {
     test("query({ with, without }) excludes entities with the excluded component", () => {
       const { world, e1, e2 } = setup();
       const { Position, Velocity, Dead } = world.components;
-      const { entities } = world.query({ with: [Position, Velocity], without: [Dead] });
+      const { entities } = world.query({
+        with: [Position, Velocity],
+        without: [Dead],
+      });
       expect(entities).toContain(e1);
       expect(entities).not.toContain(e2);
     });
@@ -278,24 +281,36 @@ describe("Query", () => {
     test("cache is invalidated when a component in without is added to an entity", () => {
       const { world, e1 } = setup();
       const { Position, Velocity, Dead } = world.components;
-      const before = world.query({ with: [Position, Velocity], without: [Dead] });
+      const before = world.query({
+        with: [Position, Velocity],
+        without: [Dead],
+      });
       expect(before.entities).toContain(e1);
 
       world.setComponent(e1, Dead);
 
-      const after = world.query({ with: [Position, Velocity], without: [Dead] });
+      const after = world.query({
+        with: [Position, Velocity],
+        without: [Dead],
+      });
       expect(after.entities).not.toContain(e1);
     });
 
     test("cache is invalidated when a component in without is removed from an entity", () => {
       const { world, e2 } = setup();
       const { Position, Velocity, Dead } = world.components;
-      const before = world.query({ with: [Position, Velocity], without: [Dead] });
+      const before = world.query({
+        with: [Position, Velocity],
+        without: [Dead],
+      });
       expect(before.entities).not.toContain(e2);
 
       world.removeComponent(e2, Dead);
 
-      const after = world.query({ with: [Position, Velocity], without: [Dead] });
+      const after = world.query({
+        with: [Position, Velocity],
+        without: [Dead],
+      });
       expect(after.entities).toContain(e2);
     });
 
@@ -416,7 +431,10 @@ describe("Query", () => {
     });
 
     test("writes through query columns are visible to a separate query", () => {
-      const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 10 });
+      const world = new World(
+        { Position: { x: 0, y: 0 } },
+        { maxEntities: 10 },
+      );
       const { Position } = world.components;
 
       const entity = world.addEntity();
@@ -434,7 +452,10 @@ describe("Query", () => {
     });
 
     test("returned entities array is frozen", () => {
-      const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 10 });
+      const world = new World(
+        { Position: { x: 0, y: 0 } },
+        { maxEntities: 10 },
+      );
       const { Position } = world.components;
 
       const entity = world.addEntity();

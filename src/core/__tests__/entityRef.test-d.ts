@@ -23,6 +23,7 @@ declare function wantsRef(r: EntityRef): void;
 void column[ref];
 
 // @ts-expect-error - numeric columns are a fixed-length Float64Array, not Array
+// eslint-disable-next-line @typescript-eslint/no-unsafe-call -- `.push` doesn't exist on Float64Array, which is exactly what's being asserted
 column.push(0);
 
 // String/boolean columns are likewise fixed-length: indexed get/set works, but
@@ -31,6 +32,7 @@ const textColumn = world.query(Label).Label.text;
 const firstLabel: string = textColumn[id];
 textColumn[id] = firstLabel;
 // @ts-expect-error - non-numeric columns are a FixedColumn, not a mutable Array
+// eslint-disable-next-line @typescript-eslint/no-unsafe-call -- `.push` doesn't exist on FixedColumn, which is exactly what's being asserted
 textColumn.push("x");
 
 // @ts-expect-error - world APIs take a raw EntityId, not a ref (resolve first)

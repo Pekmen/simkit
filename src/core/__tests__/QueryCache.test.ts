@@ -196,7 +196,8 @@ describe("QueryCache", () => {
       const cache = new QueryCache(8, MAX_ENTITIES);
       const matching = cache.createEntry(0b1, 0, ids(1));
       const disjoint = cache.createEntry(0b10, 0, ids(2, 3));
-      if (!matching || !disjoint) throw new Error("cache unexpectedly disabled");
+      if (!matching || !disjoint)
+        throw new Error("cache unexpectedly disabled");
       matching.dirty = false;
       disjoint.dirty = false;
       const listRef = disjoint.list;

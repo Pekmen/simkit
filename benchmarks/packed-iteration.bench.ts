@@ -29,7 +29,7 @@ describe("Packed Iteration (5 queries)", () => {
       components: [A],
       update({ query: { entities, A: a } }) {
         for (const e of entities) {
-          a.value[e] = (a.value[e] ?? 0) * 2;
+          a.value[e] = a.value[e] * 2;
         }
       },
     });
@@ -38,7 +38,7 @@ describe("Packed Iteration (5 queries)", () => {
       components: [B],
       update({ query: { entities, B: b } }) {
         for (const e of entities) {
-          b.value[e] = (b.value[e] ?? 0) * 2;
+          b.value[e] = b.value[e] * 2;
         }
       },
     });
@@ -47,7 +47,7 @@ describe("Packed Iteration (5 queries)", () => {
       components: [C],
       update({ query: { entities, C: c } }) {
         for (const e of entities) {
-          c.value[e] = (c.value[e] ?? 0) * 2;
+          c.value[e] = c.value[e] * 2;
         }
       },
     });
@@ -56,7 +56,7 @@ describe("Packed Iteration (5 queries)", () => {
       components: [D],
       update({ query: { entities, D: d } }) {
         for (const e of entities) {
-          d.value[e] = (d.value[e] ?? 0) * 2;
+          d.value[e] = d.value[e] * 2;
         }
       },
     });
@@ -65,7 +65,7 @@ describe("Packed Iteration (5 queries)", () => {
       components: [E],
       update({ query: { entities, E: eComp } }) {
         for (const e of entities) {
-          eComp.value[e] = (eComp.value[e] ?? 0) * 2;
+          eComp.value[e] = eComp.value[e] * 2;
         }
       },
     });

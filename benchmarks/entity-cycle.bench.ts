@@ -22,7 +22,7 @@ describe("Entity Cycle", () => {
     const bEntityIds = [];
     for (const e of aEntities) {
       const newEntity = world.addEntity();
-      world.setComponent(newEntity, B, { value: aComp.value[e] ?? 0 });
+      world.setComponent(newEntity, B, { value: aComp.value[e] });
       bEntityIds.push(newEntity);
     }
 
