@@ -192,7 +192,12 @@ export class World<T extends ComponentBlueprint> {
 
   spawn(config: SpawnConfig<T>): EntityId {
     const entityId = this.entityManager.addEntity();
-    this.componentManager.setComponentsFromConfig(entityId, config);
+    try {
+      this.componentManager.setComponentsFromConfig(entityId, config);
+    } catch (error) {
+      this.entityManager.removeEntity(entityId);
+      throw error;
+    }
     return entityId;
   }
 }

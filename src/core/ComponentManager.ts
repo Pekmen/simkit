@@ -111,17 +111,21 @@ export class ComponentManager<T extends ComponentBlueprint> {
     const defaults = this.componentBlueprints[componentName];
     const { names, types } = this.propMeta[componentName];
 
+    // Validate every provided prop before writing any of them, so a type
+    // error partway through the payload can't leave earlier props mutated.
     for (let i = 0; i < names.length; i++) {
-      const prop = names[i];
+      const provided = componentData?.[names[i]];
+      if (provided !== undefined && typeof provided !== types[i]) {
+        throw new TypeError(
+          `${componentName}.${names[i]}: expected ${types[i]}, got ${typeof provided}`,
+        );
+      }
+    }
+
+    for (const prop of names) {
       const provided = componentData?.[prop];
 
       if (provided !== undefined) {
-        const actualType = typeof provided;
-        if (actualType !== types[i]) {
-          throw new TypeError(
-            `${componentName}.${prop}: expected ${types[i]}, got ${actualType}`,
-          );
-        }
         storage[prop][entityId] = provided;
       } else if (isNew) {
         storage[prop][entityId] = defaults[prop];

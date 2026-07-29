@@ -323,6 +323,26 @@ describe("ComponentManager", () => {
     }).toThrow("Position.x: expected number, got string");
   });
 
+  test("setComponent does not partially write props when a later prop fails validation", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Position } = manager.components;
+
+    const entityId = entityManager.addEntity();
+    manager.setComponent(entityId, Position, { x: 10, y: 20 });
+
+    expect(() => {
+      manager.setComponent(entityId, Position, {
+        x: 99,
+        y: "not a number" as unknown as number,
+      });
+    }).toThrow("Position.y: expected number, got string");
+
+    // x must be untouched, since the whole call should have been rejected.
+    expect(manager.getComponent(entityId, Position)).toEqual({ x: 10, y: 20 });
+  });
+
   test("hasComponent throws for invalid entity", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);

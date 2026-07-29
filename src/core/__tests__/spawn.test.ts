@@ -25,6 +25,20 @@ describe("spawn", () => {
     );
   });
 
+  test("spawn does not leak an entity slot when config validation fails", () => {
+    const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 10 });
+
+    expect(() =>
+      world.spawn({ Velocity: { dx: 1, dy: 1 } } as never),
+    ).toThrow();
+    expect(world.getEntityCount()).toBe(0);
+
+    // The freed id must be reusable, not stuck as a phantom active entity.
+    const entity = world.spawn({ Position: { x: 1, y: 1 } });
+    expect(world.getEntityCount()).toBe(1);
+    expect(entity).toBe(0);
+  });
+
   test("spawn with single component", () => {
     const world = new World(
       {
