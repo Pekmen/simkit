@@ -1,4 +1,8 @@
-import { staleEntityError, DEFAULT_QUERY_CACHE_SIZE } from "./types";
+import {
+  staleEntityError,
+  missingComponentError,
+  DEFAULT_QUERY_CACHE_SIZE,
+} from "./types";
 import type {
   EntityId,
   ComponentBlueprint,
@@ -198,9 +202,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     const oldBits = this.bitsets.getBits(entityId);
 
     if ((oldBits & component.bitMask) === 0) {
-      throw new Error(
-        `removeComponent: Entity ${entityId} does not have component ${component.name}`,
-      );
+      throw missingComponentError("removeComponent", entityId, component.name);
     }
 
     this.clearComponentStorage(component.name, entityId);
@@ -247,9 +249,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.validateEntity(entityId);
 
     if (!this.bitsets.has(entityId, component.bitMask)) {
-      throw new Error(
-        `getComponent: Entity ${entityId} does not have component ${component.name}`,
-      );
+      throw missingComponentError("getComponent", entityId, component.name);
     }
 
     const storage = this.componentStorages[component.name];

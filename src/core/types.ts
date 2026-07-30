@@ -113,3 +113,13 @@ export function staleEntityError(entityId: EntityId): Error {
       `and restore it with world.resolve(ref).`,
   );
 }
+
+export function missingComponentError(
+  caller: string,
+  entityId: EntityId,
+  componentName: string,
+): Error {
+  return new Error(
+    `${caller}: Entity ${entityId} does not have component ${componentName}`,
+  );
+}
