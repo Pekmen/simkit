@@ -71,9 +71,6 @@ export class SystemManager {
     }
   }
 
-  // Runs `action` for every currently-registered system (snapshotting the
-  // order first, since `action` may itself remove systems), collecting
-  // thrown errors instead of letting one failing system stop the rest.
   private runAll(
     action: (system: System) => void,
     aggregateMessage: string,

@@ -4,20 +4,12 @@ import { matchesMask } from "./BitsetManager";
 export interface CacheEntry {
   readonly include: number;
   readonly exclude: number;
-  /** Live, incrementally maintained list of matching entities. */
   readonly list: EntityId[];
-  /** entityId -> index into `list`; -1 when absent. Enables O(1) swap-remove. */
   readonly slot: Int32Array;
-  /** True when `list` changed since `result` was last snapshotted. */
   dirty: boolean;
-  /** Frozen QueryResult snapshot; typed by ComponentManager at the call site. */
   result: unknown;
 }
 
-// LRU cache of query results, keyed by (includeMask, excludeMask). Instead of
-// discarding entries when component membership changes, each entry's entity
-// list is updated in place via onMembershipChanged, so a changed query costs
-// O(matches) to re-snapshot rather than a full O(activeEntities) rescan.
 export class QueryCache {
   private cache = new Map<number | string, CacheEntry>();
   private readonly maxCacheSize: number;
@@ -41,15 +33,10 @@ export class QueryCache {
     return this.cache.size;
   }
 
-  // Most queries have no exclude mask; keying those by the include number alone
-  // avoids building a string on the hot path. The pair cannot be packed into a
-  // single number (2 x 32 bits exceeds Number's 53-bit integer range), hence
-  // the string fallback for the exclude case.
   private makeKey(include: number, exclude: number): number | string {
     return exclude === 0 ? include : `${include}:${exclude}`;
   }
 
-  // Returns the entry (refreshing its LRU recency) or undefined on miss.
   getEntry(include: number, exclude: number): CacheEntry | undefined {
     if (!this.isEnabled) return undefined;
     const key = this.makeKey(include, exclude);
@@ -61,8 +48,6 @@ export class QueryCache {
     return entry;
   }
 
-  // Registers a new entry seeded with `list` (ownership transfers to the
-  // cache). Returns undefined when the cache is disabled.
   createEntry(
     include: number,
     exclude: number,
@@ -70,8 +55,6 @@ export class QueryCache {
   ): CacheEntry | undefined {
     if (!this.isEnabled) return undefined;
     const key = this.makeKey(include, exclude);
-    // Only evict when inserting a genuinely new key; updating an existing key
-    // does not grow the map, so it must not trigger an eviction.
     if (!this.cache.has(key) && this.cache.size >= this.maxCacheSize) {
       this.evictOldestEntry();
     }
@@ -91,9 +74,6 @@ export class QueryCache {
     return entry;
   }
 
-  // Called after an entity's component mask changes. Adds/removes the entity
-  // in every cached list whose match status flipped and marks those entries
-  // dirty so their next fetch re-snapshots.
   onMembershipChanged(
     entityId: EntityId,
     oldBits: number,
@@ -103,9 +83,6 @@ export class QueryCache {
       return;
     }
 
-    // A bit not in `changed` is identical between oldBits/newBits, so an
-    // entry whose include/exclude mask has no bits in `changed` cannot have
-    // flipped match status — skip it before paying for matchesMask.
     const changed = oldBits ^ newBits;
 
     for (const entry of this.cache.values()) {

@@ -2,9 +2,6 @@ import type { EntityId } from "./types";
 
 export const MAX_COMPONENTS = 32;
 
-// True when `bits` has every bit in `include` set and none of `exclude` set.
-// Standalone (not an instance method) so callers without a BitsetManager
-// reference, like QueryCache, can share it too.
 export function matchesMask(
   bits: number,
   include: number,

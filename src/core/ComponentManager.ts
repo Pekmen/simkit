@@ -20,8 +20,6 @@ import { QueryCache } from "./QueryCache";
 import type { CacheEntry } from "./QueryCache";
 import type { EntityManager } from "./EntityManager";
 
-// "entities" is the key the query result reserves for its EntityId list, so it
-// cannot double as a component name.
 const RESERVED_COMPONENT_NAMES = new Set(["entities"]);
 
 export class ComponentManager<T extends ComponentBlueprint> {
@@ -297,7 +295,6 @@ export class ComponentManager<T extends ComponentBlueprint> {
     let bits = oldBits;
 
     while (bits !== 0) {
-      // bits & -bits isolates the lowest set bit; clz32 turns it into a bit index.
       const bitPosition = 31 - Math.clz32(bits & -bits);
       this.clearComponentStorage(
         this.bitToComponentName[bitPosition],
