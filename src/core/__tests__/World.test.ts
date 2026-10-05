@@ -94,7 +94,7 @@ describe("World", () => {
     world.addEntity();
 
     expect(() => world.addEntity()).toThrow(
-      "Maximum number of entities reached",
+      "maximum number of entities reached",
     );
   });
 
@@ -152,7 +152,7 @@ describe("World", () => {
     const entityId = world.addEntity();
 
     expect(() => world.getComponent(entityId, Position)).toThrow(
-      "getComponent: Entity 0 does not have component Position",
+      "getComponent: entity 0 does not have component Position",
     );
   });
 
@@ -282,7 +282,7 @@ describe("World", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     expect(() => {
       new World(blueprints, { maxEntities: 100, queryCacheSize: -1 });
-    }).toThrow("queryCacheSize must be non-negative");
+    }).toThrow("queryCacheSize must be a non-negative integer");
   });
 
   test("hasSystem returns true for registered system", () => {
@@ -585,7 +585,31 @@ describe("World", () => {
             // no-op
           },
         });
-      }).toThrow('component handle "Position" does not belong to this world');
+      }).toThrow(
+        'addSystem: component handle "Position" does not belong to this world',
+      );
+    });
+
+    test("overlapping components/exclude in addSystem names addSystem, not query", () => {
+      const world = new World(
+        { Position: { x: 0, y: 0 } },
+        { maxEntities: 10 },
+      );
+      const { Position } = world.components;
+
+      // addSystem shares its query validation with World.query() internally —
+      // the error must name the method the caller actually used.
+      expect(() => {
+        world.addSystem({
+          components: [Position],
+          exclude: [Position],
+          update() {
+            // no-op
+          },
+        });
+      }).toThrow(
+        "addSystem: a component cannot appear in both with and without",
+      );
     });
 
     test("init and destroy receive state and world", () => {

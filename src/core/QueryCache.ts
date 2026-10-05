@@ -24,8 +24,10 @@ export class QueryCache {
   private readonly maxEntities: number;
 
   constructor(maxCacheSize: number, maxEntities: number) {
-    if (maxCacheSize < 0) {
-      throw new Error("queryCacheSize must be non-negative");
+    if (!Number.isInteger(maxCacheSize) || maxCacheSize < 0) {
+      throw new Error(
+        `World: queryCacheSize must be a non-negative integer (${maxCacheSize})`,
+      );
     }
     this.maxCacheSize = maxCacheSize;
     this.maxEntities = maxEntities;

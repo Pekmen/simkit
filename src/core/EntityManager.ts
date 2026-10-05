@@ -10,8 +10,10 @@ export class EntityManager {
   private readonly generations: Uint32Array;
 
   constructor(maxEntities: number) {
-    if (maxEntities <= 0) {
-      throw new Error("maxEntities must be greater than 0");
+    if (!Number.isInteger(maxEntities) || maxEntities <= 0) {
+      throw new Error(
+        `World: maxEntities must be a positive integer (${maxEntities})`,
+      );
     }
     this.maxEntities = maxEntities;
     this.entityToIndex = new Int32Array(maxEntities).fill(-1);
@@ -23,7 +25,7 @@ export class EntityManager {
     if (entityId === undefined) {
       if (this.nextEntityId >= this.maxEntities) {
         throw new Error(
-          `Maximum number of entities reached (${this.maxEntities})`,
+          `maximum number of entities reached (${this.maxEntities})`,
         );
       }
       entityId = this.nextEntityId++ as EntityId;
@@ -52,6 +54,7 @@ export class EntityManager {
 
   isValid(entityId: EntityId): boolean {
     return (
+      Number.isInteger(entityId) &&
       entityId >= 0 &&
       entityId < this.maxEntities &&
       this.entityToIndex[entityId] !== -1

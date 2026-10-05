@@ -3,6 +3,7 @@ import { EntityManager } from "../EntityManager";
 import type {
   ComponentBlueprint,
   ComponentHandle,
+  EntityId,
   QueryResult,
   StringKey,
 } from "../types";
@@ -119,7 +120,7 @@ describe("ComponentManager", () => {
     const entityId = entityManager.addEntity();
 
     expect(() => manager.getComponent(entityId, Position)).toThrow(
-      "getComponent: Entity 0 does not have component Position",
+      "getComponent: entity 0 does not have component Position",
     );
   });
 
@@ -134,7 +135,7 @@ describe("ComponentManager", () => {
     manager.removeComponent(entityId, Position);
 
     expect(() => manager.getComponent(entityId, Position)).toThrow(
-      "getComponent: Entity 0 does not have component Position",
+      "getComponent: entity 0 does not have component Position",
     );
   });
 
@@ -158,7 +159,7 @@ describe("ComponentManager", () => {
     const blueprints = { entities: { id: 0 } };
     const entityManager = new EntityManager(10);
     expect(() => new ComponentManager(blueprints, 10, entityManager)).toThrow(
-      'Component name "entities" is reserved and cannot be used',
+      'World: component name "entities" is reserved and cannot be used',
     );
   });
 
@@ -170,7 +171,7 @@ describe("ComponentManager", () => {
 
     const entityManager = new EntityManager(10);
     expect(() => new ComponentManager(blueprints, 10, entityManager)).toThrow(
-      "Too many components (33). Maximum is 32.",
+      "World: too many components (33). Maximum is 32.",
     );
   });
 
@@ -371,6 +372,17 @@ describe("ComponentManager", () => {
     expect(() => manager.getComponent(entityId, Position)).toThrow(
       `Stale entity reference: EntityId ${entityId}`,
     );
+  });
+
+  test("setComponent rejects a non-integer entity id instead of silently no-opping", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Position } = manager.components;
+
+    expect(() => {
+      manager.setComponent(2.5 as EntityId, Position, { x: 1 });
+    }).toThrow(/Stale entity reference/);
   });
 
   test("getComponent returns real booleans, not 0/1", () => {

@@ -120,6 +120,6 @@ export function missingComponentError(
   componentName: string,
 ): Error {
   return new Error(
-    `${caller}: Entity ${entityId} does not have component ${componentName}`,
+    `${caller}: entity ${entityId} does not have component ${componentName}`,
   );
 }

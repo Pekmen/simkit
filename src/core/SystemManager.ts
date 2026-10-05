@@ -15,6 +15,9 @@ export class SystemManager {
         `addSystem: system${system.name ? ` "${system.name}"` : ""} already registered`,
       );
     }
+    if (!Number.isInteger(priority)) {
+      throw new Error(`addSystem: priority must be an integer (${priority})`);
+    }
 
     system.init?.();
 

@@ -9,7 +9,7 @@ describe("BitsetManager", () => {
   describe("constructor", () => {
     test("throws when component count exceeds MAX_COMPONENTS", () => {
       expect(() => new BitsetManager(33, 10)).toThrow(
-        "Too many components (33). Maximum is 32.",
+        "World: too many components (33). Maximum is 32.",
       );
     });
 

@@ -21,7 +21,16 @@ describe("spawn", () => {
     const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 10 });
 
     expect(() => world.spawn({ Velocity: { dx: 1, dy: 1 } } as never)).toThrow(
-      'spawn(): unknown component "Velocity"',
+      'spawn: unknown component "Velocity"',
+    );
+  });
+
+  test("spawn surfaces the entity cap error", () => {
+    const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 1 });
+    world.spawn({ Position: { x: 1, y: 1 } });
+
+    expect(() => world.spawn({ Position: { x: 2, y: 2 } })).toThrow(
+      "maximum number of entities reached (1)",
     );
   });
 
@@ -37,6 +46,24 @@ describe("spawn", () => {
     const entity = world.spawn({ Position: { x: 1, y: 1 } });
     expect(world.getEntityCount()).toBe(1);
     expect(entity).toBe(0);
+  });
+
+  test("spawn does not leak partial storage when a later component in the config fails validation", () => {
+    const world = new World({ A: { x: 0 }, B: { y: 0 } }, { maxEntities: 10 });
+    const { A } = world.components;
+
+    expect(() =>
+      world.spawn({ A: { x: 42 }, B: { y: "bad" as never } }),
+    ).toThrow(/expected number, got string/);
+
+    // A's bit was never set, so it's correctly absent via the public API...
+    expect(world.query(A).entities).toEqual([]);
+
+    // ...and, unlike before this fix, A's raw storage was never written either,
+    // so a freshly recycled entity doesn't inherit stale data from the failed spawn.
+    const recycled = world.spawn({ B: { y: 7 } });
+    expect(world.hasComponent(recycled, A)).toBe(false);
+    expect(world.query(A).A.x[recycled]).toBe(0);
   });
 
   test("spawn with single component", () => {

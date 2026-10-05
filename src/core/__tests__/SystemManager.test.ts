@@ -152,6 +152,19 @@ describe("SystemManager", () => {
     expect(manager.hasSystem(system)).toBe(false);
   });
 
+  test("addSystem throws for a non-integer priority instead of silently misordering", () => {
+    const manager = new SystemManager();
+    const system: System = { update: vi.fn() };
+    expect(() => {
+      manager.addSystem(system, NaN);
+    }).toThrow("priority must be an integer");
+    expect(() => {
+      manager.addSystem(system, 1.5);
+    }).toThrow("priority must be an integer");
+    // Rejected before init()/registration, so the system isn't left registered.
+    expect(manager.hasSystem(system)).toBe(false);
+  });
+
   test("systems with higher priority run first", () => {
     const manager = new SystemManager();
     const order: string[] = [];

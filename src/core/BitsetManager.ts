@@ -19,7 +19,7 @@ export class BitsetManager {
   constructor(componentCount: number, maxEntities: number) {
     if (componentCount > MAX_COMPONENTS) {
       throw new Error(
-        `Too many components (${componentCount}). Maximum is ${MAX_COMPONENTS}.`,
+        `World: too many components (${componentCount}). Maximum is ${MAX_COMPONENTS}.`,
       );
     }
 

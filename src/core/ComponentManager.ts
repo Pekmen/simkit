@@ -52,7 +52,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     for (const componentName in blueprints) {
       if (RESERVED_COMPONENT_NAMES.has(componentName)) {
         throw new Error(
-          `Component name "${componentName}" is reserved and cannot be used`,
+          `World: component name "${componentName}" is reserved and cannot be used`,
         );
       }
     }
@@ -86,8 +86,6 @@ export class ComponentManager<T extends ComponentBlueprint> {
       this.componentStorages[key] = storage;
       this.propMeta[key] = { names, types };
 
-      // Frozen so the public `world.components` handles can't be mutated at
-      // runtime (the TS type is already readonly).
       this.components[key] = Object.freeze({
         name: key,
         bitPosition,
@@ -105,18 +103,12 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
   }
 
-  private setComponentData(
-    entityId: EntityId,
+  private validateComponentData(
     componentName: string,
+    names: string[],
+    types: string[],
     componentData: Partial<Record<string, ValidComponentProp>> | undefined,
-    isNew: boolean,
   ): void {
-    const storage = this.componentStorages[componentName];
-    const defaults = this.componentBlueprints[componentName];
-    const { names, types } = this.propMeta[componentName];
-
-    // Validate every provided prop before writing any of them, so a type
-    // error partway through the payload can't leave earlier props mutated.
     for (let i = 0; i < names.length; i++) {
       const provided = componentData?.[names[i]];
       if (provided !== undefined && typeof provided !== types[i]) {
@@ -125,6 +117,17 @@ export class ComponentManager<T extends ComponentBlueprint> {
         );
       }
     }
+  }
+
+  private writeComponentData(
+    entityId: EntityId,
+    componentName: string,
+    names: string[],
+    componentData: Partial<Record<string, ValidComponentProp>> | undefined,
+    isNew: boolean,
+  ): void {
+    const storage = this.componentStorages[componentName];
+    const defaults = this.componentBlueprints[componentName];
 
     for (const prop of names) {
       const provided = componentData?.[prop];
@@ -137,9 +140,23 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
   }
 
-  // Merge semantics on an existing component: props absent from componentData
-  // keep their current values; blueprint defaults only apply when the entity
-  // gains the component.
+  private setComponentData(
+    entityId: EntityId,
+    componentName: string,
+    componentData: Partial<Record<string, ValidComponentProp>> | undefined,
+    isNew: boolean,
+  ): void {
+    const { names, types } = this.propMeta[componentName];
+    this.validateComponentData(componentName, names, types, componentData);
+    this.writeComponentData(
+      entityId,
+      componentName,
+      names,
+      componentData,
+      isNew,
+    );
+  }
+
   setComponent<K extends StringKey<T>>(
     entityId: EntityId,
     component: ComponentHandle<K>,
@@ -163,23 +180,35 @@ export class ComponentManager<T extends ComponentBlueprint> {
   }
 
   setComponentsFromConfig(entityId: EntityId, config: SpawnConfig<T>): void {
-    let mask = 0;
+    const staged: {
+      component: ComponentHandle<StringKey<T>>;
+      names: string[];
+      componentData: Partial<Record<string, ValidComponentProp>> | undefined;
+    }[] = [];
 
     for (const key in config) {
       if (!Object.hasOwn(this.components, key)) {
-        throw new Error(`spawn(): unknown component "${key}"`);
+        throw new Error(`spawn: unknown component "${key}"`);
       }
       const component = this.components[key];
       const data = config[key];
-      this.setComponentData(
-        entityId,
-        key,
-        // A handle value means "use defaults"; anything else is component data.
-        // The cast narrows out the ComponentHandle arm of the SpawnConfig union,
-        // which TS can't infer from the `=== component` runtime check.
+
+      const componentData =
         data === component
           ? undefined
-          : (data as Partial<Record<string, ValidComponentProp>>),
+          : (data as Partial<Record<string, ValidComponentProp>>);
+      const { names, types } = this.propMeta[key];
+      this.validateComponentData(key, names, types, componentData);
+      staged.push({ component, names, componentData });
+    }
+
+    let mask = 0;
+    for (const { component, names, componentData } of staged) {
+      this.writeComponentData(
+        entityId,
+        component.name,
+        names,
+        componentData,
         true,
       );
       mask |= component.bitMask;
@@ -315,6 +344,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     const { includeMask, excludeMask } = this.validateAndComputeMasks(
       withHandles,
       withoutHandles,
+      "query",
     );
     return this.fetchQuery(includeMask, excludeMask, withHandles);
   }
@@ -326,17 +356,19 @@ export class ComponentManager<T extends ComponentBlueprint> {
     const { includeMask, excludeMask } = this.validateAndComputeMasks(
       withHandles,
       withoutHandles,
+      "addSystem",
     );
     return () => this.fetchQuery(includeMask, excludeMask, withHandles);
   }
 
-  private validateHandlesOwned(handles: ComponentHandle<StringKey<T>>[]): void {
+  private validateHandlesOwned(
+    handles: ComponentHandle<StringKey<T>>[],
+    caller: string,
+  ): void {
     for (const handle of handles) {
-      // WeakSet.has(...) returns false for non-objects, so a forged non-object
-      // handle is rejected here too, not just cross-world ones.
       if (!this.ownedHandles.has(handle)) {
         throw new Error(
-          `component handle "${handle.name}" does not belong to this world`,
+          `${caller}: component handle "${handle.name}" does not belong to this world`,
         );
       }
     }
@@ -345,19 +377,20 @@ export class ComponentManager<T extends ComponentBlueprint> {
   private validateAndComputeMasks(
     withHandles: ComponentHandle<StringKey<T>>[],
     withoutHandles: ComponentHandle<StringKey<T>>[],
+    caller: string,
   ): { includeMask: number; excludeMask: number } {
     if (withHandles.length === 0 && withoutHandles.length === 0) {
       throw new Error(
-        'query() requires at least one component in "with" or "without"',
+        `${caller}: requires at least one component in "with" or "without"`,
       );
     }
-    this.validateHandlesOwned(withHandles);
-    this.validateHandlesOwned(withoutHandles);
+    this.validateHandlesOwned(withHandles, caller);
+    this.validateHandlesOwned(withoutHandles, caller);
     const includeMask = this.bitsets.createMask(withHandles);
     const excludeMask = this.bitsets.createMask(withoutHandles);
     if ((includeMask & excludeMask) !== 0) {
       throw new Error(
-        "query(): a component cannot appear in both with and without",
+        `${caller}: a component cannot appear in both with and without`,
       );
     }
     return { includeMask, excludeMask };
