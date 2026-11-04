@@ -109,9 +109,15 @@ export class ComponentManager<T extends ComponentBlueprint> {
   ): void {
     for (let i = 0; i < names.length; i++) {
       const provided = componentData?.[names[i]];
-      if (provided !== undefined && typeof provided !== types[i]) {
+      if (provided === undefined) continue;
+      if (typeof provided !== types[i]) {
         throw new TypeError(
           `${componentName}.${names[i]}: expected ${types[i]}, got ${typeof provided}`,
+        );
+      }
+      if (types[i] === "number" && !Number.isFinite(provided)) {
+        throw new TypeError(
+          `${componentName}.${names[i]}: expected a finite number, got ${provided}`,
         );
       }
     }

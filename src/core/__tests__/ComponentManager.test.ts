@@ -344,6 +344,52 @@ describe("ComponentManager", () => {
     expect(manager.getComponent(entityId, Position)).toEqual({ x: 10, y: 20 });
   });
 
+  test("setComponent throws TypeError for NaN", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Position } = manager.components;
+
+    const entityId = entityManager.addEntity();
+
+    expect(() => {
+      manager.setComponent(entityId, Position, { x: NaN, y: 20 });
+    }).toThrow(TypeError);
+    expect(() => {
+      manager.setComponent(entityId, Position, { x: NaN, y: 20 });
+    }).toThrow("Position.x: expected a finite number, got NaN");
+  });
+
+  test("setComponent throws TypeError for Infinity and -Infinity", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Position } = manager.components;
+
+    const entityId = entityManager.addEntity();
+
+    expect(() => {
+      manager.setComponent(entityId, Position, { x: 10, y: Infinity });
+    }).toThrow("Position.y: expected a finite number, got Infinity");
+    expect(() => {
+      manager.setComponent(entityId, Position, { x: 10, y: -Infinity });
+    }).toThrow("Position.y: expected a finite number, got -Infinity");
+  });
+
+  test("setComponent accepts ordinary finite numbers, including zero and negatives", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Position } = manager.components;
+
+    const entityId = entityManager.addEntity();
+
+    expect(() => {
+      manager.setComponent(entityId, Position, { x: 0, y: -3.5 });
+    }).not.toThrow();
+    expect(manager.getComponent(entityId, Position)).toEqual({ x: 0, y: -3.5 });
+  });
+
   test("hasComponent throws for invalid entity", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);

@@ -66,6 +66,23 @@ describe("spawn", () => {
     expect(world.query(A).A.x[recycled]).toBe(0);
   });
 
+  test("spawn rejects NaN/Infinity and leaves no partial state behind", () => {
+    const world = new World({ A: { x: 0 }, B: { y: 0 } }, { maxEntities: 10 });
+    const { A } = world.components;
+
+    expect(() => world.spawn({ A: { x: 42 }, B: { y: NaN as never } })).toThrow(
+      /expected a finite number, got NaN/,
+    );
+
+    // A's bit was never set, matching the existing rollback behavior for
+    // other validation failures (see "does not leak partial storage" above).
+    expect(world.query(A).entities).toEqual([]);
+
+    const recycled = world.spawn({ B: { y: 7 } });
+    expect(world.hasComponent(recycled, A)).toBe(false);
+    expect(world.query(A).A.x[recycled]).toBe(0);
+  });
+
   test("spawn with single component", () => {
     const world = new World(
       {
