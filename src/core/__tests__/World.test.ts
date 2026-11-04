@@ -906,32 +906,82 @@ describe("World", () => {
   });
 
   describe("handle ownership boundary", () => {
-    test("addSystem rejects a foreign handle but setComponent trusts it", () => {
+    test("addSystem and setComponent/removeComponent/hasComponent/getComponent all reject a foreign handle", () => {
       const blueprint = { Position: { x: 0, y: 0 } };
       const worldA = new World(blueprint, { maxEntities: 10 });
       const worldB = new World(blueprint, { maxEntities: 10 });
+      const foreign = worldB.components.Position;
 
-      // addSystem validates handle ownership.
       expect(() => {
-        worldA.addSystem({
-          components: [worldB.components.Position],
-          update: vi.fn(),
-        });
+        worldA.addSystem({ components: [foreign], update: vi.fn() });
       }).toThrow("does not belong to this world");
 
-      // setComponent does NOT re-validate ownership: a foreign handle with the
-      // same name/bitMask is trusted and writes into worldA's storage.
       const entity = worldA.addEntity();
       expect(() => {
-        worldA.setComponent(entity, worldB.components.Position, { x: 7, y: 8 });
-      }).not.toThrow();
+        worldA.setComponent(entity, foreign, { x: 7, y: 8 });
+      }).toThrow("does not belong to this world");
+      expect(() => {
+        worldA.hasComponent(entity, foreign);
+      }).toThrow("does not belong to this world");
+      expect(() => {
+        worldA.getComponent(entity, foreign);
+      }).toThrow("does not belong to this world");
+      expect(() => {
+        worldA.removeComponent(entity, foreign);
+      }).toThrow("does not belong to this world");
+
+      // Confirms no corruption occurred: the entity never actually gained
+      // worldA's Position component through the rejected foreign handle.
       expect(worldA.hasComponent(entity, worldA.components.Position)).toBe(
-        true,
+        false,
       );
-      expect(worldA.getComponent(entity, worldA.components.Position)).toEqual({
-        x: 7,
-        y: 8,
-      });
+    });
+
+    test("a handle from a world with a different component bit layout cannot flip the wrong bit", () => {
+      // worldA and worldB register the same component names in different
+      // order, so "Position" occupies a different bit in each world. Before
+      // the ownership check was added to the mutation methods, passing
+      // worldB's Position handle into worldA silently flipped worldA's
+      // Velocity bit instead (same name, wrong bitMask) with no error.
+      const worldA = new World(
+        { Position: { x: 0, y: 0 }, Velocity: { dx: 0, dy: 0 } },
+        { maxEntities: 10 },
+      );
+      const worldB = new World(
+        { Velocity: { dx: 0, dy: 0 }, Position: { x: 0, y: 0 } },
+        { maxEntities: 10 },
+      );
+
+      const entity = worldA.addEntity();
+      expect(() => {
+        worldA.setComponent(entity, worldB.components.Position, {
+          x: 7,
+          y: 8,
+        });
+      }).toThrow("does not belong to this world");
+      expect(worldA.hasComponent(entity, worldA.components.Velocity)).toBe(
+        false,
+      );
+      expect(worldA.hasComponent(entity, worldA.components.Position)).toBe(
+        false,
+      );
+    });
+
+    test("an unregistered/malformed handle is rejected with a clear error instead of an internal crash", () => {
+      const world = new World(
+        { Position: { x: 0, y: 0 } },
+        { maxEntities: 10 },
+      );
+      const entity = world.addEntity();
+      const bogus = {
+        name: "Bogus",
+        bitPosition: 5,
+        bitMask: 32,
+      } as unknown as (typeof world.components)["Position"];
+
+      expect(() => {
+        world.setComponent(entity, bogus, {});
+      }).toThrow("does not belong to this world");
     });
 
     test("query rejects a foreign handle (positional, with, and without)", () => {

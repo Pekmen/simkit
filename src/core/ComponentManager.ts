@@ -160,6 +160,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     component: ComponentHandle<K>,
     componentData?: Partial<T[K]>,
   ): void {
+    this.validateHandlesOwned([component], "setComponent");
     this.validateEntity(entityId);
 
     const oldBits = this.bitsets.getBits(entityId);
@@ -224,6 +225,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     entityId: EntityId,
     component: ComponentHandle<StringKey<T>>,
   ): void {
+    this.validateHandlesOwned([component], "removeComponent");
     this.validateEntity(entityId);
 
     const oldBits = this.bitsets.getBits(entityId);
@@ -247,6 +249,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     entityId: EntityId,
     component: ComponentHandle<StringKey<T>>,
   ): boolean {
+    this.validateHandlesOwned([component], "hasComponent");
     this.validateEntity(entityId);
     return this.bitsets.has(entityId, component.bitMask);
   }
@@ -273,6 +276,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     entityId: EntityId,
     component: ComponentHandle<K>,
   ): T[K] {
+    this.validateHandlesOwned([component], "getComponent");
     this.validateEntity(entityId);
 
     if (!this.bitsets.has(entityId, component.bitMask)) {
