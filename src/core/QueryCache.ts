@@ -1,3 +1,4 @@
+import { WorldConfigError } from "./types";
 import type { EntityId } from "./types";
 import { matchesMask } from "./BitsetManager";
 
@@ -17,7 +18,7 @@ export class QueryCache {
 
   constructor(maxCacheSize: number, maxEntities: number) {
     if (!Number.isInteger(maxCacheSize) || maxCacheSize < 0) {
-      throw new Error(
+      throw new WorldConfigError(
         `World: queryCacheSize must be a non-negative integer (${maxCacheSize})`,
       );
     }

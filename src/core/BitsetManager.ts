@@ -1,3 +1,4 @@
+import { WorldConfigError } from "./types";
 import type { EntityId } from "./types";
 
 export const MAX_COMPONENTS = 32;
@@ -15,7 +16,7 @@ export class BitsetManager {
 
   constructor(componentCount: number, maxEntities: number) {
     if (componentCount > MAX_COMPONENTS) {
-      throw new Error(
+      throw new WorldConfigError(
         `World: too many components (${componentCount}). Maximum is ${MAX_COMPONENTS}.`,
       );
     }

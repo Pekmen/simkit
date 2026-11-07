@@ -99,8 +99,43 @@ export interface QueryOptions<
 
 export const tag = Object.freeze({}) as Record<string, never>;
 
-export function staleEntityError(entityId: EntityId): Error {
-  return new Error(
+export class StaleEntityError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "StaleEntityError";
+  }
+}
+
+export class MissingComponentError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "MissingComponentError";
+  }
+}
+
+export class EntityCapacityError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "EntityCapacityError";
+  }
+}
+
+export class WorldConfigError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "WorldConfigError";
+  }
+}
+
+export class InvalidComponentDataError extends TypeError {
+  constructor(message: string) {
+    super(message);
+    this.name = "InvalidComponentDataError";
+  }
+}
+
+export function staleEntityError(entityId: EntityId): StaleEntityError {
+  return new StaleEntityError(
     `Stale entity reference: EntityId ${entityId}. ` +
       `To use an entity across frames, save world.ref(id) while it is alive ` +
       `and restore it with world.resolve(ref).`,
@@ -111,8 +146,8 @@ export function missingComponentError(
   caller: string,
   entityId: EntityId,
   componentName: string,
-): Error {
-  return new Error(
+): MissingComponentError {
+  return new MissingComponentError(
     `${caller}: entity ${entityId} does not have component ${componentName}`,
   );
 }

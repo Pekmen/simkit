@@ -1,6 +1,8 @@
 import {
   staleEntityError,
   missingComponentError,
+  WorldConfigError,
+  InvalidComponentDataError,
   DEFAULT_QUERY_CACHE_SIZE,
 } from "./types";
 import type {
@@ -49,7 +51,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     for (const componentName in blueprints) {
       if (RESERVED_COMPONENT_NAMES.has(componentName)) {
-        throw new Error(
+        throw new WorldConfigError(
           `World: component name "${componentName}" is reserved and cannot be used`,
         );
       }
@@ -111,12 +113,12 @@ export class ComponentManager<T extends ComponentBlueprint> {
       const provided = componentData?.[names[i]];
       if (provided === undefined) continue;
       if (typeof provided !== types[i]) {
-        throw new TypeError(
+        throw new InvalidComponentDataError(
           `${componentName}.${names[i]}: expected ${types[i]}, got ${typeof provided}`,
         );
       }
       if (types[i] === "number" && !Number.isFinite(provided)) {
-        throw new TypeError(
+        throw new InvalidComponentDataError(
           `${componentName}.${names[i]}: expected a finite number, got ${provided}`,
         );
       }
@@ -193,7 +195,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
 
     for (const key in config) {
       if (!Object.hasOwn(this.components, key)) {
-        throw new Error(`spawn: unknown component "${key}"`);
+        throw new WorldConfigError(`spawn: unknown component "${key}"`);
       }
       const component = this.components[key];
       const data = config[key];
@@ -374,7 +376,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
   ): void {
     for (const handle of handles) {
       if (!this.ownedHandles.has(handle)) {
-        throw new Error(
+        throw new WorldConfigError(
           `${caller}: component handle "${handle.name}" does not belong to this world`,
         );
       }
@@ -387,7 +389,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     caller: string,
   ): { includeMask: number; excludeMask: number } {
     if (withHandles.length === 0 && withoutHandles.length === 0) {
-      throw new Error(
+      throw new WorldConfigError(
         `${caller}: requires at least one component in "with" or "without"`,
       );
     }
@@ -396,7 +398,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     const includeMask = this.bitsets.createMask(withHandles);
     const excludeMask = this.bitsets.createMask(withoutHandles);
     if ((includeMask & excludeMask) !== 0) {
-      throw new Error(
+      throw new WorldConfigError(
         `${caller}: a component cannot appear in both with and without`,
       );
     }

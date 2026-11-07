@@ -1,6 +1,13 @@
 export * from "./World.js";
 export { MAX_COMPONENTS } from "./BitsetManager.js";
-export { tag } from "./types.js";
+export {
+  tag,
+  StaleEntityError,
+  MissingComponentError,
+  EntityCapacityError,
+  WorldConfigError,
+  InvalidComponentDataError,
+} from "./types.js";
 export type {
   EntityId,
   EntityRef,

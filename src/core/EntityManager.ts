@@ -1,4 +1,8 @@
-import { staleEntityError } from "./types";
+import {
+  staleEntityError,
+  WorldConfigError,
+  EntityCapacityError,
+} from "./types";
 import type { EntityId, EntityRef } from "./types";
 
 export class EntityManager {
@@ -11,7 +15,7 @@ export class EntityManager {
 
   constructor(maxEntities: number) {
     if (!Number.isInteger(maxEntities) || maxEntities <= 0) {
-      throw new Error(
+      throw new WorldConfigError(
         `World: maxEntities must be a positive integer (${maxEntities})`,
       );
     }
@@ -24,7 +28,7 @@ export class EntityManager {
     let entityId = this.freeEntityIds.pop();
     if (entityId === undefined) {
       if (this.nextEntityId >= this.maxEntities) {
-        throw new Error(
+        throw new EntityCapacityError(
           `maximum number of entities reached (${this.maxEntities})`,
         );
       }
