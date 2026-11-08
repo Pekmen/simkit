@@ -168,7 +168,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     component: ComponentHandle<K>,
     componentData?: Partial<T[K]>,
   ): void {
-    this.validateHandlesOwned([component], "setComponent");
+    this.validateHandleOwned(component, "setComponent");
     this.validateEntity(entityId);
 
     const oldBits = this.bitsets.getBits(entityId);
@@ -233,7 +233,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     entityId: EntityId,
     component: ComponentHandle<StringKey<T>>,
   ): void {
-    this.validateHandlesOwned([component], "removeComponent");
+    this.validateHandleOwned(component, "removeComponent");
     this.validateEntity(entityId);
 
     const oldBits = this.bitsets.getBits(entityId);
@@ -257,7 +257,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     entityId: EntityId,
     component: ComponentHandle<StringKey<T>>,
   ): boolean {
-    this.validateHandlesOwned([component], "hasComponent");
+    this.validateHandleOwned(component, "hasComponent");
     this.validateEntity(entityId);
     return this.bitsets.has(entityId, component.bitMask);
   }
@@ -284,7 +284,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     entityId: EntityId,
     component: ComponentHandle<K>,
   ): T[K] {
-    this.validateHandlesOwned([component], "getComponent");
+    this.validateHandleOwned(component, "getComponent");
     this.validateEntity(entityId);
 
     if (!this.bitsets.has(entityId, component.bitMask)) {
@@ -370,16 +370,23 @@ export class ComponentManager<T extends ComponentBlueprint> {
     return () => this.fetchQuery(includeMask, excludeMask, withHandles);
   }
 
+  private validateHandleOwned(
+    handle: ComponentHandle<StringKey<T>>,
+    caller: string,
+  ): void {
+    if (!this.ownedHandles.has(handle)) {
+      throw new WorldConfigError(
+        `${caller}: component handle "${handle.name}" does not belong to this world`,
+      );
+    }
+  }
+
   private validateHandlesOwned(
     handles: ComponentHandle<StringKey<T>>[],
     caller: string,
   ): void {
     for (const handle of handles) {
-      if (!this.ownedHandles.has(handle)) {
-        throw new WorldConfigError(
-          `${caller}: component handle "${handle.name}" does not belong to this world`,
-        );
-      }
+      this.validateHandleOwned(handle, caller);
     }
   }
 
