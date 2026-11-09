@@ -422,5 +422,85 @@ describe("SystemManager", () => {
       // The healthy system between the two failures still ran.
       expect(ran).toHaveBeenCalledTimes(1);
     });
+
+    test("tags a named system's error with its name", () => {
+      const manager = new SystemManager();
+      const err = new Error("boom");
+      manager.addSystem({
+        name: "physics",
+        update: () => {
+          throw err;
+        },
+      });
+
+      expect(() => {
+        manager.updateAll(16);
+      }).toThrow(AggregateError);
+      expect((err as Error & { systemName?: string }).systemName).toBe(
+        "physics",
+      );
+    });
+
+    test("tags an anonymous system's error with its index when no name is set", () => {
+      const manager = new SystemManager();
+      const err = new Error("boom");
+      manager.addSystem({
+        update: () => {
+          throw err;
+        },
+      });
+
+      expect(() => {
+        manager.updateAll(16);
+      }).toThrow(AggregateError);
+      expect((err as Error & { systemName?: string }).systemName).toBe(
+        "system#0",
+      );
+    });
+
+    test("does not crash when a non-object value is thrown", () => {
+      const manager = new SystemManager();
+      manager.addSystem({
+        update: () => {
+          // eslint-disable-next-line @typescript-eslint/only-throw-error
+          throw "boom";
+        },
+      });
+
+      let caught: unknown;
+      try {
+        manager.updateAll(16);
+      } catch (e) {
+        caught = e;
+      }
+
+      expect(caught).toBeInstanceOf(AggregateError);
+      expect((caught as AggregateError).errors).toContain("boom");
+    });
+
+    test("does not crash when the thrown error is frozen (cannot be tagged)", () => {
+      const manager = new SystemManager();
+      const err = new Error("boom");
+      Object.freeze(err);
+      manager.addSystem({
+        name: "physics",
+        update: () => {
+          throw err;
+        },
+      });
+
+      let caught: unknown;
+      try {
+        manager.updateAll(16);
+      } catch (e) {
+        caught = e;
+      }
+
+      expect(caught).toBeInstanceOf(AggregateError);
+      expect((caught as AggregateError).errors).toContain(err);
+      expect(
+        (err as Error & { systemName?: string }).systemName,
+      ).toBeUndefined();
+    });
   });
 });

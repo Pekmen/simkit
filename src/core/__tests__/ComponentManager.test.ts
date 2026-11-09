@@ -376,6 +376,22 @@ describe("ComponentManager", () => {
     }).toThrow("Position.y: expected a finite number, got -Infinity");
   });
 
+  test("constructor rejects a blueprint whose default value is NaN/Infinity", () => {
+    const entityManager = new EntityManager(5);
+
+    expect(() => {
+      new ComponentManager({ Position: { x: NaN, y: 0 } }, 5, entityManager);
+    }).toThrow("Position.x: expected a finite number, got NaN");
+
+    expect(() => {
+      new ComponentManager(
+        { Position: { x: Infinity, y: 0 } },
+        5,
+        entityManager,
+      );
+    }).toThrow("Position.x: expected a finite number, got Infinity");
+  });
+
   test("setComponent accepts ordinary finite numbers, including zero and negatives", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);

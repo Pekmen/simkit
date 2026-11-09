@@ -79,11 +79,19 @@ export class SystemManager {
     aggregateMessage: string,
   ): void {
     const errors: unknown[] = [];
-    for (const { system } of [...this.sortedRecords]) {
+    for (const [index, { system }] of [...this.sortedRecords].entries()) {
       if (!this.systems.has(system)) continue;
       try {
         action(system);
       } catch (error) {
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          Object.isExtensible(error)
+        ) {
+          (error as Record<string, unknown>).systemName =
+            system.name ?? `system#${index}`;
+        }
         errors.push(error);
       }
     }

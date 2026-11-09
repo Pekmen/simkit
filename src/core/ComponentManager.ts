@@ -85,6 +85,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
       }
       this.componentStorages[key] = storage;
       this.propMeta[key] = { names, types };
+      this.validateComponentData(key, names, types, blueprint);
 
       this.components[key] = Object.freeze({
         name: key,
