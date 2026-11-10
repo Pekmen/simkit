@@ -967,6 +967,45 @@ describe("World", () => {
       );
     });
 
+    test("spawn rejects a foreign handle used as a component value", () => {
+      const blueprint = { Position: { x: 0, y: 0 } };
+      const worldA = new World(blueprint, { maxEntities: 10 });
+      const worldB = new World(blueprint, { maxEntities: 10 });
+
+      expect(() => {
+        worldA.spawn({ Position: worldB.components.Position });
+      }).toThrow("does not belong to this world");
+
+      // Confirms no corruption: the entity was never created/left half-initialized.
+      expect(worldA.query(worldA.components.Position).entities).toEqual([]);
+    });
+
+    test("spawn treats a null component value as no data, without throwing", () => {
+      const world = new World(
+        { Position: { x: 1, y: 2 } },
+        { maxEntities: 10 },
+      );
+
+      const entity = world.spawn({
+        Position: null as unknown as { x: number; y: number },
+      });
+
+      expect(world.getComponent(entity, world.components.Position)).toEqual({
+        x: 1,
+        y: 2,
+      });
+    });
+
+    test("spawn does not misidentify a data payload with a 'bitPosition' field as a foreign handle", () => {
+      const world = new World({ Foo: { bitPosition: 0 } }, { maxEntities: 10 });
+
+      const entity = world.spawn({ Foo: { bitPosition: 5 } });
+
+      expect(world.getComponent(entity, world.components.Foo)).toEqual({
+        bitPosition: 5,
+      });
+    });
+
     test("an unregistered/malformed handle is rejected with a clear error instead of an internal crash", () => {
       const world = new World(
         { Position: { x: 0, y: 0 } },

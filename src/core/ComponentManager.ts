@@ -199,12 +199,28 @@ export class ComponentManager<T extends ComponentBlueprint> {
         throw new WorldConfigError(`spawn: unknown component "${key}"`);
       }
       const component = this.components[key];
-      const data = config[key];
+      const data: unknown = config[key];
 
-      const componentData =
-        data === component
-          ? undefined
-          : (data as Partial<Record<string, ValidComponentProp>>);
+      let componentData:
+        | Partial<Record<string, ValidComponentProp>>
+        | undefined;
+      if (data === component) {
+        componentData = undefined;
+      } else {
+        if (
+          typeof data === "object" &&
+          data !== null &&
+          "name" in data &&
+          "bitPosition" in data &&
+          "bitMask" in data &&
+          !this.ownedHandles.has(data as ComponentHandle<StringKey<T>>)
+        ) {
+          throw new WorldConfigError(
+            `spawn: component handle "${(data as ComponentHandle<StringKey<T>>).name}" does not belong to this world`,
+          );
+        }
+        componentData = data as Partial<Record<string, ValidComponentProp>>;
+      }
       const { names, types } = this.propMeta[key];
       this.validateComponentData(key, names, types, componentData);
       staged.push({ component, names, componentData });
