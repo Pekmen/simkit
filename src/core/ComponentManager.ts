@@ -112,6 +112,16 @@ export class ComponentManager<T extends ComponentBlueprint> {
     types: string[],
     componentData: Partial<Record<string, ValidComponentProp>> | undefined,
   ): void {
+    if (componentData !== undefined) {
+      for (const key in componentData) {
+        if (!names.includes(key)) {
+          throw new InvalidComponentDataError(
+            `${componentName}: unrecognized property "${key}"`,
+          );
+        }
+      }
+    }
+
     for (let i = 0; i < names.length; i++) {
       const provided = componentData?.[names[i]];
       if (provided === undefined) continue;

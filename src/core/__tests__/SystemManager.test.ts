@@ -298,6 +298,45 @@ describe("SystemManager", () => {
     expect(manager.systems.has(system)).toBe(false);
   });
 
+  test("removeSystem tags a destroy() error with the system's name, same as destroyAll", () => {
+    const manager = new SystemManager();
+    const err = new Error("boom");
+    const system: System = {
+      name: "physics",
+      update: vi.fn(),
+      destroy: () => {
+        throw err;
+      },
+    };
+
+    manager.addSystem(system);
+
+    expect(() => {
+      manager.removeSystem(system);
+    }).toThrow(err);
+    expect((err as Error & { systemName?: string }).systemName).toBe("physics");
+  });
+
+  test("removeSystem tags an anonymous system's destroy() error with its index", () => {
+    const manager = new SystemManager();
+    const err = new Error("boom");
+    const system: System = {
+      update: vi.fn(),
+      destroy: () => {
+        throw err;
+      },
+    };
+
+    manager.addSystem(system);
+
+    expect(() => {
+      manager.removeSystem(system);
+    }).toThrow(err);
+    expect((err as Error & { systemName?: string }).systemName).toBe(
+      "system#0",
+    );
+  });
+
   test("updateAll runs all systems even when one throws", () => {
     const manager = new SystemManager();
     const error = new Error("boom");

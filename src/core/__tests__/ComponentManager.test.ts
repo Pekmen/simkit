@@ -376,6 +376,56 @@ describe("ComponentManager", () => {
     }).toThrow("Position.y: expected a finite number, got -Infinity");
   });
 
+  test("setComponent rejects an unrecognized/misspelled property instead of silently dropping it", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Position } = manager.components;
+
+    const entityId = entityManager.addEntity();
+
+    expect(() => {
+      manager.setComponent(entityId, Position, {
+        x: 5,
+        yy: 10,
+      } as unknown as Partial<{ x: number; y: number }>);
+    }).toThrow('Position: unrecognized property "yy"');
+  });
+
+  test("spawn rejects a valid handle for a different component passed under the wrong key", () => {
+    const blueprints = {
+      Position: { x: 0, y: 0 },
+      Velocity: { dx: 0, dy: 0 },
+    };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Velocity } = manager.components;
+
+    const entityId = entityManager.addEntity();
+
+    expect(() => {
+      manager.setComponentsFromConfig(entityId, {
+        // Velocity's handle, mistakenly placed under the Position key.
+        Position: Velocity,
+      } as never);
+    }).toThrow(/Position: unrecognized property "(name|bitPosition|bitMask)"/);
+  });
+
+  test("tag components reject non-empty data instead of silently ignoring it", () => {
+    const blueprints = { Marker: {} };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Marker } = manager.components;
+
+    const entityId = entityManager.addEntity();
+
+    expect(() => {
+      manager.setComponent(entityId, Marker, { foo: 1 } as unknown as Partial<
+        Record<string, never>
+      >);
+    }).toThrow('Marker: unrecognized property "foo"');
+  });
+
   test("constructor rejects a blueprint whose default value is NaN/Infinity", () => {
     const entityManager = new EntityManager(5);
 

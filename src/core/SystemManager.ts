@@ -42,13 +42,15 @@ export class SystemManager {
         `removeSystem: system${system.name ? ` "${system.name}"` : ""} not registered`,
       );
     }
+    const idx = this.sortedRecords.findIndex(
+      (record) => record.system === system,
+    );
     try {
       system.destroy?.();
+    } catch (error) {
+      throw this.tagError(error, system, idx);
     } finally {
       this.systems.delete(system);
-      const idx = this.sortedRecords.findIndex(
-        (record) => record.system === system,
-      );
       if (idx !== -1) this.sortedRecords.splice(idx, 1);
     }
   }
@@ -84,19 +86,23 @@ export class SystemManager {
       try {
         action(system);
       } catch (error) {
-        if (
-          typeof error === "object" &&
-          error !== null &&
-          Object.isExtensible(error)
-        ) {
-          (error as Record<string, unknown>).systemName =
-            system.name ?? `system#${index}`;
-        }
-        errors.push(error);
+        errors.push(this.tagError(error, system, index));
       }
     }
     if (errors.length > 0) {
       throw new AggregateError(errors, aggregateMessage);
     }
+  }
+
+  private tagError(error: unknown, system: System, index: number): unknown {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      Object.isExtensible(error)
+    ) {
+      (error as Record<string, unknown>).systemName =
+        system.name ?? `system#${index}`;
+    }
+    return error;
   }
 }
