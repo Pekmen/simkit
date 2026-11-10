@@ -11,21 +11,6 @@ describe("QueryCache", () => {
   const MAX_ENTITIES = 16;
 
   describe("constructor / isEnabled", () => {
-    test("throws for negative size", () => {
-      expect(() => new QueryCache(-1, MAX_ENTITIES)).toThrow(
-        "queryCacheSize must be a non-negative integer",
-      );
-    });
-
-    test("throws for non-integer size instead of silently accepting it", () => {
-      expect(() => new QueryCache(NaN, MAX_ENTITIES)).toThrow(
-        "queryCacheSize must be a non-negative integer",
-      );
-      expect(() => new QueryCache(1.5, MAX_ENTITIES)).toThrow(
-        "queryCacheSize must be a non-negative integer",
-      );
-    });
-
     test("size 0 is a disabled cache", () => {
       const cache = new QueryCache(0, MAX_ENTITIES);
       expect(cache.isEnabled).toBe(false);

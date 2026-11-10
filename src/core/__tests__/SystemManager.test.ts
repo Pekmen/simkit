@@ -31,21 +31,6 @@ describe("SystemManager", () => {
     expect(manager.systems).not.toContain(system);
   });
 
-  test("removeSystem throws if system not found", () => {
-    const manager = new SystemManager();
-    const system: System = {
-      update: vi.fn(),
-      destroy: vi.fn(),
-    };
-
-    // Should throw when system not registered
-    expect(() => {
-      manager.removeSystem(system);
-    }).toThrow("removeSystem: system not registered");
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    expect(system.destroy).not.toHaveBeenCalled();
-  });
-
   test("updateAll calls update on all systems", () => {
     const manager = new SystemManager();
     const systemA: System = { update: vi.fn() };
@@ -102,40 +87,6 @@ describe("SystemManager", () => {
     expect(system.init).toHaveBeenCalledOnce();
   });
 
-  test("addSystem throws on duplicate system", () => {
-    const manager = new SystemManager();
-    const system: System = { update: vi.fn() };
-    manager.addSystem(system);
-    expect(() => {
-      manager.addSystem(system);
-    }).toThrow("addSystem: system already registered");
-  });
-
-  test("addSystem duplicate error includes name when system is named", () => {
-    const manager = new SystemManager();
-    const system: System = { name: "Foo", update: vi.fn() };
-    manager.addSystem(system);
-    expect(() => {
-      manager.addSystem(system);
-    }).toThrow(`addSystem: system "Foo" already registered`);
-  });
-
-  test("removeSystem not-found error includes name when system is named", () => {
-    const manager = new SystemManager();
-    const system: System = { name: "Foo", update: vi.fn() };
-    expect(() => {
-      manager.removeSystem(system);
-    }).toThrow(`removeSystem: system "Foo" not registered`);
-  });
-
-  test("unnamed system error messages have no name suffix", () => {
-    const manager = new SystemManager();
-    const system: System = { update: vi.fn() };
-    expect(() => {
-      manager.removeSystem(system);
-    }).toThrow("removeSystem: system not registered");
-  });
-
   test("hasSystem returns true for registered system", () => {
     const manager = new SystemManager();
     const system: System = { update: vi.fn() };
@@ -149,19 +100,6 @@ describe("SystemManager", () => {
     const system: System = { update: vi.fn() };
     manager.addSystem(system);
     manager.removeSystem(system);
-    expect(manager.hasSystem(system)).toBe(false);
-  });
-
-  test("addSystem throws for a non-integer priority instead of silently misordering", () => {
-    const manager = new SystemManager();
-    const system: System = { update: vi.fn() };
-    expect(() => {
-      manager.addSystem(system, NaN);
-    }).toThrow("priority must be an integer");
-    expect(() => {
-      manager.addSystem(system, 1.5);
-    }).toThrow("priority must be an integer");
-    // Rejected before init()/registration, so the system isn't left registered.
     expect(manager.hasSystem(system)).toBe(false);
   });
 

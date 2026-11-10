@@ -1,4 +1,3 @@
-import { WorldConfigError } from "./types";
 import type { System } from "./types";
 
 interface SystemRecord {
@@ -11,17 +10,6 @@ export class SystemManager {
   private sortedRecords: SystemRecord[] = [];
 
   addSystem(system: System, priority = 0): void {
-    if (this.systems.has(system)) {
-      throw new WorldConfigError(
-        `addSystem: system${system.name ? ` "${system.name}"` : ""} already registered`,
-      );
-    }
-    if (!Number.isInteger(priority)) {
-      throw new WorldConfigError(
-        `addSystem: priority must be an integer (${priority})`,
-      );
-    }
-
     system.init?.();
 
     const insertIndex = this.sortedRecords.findIndex(
@@ -37,11 +25,6 @@ export class SystemManager {
   }
 
   removeSystem(system: System): void {
-    if (!this.systems.has(system)) {
-      throw new WorldConfigError(
-        `removeSystem: system${system.name ? ` "${system.name}"` : ""} not registered`,
-      );
-    }
     const idx = this.sortedRecords.findIndex(
       (record) => record.system === system,
     );

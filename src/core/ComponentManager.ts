@@ -1,11 +1,4 @@
-import {
-  staleEntityError,
-  missingComponentError,
-  WorldConfigError,
-  InvalidComponentDataError,
-  DEFAULT_QUERY_CACHE_SIZE,
-  COMPONENT_HANDLE_BRAND,
-} from "./types";
+import { DEFAULT_QUERY_CACHE_SIZE } from "./types";
 import type {
   EntityId,
   ComponentBlueprint,
@@ -24,8 +17,6 @@ import { QueryCache } from "./QueryCache";
 import type { CacheEntry } from "./QueryCache";
 import type { EntityManager } from "./EntityManager";
 
-const RESERVED_COMPONENT_NAMES = new Set(["entities"]);
-
 export class ComponentManager<T extends ComponentBlueprint> {
   private readonly componentBlueprints: T;
   private readonly componentStorages: Record<string, ComponentStorage>;
@@ -34,7 +25,6 @@ export class ComponentManager<T extends ComponentBlueprint> {
   private readonly bitsets: BitsetManager;
   private readonly queryCache: QueryCache;
   private readonly bitToComponentName: string[] = [];
-  private readonly ownedHandles = new WeakSet<ComponentHandle>();
 
   private readonly propMeta: Record<
     string,
@@ -50,14 +40,6 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.queryCache = new QueryCache(maxCacheSize, maxEntities);
     this.componentBlueprints = blueprints;
     this.entityManager = entityManager;
-
-    for (const componentName in blueprints) {
-      if (RESERVED_COMPONENT_NAMES.has(componentName)) {
-        throw new WorldConfigError(
-          `World: component name "${componentName}" is reserved and cannot be used`,
-        );
-      }
-    }
 
     const componentCount = Object.keys(blueprints).length;
     this.bitsets = new BitsetManager(componentCount, maxEntities);
@@ -85,56 +67,15 @@ export class ComponentManager<T extends ComponentBlueprint> {
       }
       this.componentStorages[key] = storage;
       this.propMeta[key] = { names, types };
-      this.validateComponentData(key, names, types, blueprint);
 
       const handle = Object.freeze({
         name: key,
         bitPosition,
         bitMask: 1 << bitPosition,
-        [COMPONENT_HANDLE_BRAND]: true,
       });
       this.components[key] = handle as ComponentHandle<typeof key>;
-      this.ownedHandles.add(this.components[key]);
       this.bitToComponentName[bitPosition] = key;
       bitPosition++;
-    }
-  }
-
-  private validateEntity(entityId: EntityId): void {
-    if (!this.entityManager.isValid(entityId)) {
-      throw staleEntityError(entityId);
-    }
-  }
-
-  private validateComponentData(
-    componentName: string,
-    names: string[],
-    types: string[],
-    componentData: Partial<Record<string, ValidComponentProp>> | undefined,
-  ): void {
-    if (componentData !== undefined) {
-      for (const key in componentData) {
-        if (!names.includes(key)) {
-          throw new InvalidComponentDataError(
-            `${componentName}: unrecognized property "${key}"`,
-          );
-        }
-      }
-    }
-
-    for (let i = 0; i < names.length; i++) {
-      const provided = componentData?.[names[i]];
-      if (provided === undefined) continue;
-      if (typeof provided !== types[i]) {
-        throw new InvalidComponentDataError(
-          `${componentName}.${names[i]}: expected ${types[i]}, got ${typeof provided}`,
-        );
-      }
-      if (types[i] === "number" && !Number.isFinite(provided)) {
-        throw new InvalidComponentDataError(
-          `${componentName}.${names[i]}: expected a finite number, got ${provided}`,
-        );
-      }
     }
   }
 
@@ -165,8 +106,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     componentData: Partial<Record<string, ValidComponentProp>> | undefined,
     isNew: boolean,
   ): void {
-    const { names, types } = this.propMeta[componentName];
-    this.validateComponentData(componentName, names, types, componentData);
+    const { names } = this.propMeta[componentName];
     this.writeComponentData(
       entityId,
       componentName,
@@ -181,9 +121,6 @@ export class ComponentManager<T extends ComponentBlueprint> {
     component: ComponentHandle<K>,
     componentData?: Partial<T[K]>,
   ): void {
-    this.validateHandleOwned(component, "setComponent");
-    this.validateEntity(entityId);
-
     const oldBits = this.bitsets.getBits(entityId);
     const isNew = (oldBits & component.bitMask) === 0;
 
@@ -207,32 +144,16 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }[] = [];
 
     for (const key in config) {
-      if (!Object.hasOwn(this.components, key)) {
-        throw new WorldConfigError(`spawn: unknown component "${key}"`);
-      }
       const component = this.components[key];
       const data: unknown = config[key];
 
-      let componentData:
+      const componentData:
         | Partial<Record<string, ValidComponentProp>>
-        | undefined;
-      if (data === component) {
-        componentData = undefined;
-      } else {
-        if (
-          typeof data === "object" &&
-          data !== null &&
-          COMPONENT_HANDLE_BRAND in data &&
-          !this.ownedHandles.has(data as ComponentHandle<StringKey<T>>)
-        ) {
-          throw new WorldConfigError(
-            `spawn: component handle "${(data as ComponentHandle<StringKey<T>>).name}" does not belong to this world`,
-          );
-        }
-        componentData = data as Partial<Record<string, ValidComponentProp>>;
-      }
-      const { names, types } = this.propMeta[key];
-      this.validateComponentData(key, names, types, componentData);
+        | undefined =
+        data === component
+          ? undefined
+          : (data as Partial<Record<string, ValidComponentProp>>);
+      const { names } = this.propMeta[key];
       staged.push({ component, names, componentData });
     }
 
@@ -260,14 +181,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     entityId: EntityId,
     component: ComponentHandle<StringKey<T>>,
   ): void {
-    this.validateHandleOwned(component, "removeComponent");
-    this.validateEntity(entityId);
-
     const oldBits = this.bitsets.getBits(entityId);
-
-    if ((oldBits & component.bitMask) === 0) {
-      throw missingComponentError("removeComponent", entityId, component.name);
-    }
 
     this.clearComponentStorage(component.name, entityId);
 
@@ -284,8 +198,6 @@ export class ComponentManager<T extends ComponentBlueprint> {
     entityId: EntityId,
     component: ComponentHandle<StringKey<T>>,
   ): boolean {
-    this.validateHandleOwned(component, "hasComponent");
-    this.validateEntity(entityId);
     return this.bitsets.has(entityId, component.bitMask);
   }
 
@@ -311,13 +223,6 @@ export class ComponentManager<T extends ComponentBlueprint> {
     entityId: EntityId,
     component: ComponentHandle<K>,
   ): T[K] {
-    this.validateHandleOwned(component, "getComponent");
-    this.validateEntity(entityId);
-
-    if (!this.bitsets.has(entityId, component.bitMask)) {
-      throw missingComponentError("getComponent", entityId, component.name);
-    }
-
     const storage = this.componentStorages[component.name];
     const componentData: Record<string, unknown> = {};
     for (const prop in storage) {
@@ -328,8 +233,6 @@ export class ComponentManager<T extends ComponentBlueprint> {
   }
 
   removeAllComponents(entityId: EntityId): void {
-    this.validateEntity(entityId);
-
     const oldBits = this.bitsets.getBits(entityId);
     let bits = oldBits;
 
@@ -377,10 +280,9 @@ export class ComponentManager<T extends ComponentBlueprint> {
       withoutHandles = first.without ?? [];
     }
 
-    const { includeMask, excludeMask } = this.validateAndComputeMasks(
+    const { includeMask, excludeMask } = this.computeMasks(
       withHandles,
       withoutHandles,
-      "query",
     );
     return this.fetchQuery(includeMask, excludeMask, withHandles);
   }
@@ -389,54 +291,21 @@ export class ComponentManager<T extends ComponentBlueprint> {
     withHandles: ComponentHandle<K>[],
     withoutHandles: ComponentHandle<StringKey<T>>[],
   ): () => QueryResult<T, K> {
-    const { includeMask, excludeMask } = this.validateAndComputeMasks(
+    const { includeMask, excludeMask } = this.computeMasks(
       withHandles,
       withoutHandles,
-      "addSystem",
     );
     return () => this.fetchQuery(includeMask, excludeMask, withHandles);
   }
 
-  private validateHandleOwned(
-    handle: ComponentHandle<StringKey<T>>,
-    caller: string,
-  ): void {
-    if (!this.ownedHandles.has(handle)) {
-      throw new WorldConfigError(
-        `${caller}: component handle "${handle.name}" does not belong to this world`,
-      );
-    }
-  }
-
-  private validateHandlesOwned(
-    handles: ComponentHandle<StringKey<T>>[],
-    caller: string,
-  ): void {
-    for (const handle of handles) {
-      this.validateHandleOwned(handle, caller);
-    }
-  }
-
-  private validateAndComputeMasks(
+  private computeMasks(
     withHandles: ComponentHandle<StringKey<T>>[],
     withoutHandles: ComponentHandle<StringKey<T>>[],
-    caller: string,
   ): { includeMask: number; excludeMask: number } {
-    if (withHandles.length === 0 && withoutHandles.length === 0) {
-      throw new WorldConfigError(
-        `${caller}: requires at least one component in "with" or "without"`,
-      );
-    }
-    this.validateHandlesOwned(withHandles, caller);
-    this.validateHandlesOwned(withoutHandles, caller);
-    const includeMask = this.bitsets.createMask(withHandles);
-    const excludeMask = this.bitsets.createMask(withoutHandles);
-    if ((includeMask & excludeMask) !== 0) {
-      throw new WorldConfigError(
-        `${caller}: a component cannot appear in both with and without`,
-      );
-    }
-    return { includeMask, excludeMask };
+    return {
+      includeMask: this.bitsets.createMask(withHandles),
+      excludeMask: this.bitsets.createMask(withoutHandles),
+    };
   }
 
   private fetchQuery<K extends StringKey<T>>(

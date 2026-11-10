@@ -1,8 +1,3 @@
-import {
-  staleEntityError,
-  WorldConfigError,
-  EntityCapacityError,
-} from "./types";
 import type { EntityId, EntityRef } from "./types";
 
 export class EntityManager {
@@ -14,11 +9,6 @@ export class EntityManager {
   private readonly generations: Uint32Array;
 
   constructor(maxEntities: number) {
-    if (!Number.isInteger(maxEntities) || maxEntities <= 0) {
-      throw new WorldConfigError(
-        `World: maxEntities must be a positive integer (${maxEntities})`,
-      );
-    }
     this.maxEntities = maxEntities;
     this.entityToIndex = new Int32Array(maxEntities).fill(-1);
     this.generations = new Uint32Array(maxEntities).fill(1);
@@ -26,14 +16,7 @@ export class EntityManager {
 
   addEntity(): EntityId {
     let entityId = this.freeEntityIds.pop();
-    if (entityId === undefined) {
-      if (this.nextEntityId >= this.maxEntities) {
-        throw new EntityCapacityError(
-          `maximum number of entities reached (${this.maxEntities})`,
-        );
-      }
-      entityId = this.nextEntityId++ as EntityId;
-    }
+    entityId ??= this.nextEntityId++ as EntityId;
 
     this.entityToIndex[entityId] = this.activeEntities.length;
     this.activeEntities.push(entityId);
@@ -41,10 +24,6 @@ export class EntityManager {
   }
 
   removeEntity(entityId: EntityId): void {
-    if (!this.isValid(entityId)) {
-      throw staleEntityError(entityId);
-    }
-
     const index = this.entityToIndex[entityId];
     const lastEntity = this.activeEntities[this.activeEntities.length - 1];
     this.activeEntities[index] = lastEntity;
@@ -66,9 +45,6 @@ export class EntityManager {
   }
 
   ref(entityId: EntityId): EntityRef {
-    if (!this.isValid(entityId)) {
-      throw staleEntityError(entityId);
-    }
     return { index: entityId, generation: this.generations[entityId] };
   }
 

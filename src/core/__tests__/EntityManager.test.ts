@@ -14,17 +14,6 @@ describe("EntityManager", () => {
     expect(e3).toBe(2);
   });
 
-  test("addEntity throws error when exceeding maxEntities", () => {
-    const manager = new EntityManager(2);
-
-    manager.addEntity();
-    manager.addEntity();
-
-    expect(() => manager.addEntity()).toThrow(
-      "maximum number of entities reached",
-    );
-  });
-
   test("get nextEntityId increments correctly", () => {
     const manager = new EntityManager(3);
 
@@ -55,23 +44,6 @@ describe("EntityManager", () => {
     // e2 and e4 are the same ID, so checking e2 is the same as checking e4
     expect(manager.isValid(e2)).toBe(true);
     expect(manager.activeEntities.length).toBe(3);
-  });
-
-  test("removeEntity throws error on double deletion (stale reference)", () => {
-    const manager = new EntityManager(5);
-
-    const e1 = manager.addEntity();
-
-    manager.removeEntity(e1);
-
-    // Second removal should throw because e1 is now a stale reference
-    expect(() => {
-      manager.removeEntity(e1);
-    }).toThrow(/Stale entity reference/);
-
-    const e2 = manager.addEntity();
-    expect(e2).toBe(0); // Reuses the same index
-    expect(manager.activeEntities.length).toBe(1);
   });
 
   test("getEntityCount returns correct count", () => {
@@ -151,17 +123,11 @@ describe("EntityManager", () => {
     expect(manager.isValid(e1)).toBe(true);
   });
 
-  test("isValid rejects a non-integer id instead of silently no-opping", () => {
+  test("isValid rejects a non-integer id", () => {
     const manager = new EntityManager(10);
     manager.addEntity();
 
-    // Without the Number.isInteger guard, a non-integer numeric key is a
-    // no-op on the underlying typed arrays (never a valid write or read),
-    // so callers would get neither an error nor a usable result.
     expect(manager.isValid(2.5 as EntityId)).toBe(false);
-    expect(() => {
-      manager.removeEntity(2.5 as EntityId);
-    }).toThrow(/Stale entity reference/);
   });
 
   test("deleted entities are marked invalid before recycling", () => {
@@ -255,27 +221,6 @@ describe("EntityManager", () => {
       ).toBeUndefined();
     });
 
-    test("ref throws on a stale id", () => {
-      const manager = new EntityManager(10);
-
-      const e1 = manager.addEntity();
-      manager.removeEntity(e1);
-
-      expect(() => manager.ref(e1)).toThrow(/Stale entity reference/);
-    });
-
-    test("stale-reference error message guides toward ref/resolve", () => {
-      const manager = new EntityManager(10);
-
-      const e1 = manager.addEntity();
-      manager.removeEntity(e1);
-
-      expect(() => {
-        manager.removeEntity(e1);
-      }).toThrow(/world\.ref/);
-      expect(() => manager.ref(e1)).toThrow(/world\.resolve/);
-    });
-
     describe("generation wrap-around", () => {
       // White-box access to the private per-slot generation counters. A real
       // wrap only happens after 2^32 reuses of a slot — impossible to reach by
@@ -335,27 +280,6 @@ describe("EntityManager", () => {
   });
 
   describe("constructor and generation baseline", () => {
-    test("throws when maxEntities <= 0", () => {
-      expect(() => new EntityManager(0)).toThrow(
-        "maxEntities must be a positive integer",
-      );
-      expect(() => new EntityManager(-5)).toThrow(
-        "maxEntities must be a positive integer",
-      );
-    });
-
-    test("throws for non-integer maxEntities instead of silently accepting it", () => {
-      expect(() => new EntityManager(NaN)).toThrow(
-        "maxEntities must be a positive integer",
-      );
-      expect(() => new EntityManager(10.5)).toThrow(
-        "maxEntities must be a positive integer",
-      );
-      expect(() => new EntityManager(Infinity)).toThrow(
-        "maxEntities must be a positive integer",
-      );
-    });
-
     test("generations start at 1 so a zero-generation ref never resolves", () => {
       const manager = new EntityManager(5);
       const id = manager.addEntity();
@@ -370,10 +294,6 @@ describe("EntityManager", () => {
       const manager = new EntityManager(2);
       const a = manager.addEntity();
       manager.addEntity();
-      // At capacity: allocating a new id throws.
-      expect(() => manager.addEntity()).toThrow(
-        "maximum number of entities reached (2)",
-      );
 
       // Free one and the slot is reusable without exceeding the cap.
       manager.removeEntity(a);

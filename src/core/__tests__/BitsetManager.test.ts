@@ -7,16 +7,6 @@ const e = (n: number): EntityId => n as EntityId;
 
 describe("BitsetManager", () => {
   describe("constructor", () => {
-    test("throws when component count exceeds MAX_COMPONENTS", () => {
-      expect(() => new BitsetManager(33, 10)).toThrow(
-        "World: too many components (33). Maximum is 32.",
-      );
-    });
-
-    test("allows exactly MAX_COMPONENTS components", () => {
-      expect(() => new BitsetManager(32, 10)).not.toThrow();
-    });
-
     test("all entities start with zero bits", () => {
       const bits = new BitsetManager(4, 5);
       for (let i = 0; i < 5; i++) {

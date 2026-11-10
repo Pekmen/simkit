@@ -1,4 +1,3 @@
-import { WorldConfigError } from "./types";
 import type { EntityId } from "./types";
 
 export const MAX_COMPONENTS = 32;
@@ -14,13 +13,7 @@ export function matchesMask(
 export class BitsetManager {
   private readonly entityBits: Uint32Array;
 
-  constructor(componentCount: number, maxEntities: number) {
-    if (componentCount > MAX_COMPONENTS) {
-      throw new WorldConfigError(
-        `World: too many components (${componentCount}). Maximum is ${MAX_COMPONENTS}.`,
-      );
-    }
-
+  constructor(_componentCount: number, maxEntities: number) {
     this.entityBits = new Uint32Array(maxEntities);
   }
 

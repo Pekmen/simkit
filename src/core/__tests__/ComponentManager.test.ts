@@ -3,7 +3,6 @@ import { EntityManager } from "../EntityManager";
 import type {
   ComponentBlueprint,
   ComponentHandle,
-  EntityId,
   QueryResult,
   StringKey,
 } from "../types";
@@ -111,34 +110,6 @@ describe("ComponentManager", () => {
     expect(component).toEqual({ x: 10, y: 20 });
   });
 
-  test("getComponent throws for entity without component", () => {
-    const blueprints = { Position: { x: 0, y: 0 } };
-    const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager);
-    const { Position } = manager.components;
-
-    const entityId = entityManager.addEntity();
-
-    expect(() => manager.getComponent(entityId, Position)).toThrow(
-      "getComponent: entity 0 does not have component Position",
-    );
-  });
-
-  test("getComponent throws after component is removed", () => {
-    const blueprints = { Position: { x: 0, y: 0 } };
-    const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager);
-    const { Position } = manager.components;
-
-    const entityId = entityManager.addEntity();
-    manager.setComponent(entityId, Position, { x: 10, y: 20 });
-    manager.removeComponent(entityId, Position);
-
-    expect(() => manager.getComponent(entityId, Position)).toThrow(
-      "getComponent: entity 0 does not have component Position",
-    );
-  });
-
   test("hasComponent uses bitset correctly", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
@@ -153,26 +124,6 @@ describe("ComponentManager", () => {
 
     manager.removeComponent(entityId, Position);
     expect(manager.hasComponent(entityId, Position)).toBe(false);
-  });
-
-  test("throws error when component name is reserved", () => {
-    const blueprints = { entities: { id: 0 } };
-    const entityManager = new EntityManager(10);
-    expect(() => new ComponentManager(blueprints, 10, entityManager)).toThrow(
-      'World: component name "entities" is reserved and cannot be used',
-    );
-  });
-
-  test("throws error when more than 32 components", () => {
-    const blueprints = {} as Record<string, Record<string, number>>;
-    for (let i = 0; i < 33; i++) {
-      blueprints[`Component${i}`] = { value: 0 };
-    }
-
-    const entityManager = new EntityManager(10);
-    expect(() => new ComponentManager(blueprints, 10, entityManager)).toThrow(
-      "World: too many components (33). Maximum is 32.",
-    );
   });
 
   test("supports exactly 32 components", () => {
@@ -281,167 +232,6 @@ describe("ComponentManager", () => {
     expect(component).toEqual({ x: 50, y: 20 });
   });
 
-  test("setComponent throws TypeError for wrong property type on new component", () => {
-    const blueprints = { Position: { x: 0, y: 0 } };
-    const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager);
-    const { Position } = manager.components;
-
-    const entityId = entityManager.addEntity();
-
-    expect(() => {
-      manager.setComponent(entityId, Position, {
-        x: "not a number" as unknown as number,
-        y: 20,
-      });
-    }).toThrow(TypeError);
-    expect(() => {
-      manager.setComponent(entityId, Position, {
-        x: "not a number" as unknown as number,
-        y: 20,
-      });
-    }).toThrow("Position.x: expected number, got string");
-  });
-
-  test("setComponent throws TypeError for wrong property type", () => {
-    const blueprints = { Position: { x: 0, y: 0 } };
-    const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager);
-    const { Position } = manager.components;
-
-    const entityId = entityManager.addEntity();
-    manager.setComponent(entityId, Position, { x: 10, y: 20 });
-
-    expect(() => {
-      manager.setComponent(entityId, Position, {
-        x: "not a number" as unknown as number,
-      });
-    }).toThrow(TypeError);
-    expect(() => {
-      manager.setComponent(entityId, Position, {
-        x: "not a number" as unknown as number,
-      });
-    }).toThrow("Position.x: expected number, got string");
-  });
-
-  test("setComponent does not partially write props when a later prop fails validation", () => {
-    const blueprints = { Position: { x: 0, y: 0 } };
-    const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager);
-    const { Position } = manager.components;
-
-    const entityId = entityManager.addEntity();
-    manager.setComponent(entityId, Position, { x: 10, y: 20 });
-
-    expect(() => {
-      manager.setComponent(entityId, Position, {
-        x: 99,
-        y: "not a number" as unknown as number,
-      });
-    }).toThrow("Position.y: expected number, got string");
-
-    // x must be untouched, since the whole call should have been rejected.
-    expect(manager.getComponent(entityId, Position)).toEqual({ x: 10, y: 20 });
-  });
-
-  test("setComponent throws TypeError for NaN", () => {
-    const blueprints = { Position: { x: 0, y: 0 } };
-    const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager);
-    const { Position } = manager.components;
-
-    const entityId = entityManager.addEntity();
-
-    expect(() => {
-      manager.setComponent(entityId, Position, { x: NaN, y: 20 });
-    }).toThrow(TypeError);
-    expect(() => {
-      manager.setComponent(entityId, Position, { x: NaN, y: 20 });
-    }).toThrow("Position.x: expected a finite number, got NaN");
-  });
-
-  test("setComponent throws TypeError for Infinity and -Infinity", () => {
-    const blueprints = { Position: { x: 0, y: 0 } };
-    const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager);
-    const { Position } = manager.components;
-
-    const entityId = entityManager.addEntity();
-
-    expect(() => {
-      manager.setComponent(entityId, Position, { x: 10, y: Infinity });
-    }).toThrow("Position.y: expected a finite number, got Infinity");
-    expect(() => {
-      manager.setComponent(entityId, Position, { x: 10, y: -Infinity });
-    }).toThrow("Position.y: expected a finite number, got -Infinity");
-  });
-
-  test("setComponent rejects an unrecognized/misspelled property instead of silently dropping it", () => {
-    const blueprints = { Position: { x: 0, y: 0 } };
-    const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager);
-    const { Position } = manager.components;
-
-    const entityId = entityManager.addEntity();
-
-    expect(() => {
-      manager.setComponent(entityId, Position, {
-        x: 5,
-        yy: 10,
-      } as unknown as Partial<{ x: number; y: number }>);
-    }).toThrow('Position: unrecognized property "yy"');
-  });
-
-  test("spawn rejects a valid handle for a different component passed under the wrong key", () => {
-    const blueprints = {
-      Position: { x: 0, y: 0 },
-      Velocity: { dx: 0, dy: 0 },
-    };
-    const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager);
-    const { Velocity } = manager.components;
-
-    const entityId = entityManager.addEntity();
-
-    expect(() => {
-      manager.setComponentsFromConfig(entityId, {
-        // Velocity's handle, mistakenly placed under the Position key.
-        Position: Velocity,
-      } as never);
-    }).toThrow(/Position: unrecognized property "(name|bitPosition|bitMask)"/);
-  });
-
-  test("tag components reject non-empty data instead of silently ignoring it", () => {
-    const blueprints = { Marker: {} };
-    const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager);
-    const { Marker } = manager.components;
-
-    const entityId = entityManager.addEntity();
-
-    expect(() => {
-      manager.setComponent(entityId, Marker, { foo: 1 } as unknown as Partial<
-        Record<string, never>
-      >);
-    }).toThrow('Marker: unrecognized property "foo"');
-  });
-
-  test("constructor rejects a blueprint whose default value is NaN/Infinity", () => {
-    const entityManager = new EntityManager(5);
-
-    expect(() => {
-      new ComponentManager({ Position: { x: NaN, y: 0 } }, 5, entityManager);
-    }).toThrow("Position.x: expected a finite number, got NaN");
-
-    expect(() => {
-      new ComponentManager(
-        { Position: { x: Infinity, y: 0 } },
-        5,
-        entityManager,
-      );
-    }).toThrow("Position.x: expected a finite number, got Infinity");
-  });
-
   test("setComponent accepts ordinary finite numbers, including zero and negatives", () => {
     const blueprints = { Position: { x: 0, y: 0 } };
     const entityManager = new EntityManager(5);
@@ -454,47 +244,6 @@ describe("ComponentManager", () => {
       manager.setComponent(entityId, Position, { x: 0, y: -3.5 });
     }).not.toThrow();
     expect(manager.getComponent(entityId, Position)).toEqual({ x: 0, y: -3.5 });
-  });
-
-  test("hasComponent throws for invalid entity", () => {
-    const blueprints = { Position: { x: 0, y: 0 } };
-    const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager);
-    const { Position } = manager.components;
-
-    const entityId = entityManager.addEntity();
-    manager.setComponent(entityId, Position, { x: 10, y: 20 });
-    entityManager.removeEntity(entityId);
-
-    expect(() => manager.hasComponent(entityId, Position)).toThrow(
-      `Stale entity reference: EntityId ${entityId}`,
-    );
-  });
-
-  test("getComponent throws for invalid entity", () => {
-    const blueprints = { Position: { x: 0, y: 0 } };
-    const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager);
-    const { Position } = manager.components;
-
-    const entityId = entityManager.addEntity();
-    manager.setComponent(entityId, Position, { x: 10, y: 20 });
-    entityManager.removeEntity(entityId);
-
-    expect(() => manager.getComponent(entityId, Position)).toThrow(
-      `Stale entity reference: EntityId ${entityId}`,
-    );
-  });
-
-  test("setComponent rejects a non-integer entity id instead of silently no-opping", () => {
-    const blueprints = { Position: { x: 0, y: 0 } };
-    const entityManager = new EntityManager(5);
-    const manager = new ComponentManager(blueprints, 5, entityManager);
-    const { Position } = manager.components;
-
-    expect(() => {
-      manager.setComponent(2.5 as EntityId, Position, { x: 1 });
-    }).toThrow(/Stale entity reference/);
   });
 
   test("getComponent returns real booleans, not 0/1", () => {
@@ -929,26 +678,6 @@ describe("ComponentManager", () => {
   });
 
   describe("type validation across prop kinds", () => {
-    test("throws for wrong boolean and string prop types", () => {
-      const blueprints = { Data: { flag: false, label: "" } };
-      const entityManager = new EntityManager(5);
-      const manager = new ComponentManager(blueprints, 5, entityManager);
-      const { Data } = manager.components;
-
-      const entityId = entityManager.addEntity();
-
-      expect(() => {
-        manager.setComponent(entityId, Data, {
-          flag: 1 as unknown as boolean,
-        });
-      }).toThrow("Data.flag: expected boolean, got number");
-      expect(() => {
-        manager.setComponent(entityId, Data, {
-          label: true as unknown as string,
-        });
-      }).toThrow("Data.label: expected string, got boolean");
-    });
-
     test("explicit undefined for a prop is treated as not provided", () => {
       const blueprints = { Position: { x: 0, y: 0 } };
       const entityManager = new EntityManager(5);
@@ -1014,16 +743,6 @@ describe("ComponentManager", () => {
       const afterAdd = query(manager, Position);
       expect(afterAdd.entities).not.toBe(before.entities);
       expect(afterAdd.entities).toEqual([e1, e2]);
-    });
-  });
-
-  describe("reserved name guard", () => {
-    test("a non-reserved name close to 'entities' is allowed", () => {
-      const blueprints = { entity: { id: 0 } };
-      const entityManager = new EntityManager(10);
-      expect(
-        () => new ComponentManager(blueprints, 10, entityManager),
-      ).not.toThrow();
     });
   });
 });

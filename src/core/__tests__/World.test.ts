@@ -87,17 +87,6 @@ describe("World", () => {
     expect(storages.Velocity.dy[entityId]).toBe(0);
   });
 
-  test("adding an entity beyond maxEntities throws an error", () => {
-    const world = new World({}, { maxEntities: 2 });
-
-    world.addEntity();
-    world.addEntity();
-
-    expect(() => world.addEntity()).toThrow(
-      "maximum number of entities reached",
-    );
-  });
-
   test("getEntityCount tracks entity additions and removals", () => {
     const world = new World({}, { maxEntities: 10 });
 
@@ -142,18 +131,6 @@ describe("World", () => {
     const component = world.getComponent(entityId, Position);
 
     expect(component).toEqual({ x: 10, y: 20 });
-  });
-
-  test("getComponent throws for entity without component", () => {
-    const blueprints = { Position: { x: 0, y: 0 } };
-    const world = new World(blueprints, { maxEntities: 5 });
-    const { Position } = world.components;
-
-    const entityId = world.addEntity();
-
-    expect(() => world.getComponent(entityId, Position)).toThrow(
-      "getComponent: entity 0 does not have component Position",
-    );
   });
 
   test("getComponent works with partial component data", () => {
@@ -278,13 +255,6 @@ describe("World", () => {
     expect(world.componentManager.queryCache.size).toBe(1);
   });
 
-  test("rejects negative queryCacheSize", () => {
-    const blueprints = { Position: { x: 0, y: 0 } };
-    expect(() => {
-      new World(blueprints, { maxEntities: 100, queryCacheSize: -1 });
-    }).toThrow("queryCacheSize must be a non-negative integer");
-  });
-
   test("hasSystem returns true for registered system", () => {
     const world = new World({}, { maxEntities: 10 });
     const updateFn = vi.fn();
@@ -336,63 +306,6 @@ describe("World", () => {
     world.update(16);
 
     expect(order).toEqual(["B", "C", "A"]);
-  });
-
-  test("hasComponent throws for stale entity reference", () => {
-    const blueprints = { Position: { x: 0, y: 0 } };
-    const world = new World(blueprints, { maxEntities: 5 });
-    const { Position } = world.components;
-
-    const entityId = world.addEntity();
-    world.setComponent(entityId, Position, { x: 10, y: 20 });
-    world.removeEntity(entityId);
-
-    expect(() => world.hasComponent(entityId, Position)).toThrow(
-      `Stale entity reference: EntityId ${entityId}`,
-    );
-  });
-
-  test("getComponent throws for stale entity reference", () => {
-    const blueprints = { Position: { x: 0, y: 0 } };
-    const world = new World(blueprints, { maxEntities: 5 });
-    const { Position } = world.components;
-
-    const entityId = world.addEntity();
-    world.setComponent(entityId, Position, { x: 10, y: 20 });
-    world.removeEntity(entityId);
-
-    expect(() => world.getComponent(entityId, Position)).toThrow(
-      `Stale entity reference: EntityId ${entityId}`,
-    );
-  });
-
-  test("setComponent validates property types on new component", () => {
-    const blueprints = { Position: { x: 0, y: 0 } };
-    const world = new World(blueprints, { maxEntities: 5 });
-    const { Position } = world.components;
-
-    const entityId = world.addEntity();
-
-    expect(() => {
-      world.setComponent(entityId, Position, {
-        x: "not a number" as unknown as number,
-      });
-    }).toThrow(TypeError);
-  });
-
-  test("setComponent validates property types", () => {
-    const blueprints = { Position: { x: 0, y: 0 } };
-    const world = new World(blueprints, { maxEntities: 5 });
-    const { Position } = world.components;
-
-    const entityId = world.addEntity();
-    world.setComponent(entityId, Position, { x: 10, y: 20 });
-
-    expect(() => {
-      world.setComponent(entityId, Position, {
-        x: "not a number" as unknown as number,
-      });
-    }).toThrow(TypeError);
   });
 
   describe("addSystem", () => {
@@ -571,45 +484,6 @@ describe("World", () => {
       world.update(1);
 
       expect(called).toBe(true);
-    });
-
-    test("rejects component handles from a different world", () => {
-      const blueprints = { Position: { x: 0, y: 0 } };
-      const world1 = new World(blueprints, { maxEntities: 10 });
-      const world2 = new World(blueprints, { maxEntities: 10 });
-
-      expect(() => {
-        world2.addSystem({
-          components: [world1.components.Position],
-          update() {
-            // no-op
-          },
-        });
-      }).toThrow(
-        'addSystem: component handle "Position" does not belong to this world',
-      );
-    });
-
-    test("overlapping components/exclude in addSystem names addSystem, not query", () => {
-      const world = new World(
-        { Position: { x: 0, y: 0 } },
-        { maxEntities: 10 },
-      );
-      const { Position } = world.components;
-
-      // addSystem shares its query validation with World.query() internally —
-      // the error must name the method the caller actually used.
-      expect(() => {
-        world.addSystem({
-          components: [Position],
-          exclude: [Position],
-          update() {
-            // no-op
-          },
-        });
-      }).toThrow(
-        "addSystem: a component cannot appear in both with and without",
-      );
     });
 
     test("init and destroy receive state and world", () => {
@@ -891,9 +765,6 @@ describe("World", () => {
 
       // Entity is invalid...
       expect(world.isAlive(world.ref(keep))).toBe(true);
-      expect(() => world.getComponent(drop, Position)).toThrow(
-        "Stale entity reference",
-      );
       // ...and no longer returned by a query.
       const result = world.query(Position);
       expect(result.entities).toEqual([keep]);
@@ -905,81 +776,7 @@ describe("World", () => {
     });
   });
 
-  describe("handle ownership boundary", () => {
-    test("addSystem and setComponent/removeComponent/hasComponent/getComponent all reject a foreign handle", () => {
-      const blueprint = { Position: { x: 0, y: 0 } };
-      const worldA = new World(blueprint, { maxEntities: 10 });
-      const worldB = new World(blueprint, { maxEntities: 10 });
-      const foreign = worldB.components.Position;
-
-      expect(() => {
-        worldA.addSystem({ components: [foreign], update: vi.fn() });
-      }).toThrow("does not belong to this world");
-
-      const entity = worldA.addEntity();
-      expect(() => {
-        worldA.setComponent(entity, foreign, { x: 7, y: 8 });
-      }).toThrow("does not belong to this world");
-      expect(() => {
-        worldA.hasComponent(entity, foreign);
-      }).toThrow("does not belong to this world");
-      expect(() => {
-        worldA.getComponent(entity, foreign);
-      }).toThrow("does not belong to this world");
-      expect(() => {
-        worldA.removeComponent(entity, foreign);
-      }).toThrow("does not belong to this world");
-
-      // Confirms no corruption occurred: the entity never actually gained
-      // worldA's Position component through the rejected foreign handle.
-      expect(worldA.hasComponent(entity, worldA.components.Position)).toBe(
-        false,
-      );
-    });
-
-    test("a handle from a world with a different component bit layout cannot flip the wrong bit", () => {
-      // worldA and worldB register the same component names in different
-      // order, so "Position" occupies a different bit in each world. Before
-      // the ownership check was added to the mutation methods, passing
-      // worldB's Position handle into worldA silently flipped worldA's
-      // Velocity bit instead (same name, wrong bitMask) with no error.
-      const worldA = new World(
-        { Position: { x: 0, y: 0 }, Velocity: { dx: 0, dy: 0 } },
-        { maxEntities: 10 },
-      );
-      const worldB = new World(
-        { Velocity: { dx: 0, dy: 0 }, Position: { x: 0, y: 0 } },
-        { maxEntities: 10 },
-      );
-
-      const entity = worldA.addEntity();
-      expect(() => {
-        worldA.setComponent(entity, worldB.components.Position, {
-          x: 7,
-          y: 8,
-        });
-      }).toThrow("does not belong to this world");
-      expect(worldA.hasComponent(entity, worldA.components.Velocity)).toBe(
-        false,
-      );
-      expect(worldA.hasComponent(entity, worldA.components.Position)).toBe(
-        false,
-      );
-    });
-
-    test("spawn rejects a foreign handle used as a component value", () => {
-      const blueprint = { Position: { x: 0, y: 0 } };
-      const worldA = new World(blueprint, { maxEntities: 10 });
-      const worldB = new World(blueprint, { maxEntities: 10 });
-
-      expect(() => {
-        worldA.spawn({ Position: worldB.components.Position });
-      }).toThrow("does not belong to this world");
-
-      // Confirms no corruption: the entity was never created/left half-initialized.
-      expect(worldA.query(worldA.components.Position).entities).toEqual([]);
-    });
-
+  describe("spawn data vs. handle disambiguation", () => {
     test("spawn treats a null component value as no data, without throwing", () => {
       const world = new World(
         { Position: { x: 1, y: 2 } },
@@ -1021,40 +818,6 @@ describe("World", () => {
         bitPosition: 1,
         bitMask: 1,
       });
-    });
-
-    test("an unregistered/malformed handle is rejected with a clear error instead of an internal crash", () => {
-      const world = new World(
-        { Position: { x: 0, y: 0 } },
-        { maxEntities: 10 },
-      );
-      const entity = world.addEntity();
-      const bogus = {
-        name: "Bogus",
-        bitPosition: 5,
-        bitMask: 32,
-      } as unknown as (typeof world.components)["Position"];
-
-      expect(() => {
-        world.setComponent(entity, bogus, {});
-      }).toThrow("does not belong to this world");
-    });
-
-    test("query rejects a foreign handle (positional, with, and without)", () => {
-      const blueprint = { Position: { x: 0, y: 0 }, Velocity: { dx: 0 } };
-      const worldA = new World(blueprint, { maxEntities: 10 });
-      const worldB = new World(blueprint, { maxEntities: 10 });
-      const foreign = worldB.components.Position;
-
-      expect(() => worldA.query(foreign)).toThrow(
-        "does not belong to this world",
-      );
-      expect(() => worldA.query({ with: [foreign] })).toThrow(
-        "does not belong to this world",
-      );
-      expect(() => worldA.query({ without: [foreign] })).toThrow(
-        "does not belong to this world",
-      );
     });
   });
 

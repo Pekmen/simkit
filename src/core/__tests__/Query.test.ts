@@ -263,21 +263,6 @@ describe("Query", () => {
       expect(optionsResult.entities).toEqual(restResult.entities);
     });
 
-    test("throws when the same component appears in both with and without", () => {
-      const { world } = setup();
-      const { Position } = world.components;
-      expect(() => {
-        world.query({ with: [Position], without: [Position] });
-      }).toThrow("with and without");
-    });
-
-    test("throws when both with and without are empty", () => {
-      const { world } = setup();
-      expect(() => {
-        world.query({});
-      }).toThrow();
-    });
-
     test("cache is invalidated when a component in without is added to an entity", () => {
       const { world, e1 } = setup();
       const { Position, Velocity, Dead } = world.components;
