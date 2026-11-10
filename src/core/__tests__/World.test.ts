@@ -1006,6 +1006,23 @@ describe("World", () => {
       });
     });
 
+    test("spawn does not misidentify a data payload matching the full handle shape (name/bitPosition/bitMask) as a foreign handle", () => {
+      const world = new World(
+        { Thing: { name: "", bitPosition: 0, bitMask: 0 } },
+        { maxEntities: 10 },
+      );
+
+      const entity = world.spawn({
+        Thing: { name: "x", bitPosition: 1, bitMask: 1 },
+      });
+
+      expect(world.getComponent(entity, world.components.Thing)).toEqual({
+        name: "x",
+        bitPosition: 1,
+        bitMask: 1,
+      });
+    });
+
     test("an unregistered/malformed handle is rejected with a clear error instead of an internal crash", () => {
       const world = new World(
         { Position: { x: 0, y: 0 } },

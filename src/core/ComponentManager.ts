@@ -4,6 +4,7 @@ import {
   WorldConfigError,
   InvalidComponentDataError,
   DEFAULT_QUERY_CACHE_SIZE,
+  COMPONENT_HANDLE_BRAND,
 } from "./types";
 import type {
   EntityId,
@@ -87,11 +88,13 @@ export class ComponentManager<T extends ComponentBlueprint> {
       this.propMeta[key] = { names, types };
       this.validateComponentData(key, names, types, blueprint);
 
-      this.components[key] = Object.freeze({
+      const handle = Object.freeze({
         name: key,
         bitPosition,
         bitMask: 1 << bitPosition,
+        [COMPONENT_HANDLE_BRAND]: true,
       });
+      this.components[key] = handle as ComponentHandle<typeof key>;
       this.ownedHandles.add(this.components[key]);
       this.bitToComponentName[bitPosition] = key;
       bitPosition++;
@@ -210,9 +213,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
         if (
           typeof data === "object" &&
           data !== null &&
-          "name" in data &&
-          "bitPosition" in data &&
-          "bitMask" in data &&
+          COMPONENT_HANDLE_BRAND in data &&
           !this.ownedHandles.has(data as ComponentHandle<StringKey<T>>)
         ) {
           throw new WorldConfigError(

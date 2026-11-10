@@ -99,6 +99,10 @@ export interface QueryOptions<
 
 export const tag = Object.freeze({}) as Record<string, never>;
 
+export const COMPONENT_HANDLE_BRAND: unique symbol = Symbol(
+  "simkit.componentHandle",
+);
+
 export class StaleEntityError extends Error {
   constructor(message: string) {
     super(message);
