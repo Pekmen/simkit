@@ -9,6 +9,7 @@ import {
 import type {
   EntityId,
   ComponentBlueprint,
+  ComponentHandleMap,
   ComponentStorage,
   StorageColumn,
   QueryResult,
@@ -28,7 +29,7 @@ const RESERVED_COMPONENT_NAMES = new Set(["entities"]);
 export class ComponentManager<T extends ComponentBlueprint> {
   private readonly componentBlueprints: T;
   private readonly componentStorages: Record<string, ComponentStorage>;
-  readonly components: { [K in StringKey<T>]: ComponentHandle<K> };
+  readonly components: ComponentHandleMap<T>;
   private readonly entityManager: EntityManager;
   private readonly bitsets: BitsetManager;
   private readonly queryCache: QueryCache;
@@ -62,9 +63,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.bitsets = new BitsetManager(componentCount, maxEntities);
 
     this.componentStorages = {};
-    this.components = {} as {
-      [K in StringKey<T>]: ComponentHandle<K>;
-    };
+    this.components = {} as ComponentHandleMap<T>;
     let bitPosition = 0;
     for (const key in blueprints) {
       const blueprint = blueprints[key];

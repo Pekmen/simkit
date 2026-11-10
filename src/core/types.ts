@@ -43,6 +43,10 @@ export interface ComponentHandle<N extends string = string> {
   readonly bitMask: number;
 }
 
+export type ComponentHandleMap<T extends ComponentBlueprint> = {
+  [K in StringKey<T>]: ComponentHandle<K>;
+};
+
 export const DEFAULT_QUERY_CACHE_SIZE = 64;
 
 export interface WorldOptions {
@@ -103,33 +107,23 @@ export const COMPONENT_HANDLE_BRAND: unique symbol = Symbol(
   "simkit.componentHandle",
 );
 
-export class StaleEntityError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "StaleEntityError";
-  }
+function namedErrorClass(name: string): new (message: string) => Error {
+  return class extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = name;
+    }
+  };
 }
 
-export class MissingComponentError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "MissingComponentError";
-  }
-}
-
-export class EntityCapacityError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "EntityCapacityError";
-  }
-}
-
-export class WorldConfigError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "WorldConfigError";
-  }
-}
+export class StaleEntityError extends namedErrorClass("StaleEntityError") {}
+export class MissingComponentError extends namedErrorClass(
+  "MissingComponentError",
+) {}
+export class EntityCapacityError extends namedErrorClass(
+  "EntityCapacityError",
+) {}
+export class WorldConfigError extends namedErrorClass("WorldConfigError") {}
 
 export class InvalidComponentDataError extends TypeError {
   constructor(message: string) {

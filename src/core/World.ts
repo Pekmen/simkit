@@ -5,6 +5,7 @@ import type {
   EntityId,
   EntityRef,
   ComponentBlueprint,
+  ComponentHandleMap,
   QueryResult,
   QueryOptions,
   ComponentHandle,
@@ -18,7 +19,7 @@ import type {
 import { DEFAULT_QUERY_CACHE_SIZE } from "./types";
 
 export class World<T extends ComponentBlueprint> {
-  readonly components: { [K in StringKey<T>]: ComponentHandle<K> };
+  readonly components: ComponentHandleMap<T>;
 
   private readonly entityManager: EntityManager;
   private readonly systemManager: SystemManager;
