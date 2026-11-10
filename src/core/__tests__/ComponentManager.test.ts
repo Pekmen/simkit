@@ -240,9 +240,7 @@ describe("ComponentManager", () => {
 
     const entityId = entityManager.addEntity();
 
-    expect(() => {
-      manager.setComponent(entityId, Position, { x: 0, y: -3.5 });
-    }).not.toThrow();
+    manager.setComponent(entityId, Position, { x: 0, y: -3.5 });
     expect(manager.getComponent(entityId, Position)).toEqual({ x: 0, y: -3.5 });
   });
 
@@ -677,22 +675,20 @@ describe("ComponentManager", () => {
     });
   });
 
-  describe("type validation across prop kinds", () => {
-    test("explicit undefined for a prop is treated as not provided", () => {
-      const blueprints = { Position: { x: 0, y: 0 } };
-      const entityManager = new EntityManager(5);
-      const manager = new ComponentManager(blueprints, 5, entityManager);
-      const { Position } = manager.components;
+  test("explicit undefined for a prop is treated as not provided", () => {
+    const blueprints = { Position: { x: 0, y: 0 } };
+    const entityManager = new EntityManager(5);
+    const manager = new ComponentManager(blueprints, 5, entityManager);
+    const { Position } = manager.components;
 
-      const entityId = entityManager.addEntity();
-      manager.setComponent(entityId, Position, { x: 10, y: 20 });
-      manager.setComponent(entityId, Position, { x: undefined, y: 99 });
+    const entityId = entityManager.addEntity();
+    manager.setComponent(entityId, Position, { x: 10, y: 20 });
+    manager.setComponent(entityId, Position, { x: undefined, y: 99 });
 
-      // x keeps its previous value, y updates.
-      expect(manager.getComponent(entityId, Position)).toEqual({
-        x: 10,
-        y: 99,
-      });
+    // x keeps its previous value, y updates.
+    expect(manager.getComponent(entityId, Position)).toEqual({
+      x: 10,
+      y: 99,
     });
   });
 

@@ -17,7 +17,7 @@ describe("spawn", () => {
     expect(world.hasComponent(entityId, world.components.Position)).toBe(true);
   });
 
-  test("spawn does not leak an entity slot when config validation fails", () => {
+  test("spawn does not leak an entity slot when setComponentsFromConfig throws", () => {
     const world = new World({ Position: { x: 0, y: 0 } }, { maxEntities: 10 });
 
     expect(() =>
