@@ -15,8 +15,6 @@ describe("Wide Despawn", () => {
     for (let i = 0; i < TYPES; i++) blueprints[`C${i}`] = { value: 0 };
 
     const world = new World(blueprints, { maxEntities: ENTITIES + 1 });
-    const handles = world.components as Record<string, { value: number }> &
-      Record<string, Parameters<typeof world.setComponent>[1]>;
 
     const ids: EntityId[] = [];
     for (let i = 0; i < ENTITIES; i++) {
@@ -28,7 +26,6 @@ describe("Wide Despawn", () => {
         } as Parameters<typeof world.spawn>[0]),
       );
     }
-    void handles;
 
     for (const id of ids) world.removeEntity(id);
   });

@@ -26,10 +26,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
   private readonly queryCache: QueryCache;
   private readonly bitToComponentName: string[] = [];
 
-  private readonly propMeta: Record<
-    string,
-    { names: string[]; types: string[] }
-  > = {};
+  private readonly propNames: Record<string, string[]> = {};
 
   constructor(
     blueprints: T,
@@ -41,8 +38,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     this.componentBlueprints = blueprints;
     this.entityManager = entityManager;
 
-    const componentCount = Object.keys(blueprints).length;
-    this.bitsets = new BitsetManager(componentCount, maxEntities);
+    this.bitsets = new BitsetManager(maxEntities);
 
     this.componentStorages = {};
     this.components = {} as ComponentHandleMap<T>;
@@ -51,22 +47,16 @@ export class ComponentManager<T extends ComponentBlueprint> {
       const blueprint = blueprints[key];
       const storage: ComponentStorage = {};
       const names: string[] = [];
-      const types: string[] = [];
       for (const propName in blueprint) {
-        const valueType = typeof blueprint[propName];
         names.push(propName);
-        types.push(valueType);
 
-        if (valueType === "number") {
-          storage[propName] = new Float64Array(maxEntities);
-        } else if (valueType === "boolean") {
-          storage[propName] = new Array(maxEntities).fill(false);
-        } else {
-          storage[propName] = new Array(maxEntities).fill(undefined);
-        }
+        storage[propName] =
+          typeof blueprint[propName] === "number"
+            ? new Float64Array(maxEntities)
+            : new Array(maxEntities).fill(undefined);
       }
       this.componentStorages[key] = storage;
-      this.propMeta[key] = { names, types };
+      this.propNames[key] = names;
 
       const handle = Object.freeze({
         name: key,
@@ -100,22 +90,6 @@ export class ComponentManager<T extends ComponentBlueprint> {
     }
   }
 
-  private setComponentData(
-    entityId: EntityId,
-    componentName: string,
-    componentData: Partial<Record<string, ValidComponentProp>> | undefined,
-    isNew: boolean,
-  ): void {
-    const { names } = this.propMeta[componentName];
-    this.writeComponentData(
-      entityId,
-      componentName,
-      names,
-      componentData,
-      isNew,
-    );
-  }
-
   setComponent<K extends StringKey<T>>(
     entityId: EntityId,
     component: ComponentHandle<K>,
@@ -124,7 +98,13 @@ export class ComponentManager<T extends ComponentBlueprint> {
     const oldBits = this.bitsets.getBits(entityId);
     const isNew = (oldBits & component.bitMask) === 0;
 
-    this.setComponentData(entityId, component.name, componentData, isNew);
+    this.writeComponentData(
+      entityId,
+      component.name,
+      this.propNames[component.name],
+      componentData,
+      isNew,
+    );
 
     if (isNew) {
       this.bitsets.add(entityId, component.bitMask);
@@ -137,12 +117,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
   }
 
   setComponentsFromConfig(entityId: EntityId, config: SpawnConfig<T>): void {
-    const staged: {
-      component: ComponentHandle<StringKey<T>>;
-      names: string[];
-      componentData: Partial<Record<string, ValidComponentProp>> | undefined;
-    }[] = [];
-
+    let mask = 0;
     for (const key in config) {
       const component = this.components[key];
       const data: unknown = config[key];
@@ -153,16 +128,10 @@ export class ComponentManager<T extends ComponentBlueprint> {
         data === component
           ? undefined
           : (data as Partial<Record<string, ValidComponentProp>>);
-      const { names } = this.propMeta[key];
-      staged.push({ component, names, componentData });
-    }
-
-    let mask = 0;
-    for (const { component, names, componentData } of staged) {
       this.writeComponentData(
         entityId,
         component.name,
-        names,
+        this.propNames[key],
         componentData,
         true,
       );
@@ -172,7 +141,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     if (mask !== 0) {
       const oldBits = this.bitsets.getBits(entityId);
       const newBits = oldBits | mask;
-      this.bitsets.setComponentMask(entityId, newBits);
+      this.bitsets.setBits(entityId, newBits);
       this.queryCache.onMembershipChanged(entityId, oldBits, newBits);
     }
   }
@@ -214,7 +183,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
     entityId: EntityId,
   ): void {
     const storage = this.componentStorages[componentName];
-    for (const prop in storage) {
+    for (const prop of this.propNames[componentName]) {
       this.clearStorageValue(storage[prop], entityId);
     }
   }
@@ -225,7 +194,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
   ): T[K] {
     const storage = this.componentStorages[component.name];
     const componentData: Record<string, unknown> = {};
-    for (const prop in storage) {
+    for (const prop of this.propNames[component.name]) {
       componentData[prop] = storage[prop][entityId];
     }
 
@@ -252,7 +221,7 @@ export class ComponentManager<T extends ComponentBlueprint> {
   clearAll(): void {
     for (const componentName in this.componentStorages) {
       const storage = this.componentStorages[componentName];
-      for (const prop in storage) {
+      for (const prop of this.propNames[componentName]) {
         const column = storage[prop];
         if (column instanceof Float64Array) {
           column.fill(0);

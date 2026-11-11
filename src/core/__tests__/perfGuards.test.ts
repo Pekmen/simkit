@@ -16,7 +16,7 @@ describe("performance invariants", () => {
     const queryCache = world.componentManager.queryCache;
 
     const addSpy = vi.spyOn(bitsets, "add");
-    const maskSpy = vi.spyOn(bitsets, "setComponentMask");
+    const maskSpy = vi.spyOn(bitsets, "setBits");
     const membershipSpy = vi.spyOn(queryCache, "onMembershipChanged");
 
     world.spawn({ A: { v: 1 }, B: { v: 2 }, C: { v: 3 } });

@@ -1,5 +1,6 @@
 import type { EntityId } from "./types";
 import { matchesMask } from "./BitsetManager";
+import { denseAdd, denseRemove } from "./denseArray";
 
 export interface CacheEntry {
   readonly include: number;
@@ -89,15 +90,9 @@ export class QueryCache {
       if (matchedOld === matchedNew) continue;
 
       if (matchedNew) {
-        entry.slot[entityId] = entry.list.length;
-        entry.list.push(entityId);
+        denseAdd(entry.list, entry.slot, entityId);
       } else {
-        const index = entry.slot[entityId];
-        const last = entry.list[entry.list.length - 1];
-        entry.list[index] = last;
-        entry.slot[last] = index;
-        entry.list.pop();
-        entry.slot[entityId] = -1;
+        denseRemove(entry.list, entry.slot, entityId);
       }
       entry.dirty = true;
     }

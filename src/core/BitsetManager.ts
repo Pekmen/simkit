@@ -13,7 +13,7 @@ export function matchesMask(
 export class BitsetManager {
   private readonly entityBits: Uint32Array;
 
-  constructor(_componentCount: number, maxEntities: number) {
+  constructor(maxEntities: number) {
     this.entityBits = new Uint32Array(maxEntities);
   }
 
@@ -45,7 +45,7 @@ export class BitsetManager {
     return this.entityBits[entityId];
   }
 
-  setComponentMask(entityId: EntityId, bits: number): void {
+  setBits(entityId: EntityId, bits: number): void {
     this.entityBits[entityId] = bits;
   }
 

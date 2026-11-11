@@ -1,4 +1,5 @@
 import type { EntityId, EntityRef } from "./types";
+import { denseAdd, denseRemove } from "./denseArray";
 
 export class EntityManager {
   private nextEntityId = 0;
@@ -18,19 +19,13 @@ export class EntityManager {
     let entityId = this.freeEntityIds.pop();
     entityId ??= this.nextEntityId++ as EntityId;
 
-    this.entityToIndex[entityId] = this.activeEntities.length;
-    this.activeEntities.push(entityId);
+    denseAdd(this.activeEntities, this.entityToIndex, entityId);
     return entityId;
   }
 
   removeEntity(entityId: EntityId): void {
-    const index = this.entityToIndex[entityId];
-    const lastEntity = this.activeEntities[this.activeEntities.length - 1];
-    this.activeEntities[index] = lastEntity;
-    this.entityToIndex[lastEntity] = index;
-    this.activeEntities.pop();
+    denseRemove(this.activeEntities, this.entityToIndex, entityId);
 
-    this.entityToIndex[entityId] = -1;
     this.generations[entityId]++;
     this.freeEntityIds.push(entityId);
   }
