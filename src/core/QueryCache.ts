@@ -35,13 +35,8 @@ export class QueryCache {
 
   getEntry(include: number, exclude: number): CacheEntry | undefined {
     if (!this.isEnabled) return undefined;
-    const key = this.makeKey(include, exclude);
-    const entry = this.cache.get(key);
-    if (entry !== undefined) {
-      this.cache.delete(key);
-      this.cache.set(key, entry);
-    }
-    return entry;
+
+    return this.cache.get(this.makeKey(include, exclude));
   }
 
   createEntry(

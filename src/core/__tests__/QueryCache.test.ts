@@ -4,7 +4,7 @@ import type { EntityId } from "../types";
 const id = (n: number): EntityId => n as EntityId;
 const ids = (...ns: number[]): EntityId[] => ns.map(id);
 
-// Direct unit tests for the LRU query cache. The include/exclude masks are just
+// Direct unit tests for the FIFO-eviction query cache. The include/exclude masks are just
 // numbers here; the cache does not care what they mean, only how they key
 // entries and update their entity lists on membership changes.
 describe("QueryCache", () => {
@@ -81,21 +81,21 @@ describe("QueryCache", () => {
     });
   });
 
-  describe("LRU behavior", () => {
-    test("getEntry refreshes recency so the touched entry survives eviction", () => {
+  describe("FIFO eviction behavior", () => {
+    test("getEntry does not protect an entry from eviction (FIFO, not LRU)", () => {
       const cache = new QueryCache(2, MAX_ENTITIES);
       const entryA = cache.createEntry(0b1, 0, ids(1));
-      cache.createEntry(0b10, 0, ids(2));
+      const entryB = cache.createEntry(0b10, 0, ids(2));
 
-      // Touch A -> A becomes most-recently-used.
+      // Touching A would save it under LRU; FIFO eviction ignores reads.
       expect(cache.getEntry(0b1, 0)).toBe(entryA);
 
-      // Inserting C evicts the LRU entry, which is now B (not A).
+      // Inserting C evicts the oldest entry, A, despite the touch above.
       const entryC = cache.createEntry(0b100, 0, ids(3));
 
-      expect(cache.getEntry(0b1, 0)).toBe(entryA);
+      expect(cache.getEntry(0b1, 0)).toBeUndefined();
+      expect(cache.getEntry(0b10, 0)).toBe(entryB);
       expect(cache.getEntry(0b100, 0)).toBe(entryC);
-      expect(cache.getEntry(0b10, 0)).toBeUndefined();
       expect(cache.size).toBe(2);
     });
 

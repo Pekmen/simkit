@@ -520,7 +520,7 @@ describe("ComponentManager", () => {
       expect(manager.queryCache.size).toBe(2);
     });
 
-    test("query cache evicts least recently used entry", () => {
+    test("query cache evicts oldest entry first (FIFO), ignoring recent access", () => {
       const blueprints = { A: { v: 0 }, B: { v: 0 }, C: { v: 0 } };
       const entityManager = new EntityManager(100);
       const manager = new ComponentManager(blueprints, 100, entityManager, 2); // Cache size 2
@@ -534,20 +534,21 @@ describe("ComponentManager", () => {
       const r1 = query(manager, A); // Cache: [A]
       const r2 = query(manager, B); // Cache: [A, B]
 
-      // Access A again to make it most recent
-      const r3 = query(manager, A); // Cache: [B, A] (A moved to end)
-      expect(r1.entities).toBe(r3.entities); // Should be cached
+      // Re-accessing A would save it under LRU; FIFO eviction ignores this.
+      const r3 = query(manager, A);
+      expect(r1.entities).toBe(r3.entities); // Still cached
 
-      // Add C - should evict B (least recently used)
-      query(manager, C); // Cache: [A, C] (B evicted)
+      // Add C - evicts A (oldest insertion), not B, despite the access above.
+      query(manager, C); // Cache: [B, C] (A evicted)
 
-      // Verify A is still cached
-      const r5 = query(manager, A);
-      expect(r3.entities).toBe(r5.entities); // Same cached object
-
-      // Verify B was evicted and rebuilt
+      // Verify B is still cached (check this before touching A again, since
+      // re-querying A would itself evict B as the new oldest entry).
       const r6 = query(manager, B);
-      expect(r2.entities).not.toBe(r6.entities); // New object
+      expect(r2.entities).toBe(r6.entities); // Same cached object
+
+      // Verify A was evicted and rebuilt
+      const r5 = query(manager, A);
+      expect(r3.entities).not.toBe(r5.entities); // New object
     });
 
     test("adding unrelated component does not invalidate cached query", () => {
